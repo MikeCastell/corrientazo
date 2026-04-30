@@ -81,6 +81,8 @@ p { color: var(--text-secondary); }
 .bg-gray-100 { background-color: #f3f4f6; }
 .bg-green-100 { background-color: #dcfce7; }
 .bg-orange-100 { background-color: #ffedd5; }
+.bg-blue-500 { background-color: #3b82f6; }
+.bg-orange-500 { background-color: #f97316; }
 .bg-red-500 { background-color: #ef4444; }
 .bg-card-bg { background-color: var(--card-bg); }
 
