@@ -69,7 +69,8 @@ export class MealsService {
         created_at: true,
         updated_at: true,
         publications: {
-          orderBy: { created_at: "desc" },
+          // Use updated_at so the UI reflects the last pause/activate action.
+          orderBy: { updated_at: "desc" },
           take: 1,
           select: {
             id: true,
@@ -82,6 +83,7 @@ export class MealsService {
             pickup_from: true,
             pickup_to: true,
             created_at: true,
+            updated_at: true,
           },
         },
       },
@@ -257,7 +259,7 @@ export class MealsService {
     const cook = await this.ensureCookProfile(cookUserId);
     const pub = await this.prisma.meal_publications.findFirst({
       where: { id: publicationId, cook_profile_id: cook.id },
-      select: { id: true, stock_total: true, stock_available: true },
+      select: { id: true, meal_id: true, stock_total: true, stock_available: true },
     });
     if (!pub) {
       throw new DomainError({
@@ -285,25 +287,45 @@ export class MealsService {
       });
     }
 
-    return this.prisma.meal_publications.update({
-      where: { id: publicationId },
-      data: {
-        ...(dto.priceCop !== undefined ? { price_cop: dto.priceCop } : {}),
-        ...(dto.status !== undefined ? { status: dto.status } : {}),
-        ...(dto.stockTotal !== undefined ? { stock_total: nextStockTotal } : {}),
-        ...(dto.stockAvailable !== undefined ? { stock_available: nextStockAvailable } : {}),
-        ...(dto.stockTotal !== undefined && dto.stockAvailable === undefined
-          ? { stock_available: Math.min(pub.stock_available, nextStockTotal) }
-          : {}),
-      },
-      select: {
-        id: true,
-        price_cop: true,
-        stock_total: true,
-        stock_available: true,
-        status: true,
-        updated_at: true,
-      },
+    return this.prisma.$transaction(async (tx) => {
+      // Guarantee: only one PUBLISHED publication per meal for the cook.
+      if (dto.status === "PUBLISHED" || dto.status === "PAUSED") {
+        // Pause all siblings (not only those currently PUBLISHED) to avoid
+        // races/legacy duplicates causing the UI to "bounce" after refresh.
+        await tx.meal_publications.updateMany({
+          where: {
+            cook_profile_id: cook.id,
+            meal_id: pub.meal_id,
+            id: { not: publicationId },
+          },
+          data: { status: "PAUSED" },
+        });
+      }
+
+      return tx.meal_publications.update({
+        where: { id: publicationId },
+        data: {
+          ...(dto.priceCop !== undefined && dto.priceCop !== null ? { price_cop: dto.priceCop } : {}),
+          ...(dto.status !== undefined && dto.status !== null ? { status: dto.status } : {}),
+          ...(dto.stockTotal !== undefined && dto.stockTotal !== null ? { stock_total: nextStockTotal } : {}),
+          ...(dto.stockAvailable !== undefined && dto.stockAvailable !== null
+            ? { stock_available: nextStockAvailable }
+            : {}),
+          ...(dto.stockTotal !== undefined &&
+                  dto.stockTotal !== null &&
+                  (dto.stockAvailable === undefined || dto.stockAvailable === null)
+            ? { stock_available: Math.min(pub.stock_available, nextStockTotal) }
+            : {}),
+        },
+        select: {
+          id: true,
+          price_cop: true,
+          stock_total: true,
+          stock_available: true,
+          status: true,
+          updated_at: true,
+        },
+      });
     });
   }
 

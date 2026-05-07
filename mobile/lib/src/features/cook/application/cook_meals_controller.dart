@@ -1,5 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../core/env/app_env.dart';
 import '../data/cook_meals_repository.dart';
 import '../domain/cook_meal.dart';
 
@@ -100,6 +101,11 @@ class CookMealsController extends AsyncNotifier<List<CookMeal>> {
 
     final pubId = found.publicationId;
     if (pubId == null) return;
+
+    if (AppEnv.startupDebug) {
+      // ignore: avoid_print
+      print('[cook] setStatus meal=$id pub=$pubId -> $status');
+    }
 
     // Optimistic UI update so the cook sees it instantly.
     final optimistic = [

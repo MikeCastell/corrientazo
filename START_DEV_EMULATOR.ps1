@@ -22,22 +22,29 @@ try {
   Push-Location $mobileRoot
   $emulators = (flutter emulators) 2>$null
   if ($LASTEXITCODE -eq 0 -and $emulators) {
-    # Best effort: launch first listed emulator id if available
+    # Best effort: the output is a table. We pick the first row that matches:
+    # <Id> • <Name> • <Manufacturer> • <Platform>
     $lines = $emulators -split "`r?`n"
-    $ids = @()
+    $emuId = $null
     foreach ($line in $lines) {
-      if ($line -match "^\s*([^\s]+)\s+") {
-        $id = $Matches[1]
-        if ($id -and $id -ne "Id" -and $id -ne "-----") { $ids += $id }
+      # Example:
+      # Pixel_8 • Pixel 8 • Google • android
+      if ($line -match "^\s*([A-Za-z0-9_\\-]+)\s*•\s*.+\s*•\s*.+\s*•\s*(android|ios)\s*$") {
+        $emuId = $Matches[1]
+        break
+      }
+      # Fallback: space-separated columns (some terminals strip the bullet)
+      if (-not $emuId -and $line -match "^\s*([A-Za-z0-9_\\-]+)\s+.+\s+android\s*$") {
+        $emuId = $Matches[1]
+        break
       }
     }
-    if ($ids.Count -gt 0) {
-      $emuId = $ids[0]
+    if ($emuId) {
       Write-Host "Intentando abrir emulador: $emuId"
       flutter emulators --launch $emuId | Out-Host
       Start-Sleep -Seconds 3
     } else {
-      Write-Host "No detecté emuladores automáticamente. Ábrelo manualmente si hace falta." -ForegroundColor Yellow
+      Write-Host "No pude detectar el ID del emulador automáticamente. Ábrelo manualmente." -ForegroundColor Yellow
     }
   } else {
     Write-Host "No pude listar emuladores. Ábrelo manualmente si hace falta." -ForegroundColor Yellow
@@ -58,7 +65,8 @@ Pop-Location
 
 Title "2) Flutter (emulador)"
 Write-Host "Si tu emulador NO es emulator-5554, cambia el -d en este script."
+Write-Host "Tip: si el emulador se cierra, usamos render por software (más estable)."
 Push-Location $mobileRoot
-flutter run -d emulator-5554 --dart-define=API_BASE_URL=http://10.0.2.2:3000
+flutter run -d emulator-5554 --enable-software-rendering --dart-define=API_BASE_URL=http://10.0.2.2:3000 --dart-define=STARTUP_DEBUG=true
 Pop-Location
 

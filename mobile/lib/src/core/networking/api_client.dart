@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:dio/dio.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../env/app_env.dart';
@@ -27,13 +28,35 @@ class ApiClient {
           if (tokens != null) {
             options.headers['Authorization'] = 'Bearer ${tokens.accessToken}';
           }
+          if (AppEnv.startupDebug) {
+            // ignore: avoid_print
+            debugPrint(
+              '[api] ${options.method} ${options.uri} (auth=${tokens != null})',
+            );
+          }
           handler.next(options);
+        },
+        onResponse: (response, handler) {
+          if (AppEnv.startupDebug) {
+            // ignore: avoid_print
+            debugPrint(
+              '[api] <- ${response.statusCode} ${response.requestOptions.method} ${response.requestOptions.uri}',
+            );
+          }
+          handler.next(response);
         },
         onError: (err, handler) async {
           // Only handle 401 once per request
           final status = err.response?.statusCode;
           final req = err.requestOptions;
           final alreadyRetried = req.extra['retried'] == true;
+
+          if (AppEnv.startupDebug) {
+            // ignore: avoid_print
+            debugPrint(
+              '[api] !! ${status ?? '-'} ${req.method} ${req.uri} ${err.type} ${err.message}',
+            );
+          }
 
           if (status == 401 && !alreadyRetried) {
             try {

@@ -47,6 +47,14 @@ export class HttpExceptionFilter implements ExceptionFilter {
     }
 
     // Error inesperado
+    // Log for debugging 5xx in dev/alpha.
+    // eslint-disable-next-line no-console
+    console.error("[http] unexpected error", {
+      method: req?.method,
+      path: req?.originalUrl ?? req?.url,
+      correlationId,
+      exception,
+    });
     res.status(HttpStatus.INTERNAL_SERVER_ERROR).json({
       error: {
         code: "INTERNAL_ERROR",
