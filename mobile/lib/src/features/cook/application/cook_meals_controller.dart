@@ -22,14 +22,34 @@ class CookMealsController extends AsyncNotifier<List<CookMeal>> {
     final repo = ref.read(cookMealsRepositoryProvider);
     if (state.isLoading) return;
 
+    final wantsPublish = meal.status == CookMealStatus.available;
+    final now = DateTime.now();
+    final availableFrom = now.subtract(const Duration(minutes: 5));
+    final availableTo = now.add(const Duration(hours: 4));
+    final pickupFrom = now.add(const Duration(minutes: 20));
+    final pickupTo = now.add(const Duration(hours: 4));
+
     if (meal.id.startsWith('m_')) {
-      await repo.create(
+      final created = await repo.create(
         title: meal.title,
         description: meal.description.isEmpty ? null : meal.description,
         basePriceCop: meal.priceCop,
         tags: meal.ingredients,
         photoUrl: null,
       );
+      if (wantsPublish && meal.stock > 0) {
+        await repo.publish(
+          created.id,
+          priceCop: meal.priceCop,
+          stockTotal: meal.stock,
+          availableFrom: availableFrom,
+          availableTo: availableTo,
+          pickupFrom: pickupFrom,
+          pickupTo: pickupTo,
+          deliveryEnabled: false,
+          deliveryZoneId: null,
+        );
+      }
       await refresh();
       return;
     }
@@ -42,6 +62,19 @@ class CookMealsController extends AsyncNotifier<List<CookMeal>> {
       tags: meal.ingredients,
       photoUrl: null,
     );
+    if (wantsPublish && meal.stock > 0) {
+      await repo.publish(
+        meal.id,
+        priceCop: meal.priceCop,
+        stockTotal: meal.stock,
+        availableFrom: availableFrom,
+        availableTo: availableTo,
+        pickupFrom: pickupFrom,
+        pickupTo: pickupTo,
+        deliveryEnabled: false,
+        deliveryZoneId: null,
+      );
+    }
     await refresh();
   }
 

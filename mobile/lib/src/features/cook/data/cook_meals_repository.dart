@@ -49,22 +49,22 @@ class CookMealsRepository {
     required List<String> tags,
     required String? photoUrl,
   }) {
-    return _api.dio
-        .patch<Map<String, dynamic>>(
-          '/cook/meals/$mealId',
-          data: {
-            'title': title,
-            'description': description,
-            'basePriceCop': basePriceCop,
-            'tags': tags,
-            'photoUrl': photoUrl,
-          },
-        )
-        .then((r) => CookMealTemplateDto.fromJson(r.data!));
+    return _api.patchJson<CookMealTemplateDto>(
+      '/cook/meals/$mealId',
+      body: {
+        'title': title,
+        'description': description,
+        'basePriceCop': basePriceCop,
+        'tags': tags,
+        'photoUrl': photoUrl,
+      },
+      decode: (json) =>
+          CookMealTemplateDto.fromJson(json as Map<String, dynamic>),
+    );
   }
 
   Future<void> delete(String mealId) async {
-    await _api.dio.delete<void>('/cook/meals/$mealId');
+    await _api.deleteJson('/cook/meals/$mealId');
   }
 
   Future<CookMealPublicationDto> publish(
@@ -102,17 +102,17 @@ class CookMealsRepository {
     int? stockTotal,
     int? priceCop,
   }) {
-    return _api.dio
-        .patch<Map<String, dynamic>>(
-          '/meal-publications/$publicationId',
-          data: {
-            'status': status,
-            'stockAvailable': stockAvailable,
-            'stockTotal': stockTotal,
-            'priceCop': priceCop,
-          },
-        )
-        .then((r) => CookMealPublicationDto.fromJson(r.data!));
+    return _api.patchJson<CookMealPublicationDto>(
+      '/meal-publications/$publicationId',
+      body: {
+        'status': status,
+        'stockAvailable': stockAvailable,
+        'stockTotal': stockTotal,
+        'priceCop': priceCop,
+      },
+      decode: (json) =>
+          CookMealPublicationDto.fromJson(json as Map<String, dynamic>),
+    );
   }
 }
 

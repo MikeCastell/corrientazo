@@ -115,6 +115,27 @@ class ApiClient {
     }
   }
 
+  Future<T> patchJson<T>(
+    String path, {
+    Object? body,
+    T Function(dynamic json)? decode,
+  }) async {
+    try {
+      final r = await _dio.patch<dynamic>(path, data: body);
+      return decode != null ? decode(r.data) : r.data as T;
+    } on DioException catch (e) {
+      throw _mapDio(e);
+    }
+  }
+
+  Future<void> deleteJson(String path) async {
+    try {
+      await _dio.delete<dynamic>(path);
+    } on DioException catch (e) {
+      throw _mapDio(e);
+    }
+  }
+
   ApiException _mapDio(DioException e) {
     if (e.type == DioExceptionType.connectionTimeout ||
         e.type == DioExceptionType.receiveTimeout ||
@@ -140,4 +161,3 @@ class ApiClient {
 }
 
 final apiClientProvider = Provider<ApiClient>((ref) => ApiClient(ref));
-

@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/networking/api_client.dart';
 import '../domain/order_create_request.dart';
 import '../domain/order_create_response.dart';
+import '../domain/order_summary.dart';
 
 class OrdersRepository {
   OrdersRepository(this._ref);
@@ -29,21 +30,27 @@ class OrdersRepository {
         );
   }
 
-  Future<List<OrderCreateResponse>> listMine() {
+  Future<List<OrderSummary>> listMine() {
     return _ref
         .read(apiClientProvider)
-        .getJson<List<OrderCreateResponse>>(
+        .getJson<List<OrderSummary>>(
           '/orders',
           decode: (json) {
             final list = (json as List).cast<dynamic>();
             return list
-                .map(
-                  (e) =>
-                      OrderCreateResponse.fromJson(e as Map<String, dynamic>),
-                )
+                .map((e) => OrderSummary.fromJson(e as Map<String, dynamic>))
                 .toList(growable: false);
           },
         );
+  }
+
+  Future<void> updateStatus({
+    required String orderId,
+    required String action,
+  }) async {
+    await _ref
+        .read(apiClientProvider)
+        .postJson<void>('/orders/$orderId/status', body: {'action': action});
   }
 }
 

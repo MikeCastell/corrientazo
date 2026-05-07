@@ -23,34 +23,53 @@ class CustomerOrdersScreen extends ConsumerWidget {
         title: 'No pudimos cargar tus pedidos',
         subtitle: e.toString(),
         actionLabel: 'Reintentar',
-        onAction: () => ref.read(customerOrdersControllerProvider.notifier).refresh(),
+        onAction: () =>
+            ref.read(customerOrdersControllerProvider.notifier).refresh(),
       ),
       data: (data) {
         if (data.active.isEmpty && data.past.isEmpty) {
           return AppEmptyState(
             icon: Icons.receipt_long,
             title: 'Tus pedidos aparecerán aquí',
-            subtitle: 'Cuando hagas tu primer pedido, podrás ver estado y detalles desde esta pestaña.',
+            subtitle:
+                'Cuando hagas tu primer pedido, podrás ver estado y detalles desde esta pestaña.',
             actionLabel: 'Explorar corrientazos',
             onAction: () => context.go(const CustomerHomeRoute().location),
           );
         }
 
         return RefreshIndicator(
-          onRefresh: () async => ref.read(customerOrdersControllerProvider.notifier).refresh(),
+          onRefresh: () async =>
+              ref.read(customerOrdersControllerProvider.notifier).refresh(),
           child: ListView(
             padding: const EdgeInsets.all(AppSpacing.md),
             children: [
               if (data.active.isNotEmpty) ...[
                 _SectionTitle(title: 'Activos'),
                 const SizedBox(height: AppSpacing.sm),
-                ...data.active.map((o) => _OrderCard(orderId: o.id, status: o.status, totalCop: o.totalCop)),
+                ...data.active.map(
+                  (o) => _OrderCard(
+                    orderId: o.id,
+                    status: o.status,
+                    totalCop: o.totalCop,
+                    mealTitle: o.mealTitle,
+                    quantity: o.quantity,
+                  ),
+                ),
                 const SizedBox(height: AppSpacing.lg),
               ],
               if (data.past.isNotEmpty) ...[
                 _SectionTitle(title: 'Anteriores'),
                 const SizedBox(height: AppSpacing.sm),
-                ...data.past.map((o) => _OrderCard(orderId: o.id, status: o.status, totalCop: o.totalCop)),
+                ...data.past.map(
+                  (o) => _OrderCard(
+                    orderId: o.id,
+                    status: o.status,
+                    totalCop: o.totalCop,
+                    mealTitle: o.mealTitle,
+                    quantity: o.quantity,
+                  ),
+                ),
               ],
             ],
           ),
@@ -68,9 +87,9 @@ class _SectionTitle extends StatelessWidget {
   Widget build(BuildContext context) {
     return Text(
       title,
-      style: Theme.of(context).textTheme.titleMedium?.copyWith(
-            fontWeight: FontWeight.w900,
-          ),
+      style: Theme.of(
+        context,
+      ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w900),
     );
   }
 }
@@ -80,11 +99,15 @@ class _OrderCard extends StatelessWidget {
     required this.orderId,
     required this.status,
     required this.totalCop,
+    this.mealTitle,
+    this.quantity,
   });
 
   final String orderId;
   final String status;
   final int totalCop;
+  final String? mealTitle;
+  final int? quantity;
 
   @override
   Widget build(BuildContext context) {
@@ -95,14 +118,14 @@ class _OrderCard extends StatelessWidget {
     final tone = isCancelled
         ? AppColors.danger
         : isDone
-            ? AppColors.success
-            : AppColors.brand;
+        ? AppColors.success
+        : AppColors.brand;
 
     final label = isCancelled
         ? 'Cancelado'
         : isDone
-            ? 'Entregado'
-            : 'En progreso';
+        ? 'Entregado'
+        : 'En progreso';
 
     return Container(
       margin: const EdgeInsets.only(bottom: AppSpacing.sm),
@@ -126,8 +149,8 @@ class _OrderCard extends StatelessWidget {
               isCancelled
                   ? Icons.close
                   : isDone
-                      ? Icons.check
-                      : Icons.local_fire_department_outlined,
+                  ? Icons.check
+                  : Icons.local_fire_department_outlined,
               color: tone,
             ),
           ),
@@ -138,20 +161,31 @@ class _OrderCard extends StatelessWidget {
               children: [
                 Text(
                   'Pedido #${orderId.substring(0, 6).toUpperCase()}',
-                  style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w900),
+                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                    fontWeight: FontWeight.w900,
+                  ),
                 ),
                 const SizedBox(height: 2),
                 Text(
-                  label,
+                  mealTitle == null
+                      ? label
+                      : (quantity == null || quantity == 1)
+                      ? '$label · $mealTitle'
+                      : '$label · x$quantity · $mealTitle',
                   style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                        color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.65),
-                      ),
+                    color: Theme.of(
+                      context,
+                    ).colorScheme.onSurface.withValues(alpha: 0.65),
+                  ),
                 ),
               ],
             ),
           ),
           Container(
-            padding: const EdgeInsets.symmetric(horizontal: AppSpacing.sm, vertical: 8),
+            padding: const EdgeInsets.symmetric(
+              horizontal: AppSpacing.sm,
+              vertical: 8,
+            ),
             decoration: BoxDecoration(
               color: tone.withValues(alpha: 0.10),
               borderRadius: BorderRadius.circular(AppRadius.xl),
@@ -160,9 +194,9 @@ class _OrderCard extends StatelessWidget {
             child: Text(
               '\$$totalCop',
               style: Theme.of(context).textTheme.labelLarge?.copyWith(
-                    fontWeight: FontWeight.w900,
-                    color: tone,
-                  ),
+                fontWeight: FontWeight.w900,
+                color: tone,
+              ),
             ),
           ),
         ],
@@ -170,4 +204,3 @@ class _OrderCard extends StatelessWidget {
     );
   }
 }
-

@@ -1,7 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../orders/data/orders_repository.dart';
-import '../../orders/domain/order_create_response.dart';
+import '../../orders/domain/order_summary.dart';
 
 class CustomerOrdersState {
   const CustomerOrdersState({
@@ -11,8 +11,8 @@ class CustomerOrdersState {
   });
 
   final bool loading;
-  final List<OrderCreateResponse> active;
-  final List<OrderCreateResponse> past;
+  final List<OrderSummary> active;
+  final List<OrderSummary> past;
 
   static const empty = CustomerOrdersState(
     loading: false,
@@ -32,8 +32,8 @@ class CustomerOrdersController extends AsyncNotifier<CustomerOrdersState> {
     final results = await repo.listMine();
     if (results.isEmpty) return CustomerOrdersState.empty;
 
-    final active = <OrderCreateResponse>[];
-    final past = <OrderCreateResponse>[];
+    final active = <OrderSummary>[];
+    final past = <OrderSummary>[];
     for (final o in results) {
       final s = o.status.toUpperCase();
       final isTerminal =

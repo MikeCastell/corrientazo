@@ -102,9 +102,29 @@ export class MealsService {
       select: {
         id: true,
         title: true,
+        description: true,
         base_price_cop: true,
-        cook_profile_id: true,
+        photo_url: true,
+        tags: true,
+        is_active: true,
         created_at: true,
+        updated_at: true,
+        publications: {
+          orderBy: { created_at: "desc" },
+          take: 1,
+          select: {
+            id: true,
+            price_cop: true,
+            stock_total: true,
+            stock_available: true,
+            status: true,
+            available_from: true,
+            available_to: true,
+            pickup_from: true,
+            pickup_to: true,
+            created_at: true,
+          },
+        },
       },
     });
   }

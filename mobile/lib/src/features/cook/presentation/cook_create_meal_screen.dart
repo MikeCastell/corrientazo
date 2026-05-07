@@ -9,6 +9,7 @@ import '../../../core/design/tokens/app_spacing.dart';
 import '../../../core/routing/app_router.dart';
 import '../../../core/ui/app_scaffold.dart';
 import '../../../core/food/colombian_food_mock.dart';
+import '../../../core/networking/api_exception.dart';
 import '../application/cook_meals_controller.dart';
 import '../domain/cook_meal.dart';
 
@@ -120,6 +121,22 @@ class _CookCreateMealScreenState extends ConsumerState<CookCreateMealScreen> {
         ),
       );
       context.go(const CookMealsRoute().location);
+    } catch (e) {
+      if (!mounted) return;
+
+      final msg = switch (e) {
+        UnauthorizedException() =>
+          'Tu sesión expiró. Vuelve a iniciar sesión e inténtalo de nuevo.',
+        ApiErrorResponseException(code: final c, message: final m) => '$m ($c)',
+        NetworkException(message: final m) =>
+          'No pudimos conectar con el servidor. $m',
+        _ =>
+          publish
+              ? 'No pudimos publicar. Intenta de nuevo.'
+              : 'No pudimos guardar. Intenta de nuevo.',
+      };
+
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(msg)));
     } finally {
       if (mounted) setState(() => _saving = false);
     }

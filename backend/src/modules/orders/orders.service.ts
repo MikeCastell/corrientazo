@@ -157,7 +157,7 @@ export class OrdersService {
     const role = await this.getUserRole(requesterUserId);
     if (role === "COOK") {
       const cookProfileId = await this.ensureCookProfile(requesterUserId);
-      return this.prisma.orders.findMany({
+      const rows = await this.prisma.orders.findMany({
         where: { cook_profile_id: cookProfileId },
         orderBy: { created_at: "desc" },
         take: 100,
@@ -166,12 +166,38 @@ export class OrdersService {
           status: true,
           created_at: true,
           total_cop: true,
-          // keep response aligned with current Flutter DTOs (MVP)
+          quantity: true,
+          fulfillment_type: true,
+          meal_publication_id: true,
+          customer: { select: { name: true, phone: true, avatar_url: true } },
+          meal_publication: {
+            select: {
+              id: true,
+              photo_url: true,
+              title_override: true,
+              meal: { select: { title: true, photo_url: true } },
+            },
+          },
         },
       });
+
+      return rows.map((o) => ({
+        id: o.id,
+        status: o.status,
+        total_cop: o.total_cop,
+        created_at: o.created_at,
+        quantity: o.quantity,
+        fulfillment_type: o.fulfillment_type,
+        meal_publication_id: o.meal_publication_id,
+        customer_name: o.customer.name,
+        customer_phone: o.customer.phone,
+        customer_avatar_url: o.customer.avatar_url,
+        meal_title: o.meal_publication.title_override ?? o.meal_publication.meal.title,
+        meal_photo_url: o.meal_publication.photo_url ?? o.meal_publication.meal.photo_url,
+      }));
     }
 
-    return this.prisma.orders.findMany({
+    const rows = await this.prisma.orders.findMany({
       where: { customer_id: requesterUserId },
       orderBy: { created_at: "desc" },
       take: 100,
@@ -180,9 +206,33 @@ export class OrdersService {
         status: true,
         created_at: true,
         total_cop: true,
-        // keep response aligned with current Flutter DTOs (MVP)
+        quantity: true,
+        fulfillment_type: true,
+        meal_publication_id: true,
+        cook_profile_id: true,
+        meal_publication: {
+          select: {
+            id: true,
+            photo_url: true,
+            title_override: true,
+            meal: { select: { title: true, photo_url: true } },
+          },
+        },
       },
     });
+
+    return rows.map((o) => ({
+      id: o.id,
+      status: o.status,
+      total_cop: o.total_cop,
+      created_at: o.created_at,
+      quantity: o.quantity,
+      fulfillment_type: o.fulfillment_type,
+      meal_publication_id: o.meal_publication_id,
+      cook_profile_id: o.cook_profile_id,
+      meal_title: o.meal_publication.title_override ?? o.meal_publication.meal.title,
+      meal_photo_url: o.meal_publication.photo_url ?? o.meal_publication.meal.photo_url,
+    }));
   }
 
   async updateStatusAsCook(cookUserId: string, orderId: string, action: OrderAction) {
