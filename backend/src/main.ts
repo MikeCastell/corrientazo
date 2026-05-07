@@ -6,6 +6,7 @@ import cookieParser from "cookie-parser";
 import helmet from "helmet";
 import { ValidationPipe } from "@nestjs/common";
 import { NestFactory } from "@nestjs/core";
+import { DocumentBuilder, SwaggerModule } from "@nestjs/swagger";
 
 import { AppModule } from "./app.module";
 import { HttpExceptionFilter } from "./common/filters/http-exception.filter";
@@ -19,7 +20,7 @@ async function bootstrap() {
   app.use(helmet());
   app.use(cookieParser());
 
-  app.setGlobalPrefix("api");
+  app.setGlobalPrefix("api/v1");
 
   app.useGlobalPipes(
     new ValidationPipe({
@@ -31,6 +32,29 @@ async function bootstrap() {
 
   app.useGlobalInterceptors(new CorrelationIdInterceptor());
   app.useGlobalFilters(new HttpExceptionFilter());
+
+  const swaggerConfig = new DocumentBuilder()
+    .setTitle("CORRIENTAZO API")
+    .setDescription("Backend API (NestJS) — marketplace hiperlocal de corrientazos.")
+    .setVersion("v1")
+    .addBearerAuth(
+      {
+        type: "http",
+        scheme: "bearer",
+        bearerFormat: "JWT",
+        name: "Authorization",
+        in: "header",
+      },
+      "bearer"
+    )
+    .build();
+
+  const swaggerDoc = SwaggerModule.createDocument(app, swaggerConfig);
+  SwaggerModule.setup("docs", app, swaggerDoc, {
+    swaggerOptions: {
+      persistAuthorization: true,
+    },
+  });
 
   app.enableShutdownHooks();
 
