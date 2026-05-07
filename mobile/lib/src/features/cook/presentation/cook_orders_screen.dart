@@ -1,12 +1,16 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
 import '../../../core/design/tokens/app_colors.dart';
 import '../../../core/design/tokens/app_radius.dart';
 import '../../../core/design/tokens/app_spacing.dart';
+import '../../../core/routing/app_router.dart';
 import '../../../core/ui/app_scaffold.dart';
 import '../../../core/ui/states/app_empty_state.dart';
+import '../../auth/application/auth_controller.dart';
+import '../../auth/domain/auth_state.dart';
 import '../application/cook_orders_controller.dart';
 
 class CookOrdersScreen extends ConsumerWidget {
@@ -15,6 +19,7 @@ class CookOrdersScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final orders = ref.watch(cookOrdersControllerProvider);
+    final auth = ref.watch(authControllerProvider);
 
     return AppScaffold(
       title: 'Pedidos',
@@ -30,11 +35,17 @@ class CookOrdersScreen extends ConsumerWidget {
         ),
         data: (items) {
           if (items.isEmpty) {
-            return const AppEmptyState(
+            final who = auth is Authenticated ? auth.user : null;
+            final subtitle = who == null
+                ? 'Cuando te caiga el primer pedido, lo verás aquí. Sin realtime por ahora: usa refrescar.'
+                : 'Estás logueado como ${who.name} (${who.phone}).\n\n'
+                    'Para ver pedidos, un cliente debe pedir un plato publicado por ESTE cocinero. '
+                    'Sin realtime por ahora: usa refrescar.';
+
+            return AppEmptyState(
               icon: Icons.inbox_outlined,
               title: 'Aún no tienes pedidos',
-              subtitle:
-                  'Cuando te caiga el primer pedido, lo verás aquí. Sin realtime por ahora: usa refrescar.',
+              subtitle: subtitle,
             );
           }
 
@@ -61,6 +72,7 @@ class CookOrdersScreen extends ConsumerWidget {
                     quantity: o.quantity,
                     fulfillmentType: o.fulfillmentType,
                     mealTitle: o.mealTitle ?? 'Pedido',
+                    onOpen: () => context.push(CookOrderDetailRoute(o.id).location),
                     onAction: (action) async {
                       HapticFeedback.selectionClick();
                       await ref
@@ -90,6 +102,7 @@ class _CookOrderCard extends StatelessWidget {
     required this.quantity,
     required this.fulfillmentType,
     required this.onAction,
+    required this.onOpen,
   });
 
   final String orderId;
@@ -101,6 +114,7 @@ class _CookOrderCard extends StatelessWidget {
   final int quantity;
   final String fulfillmentType;
   final ValueChanged<String> onAction;
+  final VoidCallback onOpen;
 
   @override
   Widget build(BuildContext context) {
@@ -111,17 +125,20 @@ class _CookOrderCard extends StatelessWidget {
 
     final actions = _actionsForStatus(s);
 
-    return Container(
-      margin: const EdgeInsets.only(bottom: AppSpacing.sm),
-      padding: const EdgeInsets.all(AppSpacing.md),
-      decoration: BoxDecoration(
-        color: Theme.of(context).colorScheme.surface,
-        borderRadius: BorderRadius.circular(AppRadius.lg),
-        border: Border.all(color: Theme.of(context).dividerColor),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
+    return InkWell(
+      borderRadius: BorderRadius.circular(AppRadius.lg),
+      onTap: onOpen,
+      child: Container(
+        margin: const EdgeInsets.only(bottom: AppSpacing.sm),
+        padding: const EdgeInsets.all(AppSpacing.md),
+        decoration: BoxDecoration(
+          color: Theme.of(context).colorScheme.surface,
+          borderRadius: BorderRadius.circular(AppRadius.lg),
+          border: Border.all(color: Theme.of(context).dividerColor),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
           Row(
             children: [
               Container(
@@ -220,19 +237,26 @@ class _CookOrderCard extends StatelessWidget {
                   ),
                 )
               else
-                Wrap(
-                  spacing: 8,
-                  children: [
-                    for (final a in actions)
-                      FilledButton.tonal(
-                        onPressed: () => onAction(a.action),
-                        child: Text(a.label),
-                      ),
-                  ],
+                Flexible(
+                  child: Align(
+                    alignment: Alignment.centerRight,
+                    child: Wrap(
+                      spacing: 8,
+                      runSpacing: 8,
+                      children: [
+                        for (final a in actions)
+                          FilledButton.tonal(
+                            onPressed: () => onAction(a.action),
+                            child: Text(a.label),
+                          ),
+                      ],
+                    ),
+                  ),
                 ),
             ],
           ),
         ],
+        ),
       ),
     );
   }

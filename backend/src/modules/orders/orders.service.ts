@@ -147,12 +147,33 @@ export class OrdersService {
         id: true,
         customer_id: true,
         cook_profile_id: true,
+        meal_publication_id: true,
+        fulfillment_type: true,
+        quantity: true,
         status: true,
         created_at: true,
         total_cop: true,
+        notes: true,
         order_status_events: {
           orderBy: { occurred_at: "asc" },
           select: { from_status: true, to_status: true, occurred_at: true, actor_user_id: true },
+        },
+        customer: { select: { name: true, phone: true, avatar_url: true } },
+        meal_publication: {
+          select: {
+            id: true,
+            stock_available: true,
+            status: true,
+            photo_url: true,
+            title_override: true,
+            meal: { select: { title: true, photo_url: true } },
+            cook_profile: {
+              select: {
+                bio: true,
+                user: { select: { name: true, avatar_url: true, phone: true } },
+              },
+            },
+          },
         },
       },
     });
@@ -165,10 +186,11 @@ export class OrdersService {
     }
 
     // MVP access rule: customer o cook dueño del cook_profile
-    if (order.customer_id === requesterUserId) return order;
+    const isCustomer = order.customer_id === requesterUserId;
 
     const cookProfileId = await this.getCookProfileIdIfCook(requesterUserId);
-    if (!cookProfileId || order.cook_profile_id !== cookProfileId) {
+    const isCookOwner = !!cookProfileId && order.cook_profile_id === cookProfileId;
+    if (!isCustomer && !isCookOwner) {
       throw new DomainError({
         code: ErrorCodes.ORDER_ACCESS_DENIED,
         message: "Access denied",
@@ -176,7 +198,35 @@ export class OrdersService {
       });
     }
 
-    return order;
+    const mp = order.meal_publication;
+    const cookUser = mp?.cook_profile?.user;
+    return {
+      id: order.id,
+      status: order.status,
+      created_at: order.created_at,
+      total_cop: order.total_cop,
+      quantity: order.quantity,
+      fulfillment_type: order.fulfillment_type,
+      meal_publication_id: order.meal_publication_id,
+      notes: order.notes,
+      timeline: order.order_status_events.map((e) => ({
+        from_status: e.from_status,
+        to_status: e.to_status,
+        occurred_at: e.occurred_at,
+        actor_user_id: e.actor_user_id,
+      })),
+      meal_title: mp?.title_override ?? mp?.meal?.title ?? null,
+      meal_photo_url: mp?.photo_url ?? mp?.meal?.photo_url ?? null,
+      cook_name: cookUser?.name ?? null,
+      cook_avatar_url: cookUser?.avatar_url ?? null,
+      cook_phone: cookUser?.phone ?? null,
+      cook_bio: mp?.cook_profile?.bio ?? null,
+      publication_status: mp?.status ?? null,
+      stock_available: mp?.stock_available ?? null,
+      customer_name: isCookOwner ? order.customer?.name ?? null : null,
+      customer_phone: isCookOwner ? order.customer?.phone ?? null : null,
+      customer_avatar_url: isCookOwner ? order.customer?.avatar_url ?? null : null,
+    };
   }
 
   async listOrders(requesterUserId: string) {

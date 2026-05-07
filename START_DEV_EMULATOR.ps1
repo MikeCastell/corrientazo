@@ -1,3 +1,8 @@
+param(
+  [ValidateSet("emulator", "phone")]
+  [string]$Target = "emulator"
+)
+
 $ErrorActionPreference = "Stop"
 
 try {
@@ -10,49 +15,99 @@ function Title($t) {
   Write-Host "=== $t ===" -ForegroundColor Cyan
 }
 
+$script:LanIp = $null
+
+function Get-LanIPv4() {
+  try {
+    $candidates = Get-NetIPAddress -AddressFamily IPv4 -ErrorAction SilentlyContinue |
+      Where-Object {
+        $_.IPAddress -and
+        $_.IPAddress -notlike "127.*" -and
+        $_.IPAddress -notlike "169.254.*"
+      } |
+      Sort-Object -Property InterfaceMetric |
+      Select-Object -ExpandProperty IPAddress
+    if ($candidates -and $candidates.Count -gt 0) { return $candidates[0] }
+  } catch {}
+
+  try {
+    $raw = ipconfig 2>$null
+    if ($raw) {
+      $m = [regex]::Match($raw, "(?m)\\bIPv4[^:]*:\\s*([0-9]{1,3}(?:\\.[0-9]{1,3}){3})\\b")
+      if ($m.Success) {
+        $ip = $m.Groups[1].Value
+        if ($ip -and -not ($ip -like "127.*") -and -not ($ip -like "169.254.*")) {
+          return $ip
+        }
+      }
+    }
+  } catch {}
+
+  return $null
+}
+
 $workspaceRoot = (Resolve-Path $PSScriptRoot).Path
 $mobileRoot = Join-Path $workspaceRoot "mobile"
 $composeFile = Join-Path $workspaceRoot "backend\docker-compose.yml"
 
 Title "CORRIENTAZO - Dev (1 clic)"
 Write-Host "Workspace: $workspaceRoot"
+Write-Host "Target:    $Target"
 
-Title "0) Emulador (opcional)"
-try {
-  Push-Location $mobileRoot
-  $emulators = (flutter emulators) 2>$null
-  if ($LASTEXITCODE -eq 0 -and $emulators) {
-    # Best effort: the output is a table. We pick the first row that matches:
-    # <Id> • <Name> • <Manufacturer> • <Platform>
-    $lines = $emulators -split "`r?`n"
-    $emuId = $null
-    foreach ($line in $lines) {
-      # Example:
-      # Pixel_8 • Pixel 8 • Google • android
-      if ($line -match "^\s*([A-Za-z0-9_\\-]+)\s*•\s*.+\s*•\s*.+\s*•\s*(android|ios)\s*$") {
-        $emuId = $Matches[1]
-        break
+if ($Target -eq "emulator") {
+  Title "0) Emulador (opcional)"
+  try {
+    Push-Location $mobileRoot
+    $emulators = (flutter emulators) 2>$null
+    if ($LASTEXITCODE -eq 0 -and $emulators) {
+      # Best effort: the output is a table. We pick the first row that matches:
+      # <Id> • <Name> • <Manufacturer> • <Platform>
+      $lines = $emulators -split "`r?`n"
+      $emuId = $null
+      foreach ($line in $lines) {
+        # Example:
+        # Pixel_8 • Pixel 8 • Google • android
+        if ($line -match "^\s*([A-Za-z0-9_\\-]+)\s*•\s*.+\s*•\s*.+\s*•\s*(android|ios)\s*$") {
+          $emuId = $Matches[1]
+          break
+        }
+        # Fallback: space-separated columns (some terminals strip the bullet)
+        if (-not $emuId -and $line -match "^\s*([A-Za-z0-9_\\-]+)\s+.+\s+android\s*$") {
+          $emuId = $Matches[1]
+          break
+        }
       }
-      # Fallback: space-separated columns (some terminals strip the bullet)
-      if (-not $emuId -and $line -match "^\s*([A-Za-z0-9_\\-]+)\s+.+\s+android\s*$") {
-        $emuId = $Matches[1]
-        break
+      if ($emuId) {
+        Write-Host "Intentando abrir emulador: $emuId"
+        flutter emulators --launch $emuId | Out-Host
+        Start-Sleep -Seconds 3
+      } else {
+        Write-Host "No pude detectar el ID del emulador automáticamente. Ábrelo manualmente." -ForegroundColor Yellow
       }
-    }
-    if ($emuId) {
-      Write-Host "Intentando abrir emulador: $emuId"
-      flutter emulators --launch $emuId | Out-Host
-      Start-Sleep -Seconds 3
     } else {
-      Write-Host "No pude detectar el ID del emulador automáticamente. Ábrelo manualmente." -ForegroundColor Yellow
+      Write-Host "No pude listar emuladores. Ábrelo manualmente si hace falta." -ForegroundColor Yellow
     }
-  } else {
-    Write-Host "No pude listar emuladores. Ábrelo manualmente si hace falta." -ForegroundColor Yellow
+  } catch {
+    Write-Host "No pude lanzar el emulador automáticamente. Ábrelo manualmente." -ForegroundColor Yellow
+  } finally {
+    try { Pop-Location } catch {}
   }
-} catch {
-  Write-Host "No pude lanzar el emulador automáticamente. Ábrelo manualmente." -ForegroundColor Yellow
-} finally {
-  try { Pop-Location } catch {}
+} else {
+  Title "0) Celular (alpha)"
+  $script:LanIp = Get-LanIPv4
+  if (-not $script:LanIp) {
+    Write-Host "No pude detectar tu IP LAN automáticamente." -ForegroundColor Yellow
+    Write-Host "Abre CMD y corre: ipconfig" -ForegroundColor Yellow
+    Write-Host "Busca 'IPv4 Address' y úsala para el API_BASE_URL." -ForegroundColor Yellow
+  } else {
+    Write-Host "Tu IP LAN: $script:LanIp"
+    Write-Host "API_BASE_URL sugerido: http://$script:LanIp`:3000"
+  }
+  Write-Host ""
+  Write-Host "IMPORTANTE (celular):"
+  Write-Host "- PC y celular en la MISMA red WiFi"
+  Write-Host "- Backend debe quedar levantado (paso 1)"
+  Write-Host "- Si conectas por USB, puedes usar hot reload igual que emulador"
 }
 
 Title "1) Backend (Docker)"
@@ -63,10 +118,30 @@ Push-Location $workspaceRoot
 docker compose -f $composeFile up -d | Out-Host
 Pop-Location
 
-Title "2) Flutter (emulador)"
-Write-Host "Si tu emulador NO es emulator-5554, cambia el -d en este script."
-Write-Host "Tip: si el emulador se cierra, usamos render por software (más estable)."
-Push-Location $mobileRoot
-flutter run -d emulator-5554 --enable-software-rendering --dart-define=API_BASE_URL=http://10.0.2.2:3000 --dart-define=STARTUP_DEBUG=true
-Pop-Location
+if ($Target -eq "emulator") {
+  Title "2) Flutter (emulador)"
+  Write-Host "Si tu emulador NO es emulator-5554, cambia el -d en este script."
+  Write-Host "Nota: Impeller no soporta render por software. No usamos --enable-software-rendering."
+  Push-Location $mobileRoot
+  flutter run -d emulator-5554 --dart-define=API_BASE_URL=http://10.0.2.2:3000 --dart-define=STARTUP_DEBUG=true
+  Pop-Location
+} else {
+  Title "2) Flutter (celular)"
+  $api = $null
+  if ($script:LanIp) { $api = "http://$script:LanIp`:3000" }
+  if (-not $api) {
+    Write-Host "No tengo IP LAN detectada. Igual puedes correr Flutter, pero define API_BASE_URL manualmente." -ForegroundColor Yellow
+    Write-Host "Ejemplo: flutter run -d <deviceId> --dart-define=API_BASE_URL=http://TU_IP:3000" -ForegroundColor Yellow
+    return
+  }
+
+  Push-Location $mobileRoot
+  Write-Host "Buscando dispositivos (flutter devices)..."
+  flutter devices | Out-Host
+  Write-Host ""
+  Write-Host "Si tu celular aparece arriba, este comando lo corre con API_BASE_URL=$api"
+  Write-Host ""
+  flutter run --dart-define=API_BASE_URL=$api --dart-define=STARTUP_DEBUG=true
+  Pop-Location
+}
 

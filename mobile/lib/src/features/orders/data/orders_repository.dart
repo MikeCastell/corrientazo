@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/networking/api_client.dart';
 import '../domain/order_create_request.dart';
 import '../domain/order_create_response.dart';
+import '../domain/order_detail.dart';
 import '../domain/order_summary.dart';
 
 class OrdersRepository {
@@ -20,13 +21,12 @@ class OrdersRepository {
         );
   }
 
-  Future<OrderCreateResponse> getById(String id) {
+  Future<OrderDetail> getById(String id) {
     return _ref
         .read(apiClientProvider)
-        .getJson<OrderCreateResponse>(
+        .getJson<OrderDetail>(
           '/orders/$id',
-          decode: (json) =>
-              OrderCreateResponse.fromJson(json as Map<String, dynamic>),
+          decode: (json) => OrderDetail.fromJson(json as Map<String, dynamic>),
         );
   }
 

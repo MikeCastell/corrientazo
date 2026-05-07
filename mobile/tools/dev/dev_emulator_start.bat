@@ -7,7 +7,7 @@ REM - Arranca Flutter en el emulador con API_BASE_URL=10.0.2.2
 
 chcp 65001 >nul
 set SCRIPT_DIR=%~dp0
-powershell -NoProfile -ExecutionPolicy Bypass -File "%SCRIPT_DIR%dev_emulator_start.ps1"
+powershell -NoProfile -ExecutionPolicy Bypass -NoExit -File "%SCRIPT_DIR%dev_emulator_start.ps1"
 
 echo.
 echo Listo.

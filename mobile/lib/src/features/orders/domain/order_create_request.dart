@@ -2,7 +2,8 @@ import 'package:json_annotation/json_annotation.dart';
 
 part 'order_create_request.g.dart';
 
-@JsonSerializable(fieldRename: FieldRename.snake)
+// IMPORTANT: backend expects camelCase keys (CreateOrderDto).
+@JsonSerializable()
 class OrderCreateRequest {
   const OrderCreateRequest({
     required this.mealPublicationId,

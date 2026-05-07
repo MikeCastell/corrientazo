@@ -7,6 +7,7 @@ import '../../features/auth/presentation/register_screen.dart';
 import '../../features/meals/presentation/meal_detail_screen.dart';
 import '../../features/splash/presentation/splash_screen.dart';
 import '../../features/orders/presentation/order_success_screen.dart';
+import '../../features/orders/presentation/order_detail_screen.dart';
 import '../../features/auth/domain/auth_state.dart';
 import '../../features/auth/application/auth_controller.dart';
 import '../../features/meals/presentation/home_meals_screen.dart';
@@ -101,6 +102,19 @@ final appRouterProvider = Provider<GoRouter>((ref) {
                 path: const CustomerOrdersRoute().location,
                 name: CustomerOrdersRoute.name,
                 builder: (context, state) => const CustomerOrdersScreen(),
+                routes: [
+                  GoRoute(
+                    path: ':id',
+                    name: CustomerOrderDetailRoute.name,
+                    builder: (context, state) {
+                      final id = state.pathParameters['id']!;
+                      return OrderDetailScreen(
+                        orderId: id,
+                        mode: OrderDetailMode.customer,
+                      );
+                    },
+                  ),
+                ],
               ),
             ],
           ),
@@ -154,6 +168,19 @@ final appRouterProvider = Provider<GoRouter>((ref) {
                 path: const CookOrdersRoute().location,
                 name: CookOrdersRoute.name,
                 builder: (context, state) => const CookOrdersScreen(),
+                routes: [
+                  GoRoute(
+                    path: ':id',
+                    name: CookOrderDetailRoute.name,
+                    builder: (context, state) {
+                      final id = state.pathParameters['id']!;
+                      return OrderDetailScreen(
+                        orderId: id,
+                        mode: OrderDetailMode.cook,
+                      );
+                    },
+                  ),
+                ],
               ),
             ],
           ),
@@ -279,6 +306,13 @@ class CustomerOrdersRoute {
   String get location => '/c/orders';
 }
 
+class CustomerOrderDetailRoute {
+  const CustomerOrderDetailRoute(this.orderId);
+  final String orderId;
+  static const name = 'customer_order_detail';
+  String get location => '/c/orders/$orderId';
+}
+
 class CustomerProfileRoute {
   const CustomerProfileRoute();
   static const name = 'customer_profile';
@@ -307,6 +341,13 @@ class CookOrdersRoute {
   const CookOrdersRoute();
   static const name = 'cook_orders';
   String get location => '/k/orders';
+}
+
+class CookOrderDetailRoute {
+  const CookOrderDetailRoute(this.orderId);
+  final String orderId;
+  static const name = 'cook_order_detail';
+  String get location => '/k/orders/$orderId';
 }
 
 class CookProfileRoute {

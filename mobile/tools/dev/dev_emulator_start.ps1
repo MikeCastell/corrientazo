@@ -31,9 +31,9 @@ Write-Title "2) Arrancando Flutter (emulador)"
 Write-Host "IMPORTANTE:"
 Write-Host "- Abre tu emulador ANTES de correr este archivo."
 Write-Host "- Si tienes varios dispositivos, corre 'flutter devices' y ajusta el -d."
-Write-Host "Tip: si el emulador se cierra, usamos render por software (más estable)."
+Write-Host "Nota: Impeller no soporta render por software. No usamos --enable-software-rendering."
 
 Push-Location $mobileRoot
-flutter run -d emulator-5554 --enable-software-rendering --dart-define=API_BASE_URL=http://10.0.2.2:3000 --dart-define=STARTUP_DEBUG=true
+flutter run -d emulator-5554 --dart-define=API_BASE_URL=http://10.0.2.2:3000 --dart-define=STARTUP_DEBUG=true
 Pop-Location
 
