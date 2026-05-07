@@ -193,6 +193,7 @@ class _MealCardPremiumState extends State<MealCardPremium> {
                                 ),
                                 child: CookTrustChip(
                                   cookName: food.cookName,
+                                  cookAvatarUrl: widget.cookAvatarUrl,
                                   isVerified: true,
                                   sanitaryLevelLabel: 'Sanitario (próx)',
                                 ),

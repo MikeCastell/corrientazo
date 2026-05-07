@@ -8,11 +8,13 @@ class CookTrustChip extends StatelessWidget {
   const CookTrustChip({
     super.key,
     required this.cookName,
+    this.cookAvatarUrl,
     required this.isVerified,
     required this.sanitaryLevelLabel,
   });
 
   final String cookName;
+  final String? cookAvatarUrl;
   final bool isVerified;
   final String sanitaryLevelLabel; // future-ready label
 
@@ -20,10 +22,15 @@ class CookTrustChip extends StatelessWidget {
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final border = isDark ? AppColors.borderDark : AppColors.border;
-    final bg = (isDark ? AppColors.surfaceDark : AppColors.surface).withValues(alpha: 0.70);
+    final bg = (isDark ? AppColors.surfaceDark : AppColors.surface).withValues(
+      alpha: 0.70,
+    );
 
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: AppSpacing.sm, vertical: AppSpacing.xs),
+      padding: const EdgeInsets.symmetric(
+        horizontal: AppSpacing.sm,
+        vertical: AppSpacing.xs,
+      ),
       decoration: BoxDecoration(
         color: bg,
         borderRadius: BorderRadius.circular(AppRadius.xl),
@@ -38,18 +45,33 @@ class CookTrustChip extends StatelessWidget {
             decoration: BoxDecoration(
               color: AppColors.brand.withValues(alpha: 0.12),
               borderRadius: BorderRadius.circular(8),
-              border: Border.all(color: AppColors.brand.withValues(alpha: 0.22)),
+              border: Border.all(
+                color: AppColors.brand.withValues(alpha: 0.22),
+              ),
             ),
-            child: const Icon(Icons.person, size: 14, color: AppColors.brand),
+            child: cookAvatarUrl == null
+                ? const Icon(Icons.person, size: 14, color: AppColors.brand)
+                : ClipRRect(
+                    borderRadius: BorderRadius.circular(8),
+                    child: Image.network(
+                      cookAvatarUrl!,
+                      fit: BoxFit.cover,
+                      errorBuilder: (context, error, stackTrace) => const Icon(
+                        Icons.person,
+                        size: 14,
+                        color: AppColors.brand,
+                      ),
+                    ),
+                  ),
           ),
           const SizedBox(width: AppSpacing.xs),
           Flexible(
             child: Text(
               cookName,
               overflow: TextOverflow.ellipsis,
-              style: Theme.of(context).textTheme.labelLarge?.copyWith(
-                    fontWeight: FontWeight.w700,
-                  ),
+              style: Theme.of(
+                context,
+              ).textTheme.labelLarge?.copyWith(fontWeight: FontWeight.w700),
             ),
           ),
           const SizedBox(width: AppSpacing.xs),
@@ -71,11 +93,7 @@ class CookTrustChip extends StatelessWidget {
 }
 
 class _Pill extends StatelessWidget {
-  const _Pill({
-    required this.icon,
-    required this.label,
-    required this.color,
-  });
+  const _Pill({required this.icon, required this.label, required this.color});
 
   final IconData icon;
   final String label;
@@ -84,7 +102,10 @@ class _Pill extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: AppSpacing.xs, vertical: 6),
+      padding: const EdgeInsets.symmetric(
+        horizontal: AppSpacing.xs,
+        vertical: 6,
+      ),
       decoration: BoxDecoration(
         color: color.withValues(alpha: 0.10),
         borderRadius: BorderRadius.circular(AppRadius.xl),
@@ -97,13 +118,12 @@ class _Pill extends StatelessWidget {
           Text(
             label,
             style: Theme.of(context).textTheme.labelMedium?.copyWith(
-                  color: color,
-                  fontWeight: FontWeight.w700,
-                ),
+              color: color,
+              fontWeight: FontWeight.w700,
+            ),
           ),
         ],
       ),
     );
   }
 }
-

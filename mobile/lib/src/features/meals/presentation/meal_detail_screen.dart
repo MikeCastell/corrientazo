@@ -177,6 +177,7 @@ class MealDetailScreen extends ConsumerWidget {
                             const SizedBox(height: AppSpacing.sm),
                             CookTrustChip(
                               cookName: food.cookName,
+                              cookAvatarUrl: item.cookAvatarUrl,
                               isVerified: true,
                               sanitaryLevelLabel: 'Sanitario (próx)',
                             ),

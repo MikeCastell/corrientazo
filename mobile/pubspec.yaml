@@ -43,6 +43,7 @@ dependencies:
   flutter_secure_storage: ^10.0.0
   collection: ^1.19.1
   shimmer: ^3.0.0
+  image_picker: ^1.1.2
 
 dev_dependencies:
   flutter_test:
