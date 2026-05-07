@@ -141,7 +141,10 @@ final appRouterProvider = Provider<GoRouter>((ref) {
               GoRoute(
                 path: const CookCreateMealRoute().location,
                 name: CookCreateMealRoute.name,
-                builder: (context, state) => const CookCreateMealScreen(),
+                builder: (context, state) {
+                  final editId = state.uri.queryParameters['edit'];
+                  return CookCreateMealScreen(editMealId: editId);
+                },
               ),
             ],
           ),

@@ -22,17 +22,17 @@ class CustomerShell extends StatelessWidget {
         destinations: const [
           NavigationDestination(
             icon: Icon(Icons.restaurant_outlined),
-            selectedIcon: Icon(Icons.restaurant, color: AppColors.brand),
+            selectedIcon: Icon(Icons.restaurant, color: AppColors.primary),
             label: 'Hoy',
           ),
           NavigationDestination(
             icon: Icon(Icons.receipt_long_outlined),
-            selectedIcon: Icon(Icons.receipt_long, color: AppColors.brand),
+            selectedIcon: Icon(Icons.receipt_long, color: AppColors.primary),
             label: 'Pedidos',
           ),
           NavigationDestination(
             icon: Icon(Icons.person_outline),
-            selectedIcon: Icon(Icons.person, color: AppColors.brand),
+            selectedIcon: Icon(Icons.person, color: AppColors.primary),
             label: 'Perfil',
           ),
         ],
@@ -60,27 +60,27 @@ class CookShell extends StatelessWidget {
         destinations: const [
           NavigationDestination(
             icon: Icon(Icons.dashboard_outlined),
-            selectedIcon: Icon(Icons.dashboard, color: AppColors.brand),
+            selectedIcon: Icon(Icons.dashboard, color: AppColors.primary),
             label: 'Dashboard',
           ),
           NavigationDestination(
             icon: Icon(Icons.restaurant_menu_outlined),
-            selectedIcon: Icon(Icons.restaurant_menu, color: AppColors.brand),
+            selectedIcon: Icon(Icons.restaurant_menu, color: AppColors.primary),
             label: 'Mis comidas',
           ),
           NavigationDestination(
             icon: Icon(Icons.add_circle_outline),
-            selectedIcon: Icon(Icons.add_circle, color: AppColors.brand),
+            selectedIcon: Icon(Icons.add_circle, color: AppColors.primary),
             label: 'Crear',
           ),
           NavigationDestination(
             icon: Icon(Icons.inbox_outlined),
-            selectedIcon: Icon(Icons.inbox, color: AppColors.brand),
+            selectedIcon: Icon(Icons.inbox, color: AppColors.primary),
             label: 'Pedidos',
           ),
           NavigationDestination(
             icon: Icon(Icons.storefront_outlined),
-            selectedIcon: Icon(Icons.storefront, color: AppColors.brand),
+            selectedIcon: Icon(Icons.storefront, color: AppColors.primary),
             label: 'Perfil',
           ),
         ],
