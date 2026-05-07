@@ -16,7 +16,9 @@ class SplashScreen extends ConsumerWidget {
 
     if (AppEnv.startupDebug) {
       // ignore: avoid_print
-      debugPrint('[splash] build authState=${authState.runtimeType} status="$status"');
+      debugPrint(
+        '[splash] build authState=${authState.runtimeType} status="$status"',
+      );
     }
 
     return Scaffold(
@@ -31,10 +33,7 @@ class SplashScreen extends ConsumerWidget {
 }
 
 class _SplashMark extends StatelessWidget {
-  const _SplashMark({
-    required this.debugStatus,
-    required this.authStateLabel,
-  });
+  const _SplashMark({required this.debugStatus, required this.authStateLabel});
 
   final String debugStatus;
   final String authStateLabel;
@@ -58,25 +57,32 @@ class _SplashMark extends StatelessWidget {
         Text(
           'CORRIENTAZO',
           style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                fontWeight: FontWeight.w900,
-                letterSpacing: -0.4,
-              ),
+            fontWeight: FontWeight.w900,
+            letterSpacing: -0.4,
+          ),
         ),
         const SizedBox(height: AppSpacing.xs),
         Text(
           'Comida casera cerca de ti',
           style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.65),
-              ),
+            color: Theme.of(
+              context,
+            ).colorScheme.onSurface.withValues(alpha: 0.65),
+          ),
         ),
         if (AppEnv.startupDebug) ...[
           const SizedBox(height: AppSpacing.md),
           Container(
-            padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md, vertical: AppSpacing.sm),
+            padding: const EdgeInsets.symmetric(
+              horizontal: AppSpacing.md,
+              vertical: AppSpacing.sm,
+            ),
             decoration: BoxDecoration(
               color: AppColors.brand.withValues(alpha: 0.06),
               borderRadius: BorderRadius.circular(14),
-              border: Border.all(color: AppColors.brand.withValues(alpha: 0.14)),
+              border: Border.all(
+                color: AppColors.brand.withValues(alpha: 0.14),
+              ),
             ),
             child: Column(
               children: [
@@ -84,16 +90,20 @@ class _SplashMark extends StatelessWidget {
                   debugStatus,
                   textAlign: TextAlign.center,
                   style: Theme.of(context).textTheme.labelLarge?.copyWith(
-                        fontWeight: FontWeight.w800,
-                        color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.75),
-                      ),
+                    fontWeight: FontWeight.w800,
+                    color: Theme.of(
+                      context,
+                    ).colorScheme.onSurface.withValues(alpha: 0.75),
+                  ),
                 ),
                 const SizedBox(height: 6),
                 Text(
                   'AuthState: $authStateLabel',
                   style: Theme.of(context).textTheme.labelMedium?.copyWith(
-                        color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.55),
-                      ),
+                    color: Theme.of(
+                      context,
+                    ).colorScheme.onSurface.withValues(alpha: 0.55),
+                  ),
                 ),
               ],
             ),
@@ -103,4 +113,3 @@ class _SplashMark extends StatelessWidget {
     );
   }
 }
-

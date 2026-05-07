@@ -17,7 +17,9 @@ class AuthDebugStatusController extends Notifier<String> {
 }
 
 final authDebugStatusProvider =
-    NotifierProvider<AuthDebugStatusController, String>(AuthDebugStatusController.new);
+    NotifierProvider<AuthDebugStatusController, String>(
+      AuthDebugStatusController.new,
+    );
 
 class AuthController extends Notifier<AuthState> {
   @override
@@ -34,29 +36,39 @@ class AuthController extends Notifier<AuthState> {
     final sw = Stopwatch()..start();
     Timer? warn;
     warn = Timer(const Duration(seconds: 3), () {
-      if (AppEnv.startupDebug) debugPrint('[auth] WARN _init() >3s (still pending)');
-      _ref.read(authDebugStatusProvider.notifier).set(
-            'WARN: init auth >3s (still pending)',
-          );
+      if (AppEnv.startupDebug)
+        debugPrint('[auth] WARN _init() >3s (still pending)');
+      _ref
+          .read(authDebugStatusProvider.notifier)
+          .set('WARN: init auth >3s (still pending)');
     });
 
     if (AppEnv.startupDebug) debugPrint('[auth] _init() start');
     _ref.read(authDebugStatusProvider.notifier).set('Initializing auth…');
 
     try {
-      _ref.read(authDebugStatusProvider.notifier).set('Reading secure storage…');
+      _ref
+          .read(authDebugStatusProvider.notifier)
+          .set('Reading secure storage…');
 
       // Defensive hard timeout: never allow splash to hang forever.
       final tokens = await _ref
           .read(authTokenStoreProvider)
           .read()
-          .timeout(const Duration(seconds: 5), onTimeout: () {
-        if (AppEnv.startupDebug) {
-          debugPrint('[auth] TIMEOUT reading tokens (>5s) -> forcing Unauthenticated');
-        }
-        _ref.read(authDebugStatusProvider.notifier).set('Timeout >5s -> Unauthenticated');
-        return null;
-      });
+          .timeout(
+            const Duration(seconds: 5),
+            onTimeout: () {
+              if (AppEnv.startupDebug) {
+                debugPrint(
+                  '[auth] TIMEOUT reading tokens (>5s) -> forcing Unauthenticated',
+                );
+              }
+              _ref
+                  .read(authDebugStatusProvider.notifier)
+                  .set('Timeout >5s -> Unauthenticated');
+              return null;
+            },
+          );
 
       if (AppEnv.startupDebug) {
         debugPrint(
@@ -71,7 +83,9 @@ class AuthController extends Notifier<AuthState> {
             '[auth] _init() resolved -> Unauthenticated (no tokens) in ${sw.elapsedMilliseconds}ms',
           );
         }
-        _ref.read(authDebugStatusProvider.notifier).set('Auth resolved -> Unauthenticated');
+        _ref
+            .read(authDebugStatusProvider.notifier)
+            .set('Auth resolved -> Unauthenticated');
         state = const Unauthenticated();
         return;
       }
@@ -88,27 +102,32 @@ class AuthController extends Notifier<AuthState> {
             '[auth] _init() resolved -> Authenticated(role=${me.role}) in ${sw.elapsedMilliseconds}ms',
           );
         }
-        _ref.read(authDebugStatusProvider.notifier).set('Auth resolved -> Authenticated (${me.role.name})');
+        _ref
+            .read(authDebugStatusProvider.notifier)
+            .set('Auth resolved -> Authenticated (${me.role.name})');
         state = Authenticated(me);
         return;
       } on TimeoutException {
         if (AppEnv.startupDebug) {
-          debugPrint('[auth] TIMEOUT /users/me (>5s) -> forcing Unauthenticated');
+          debugPrint(
+            '[auth] TIMEOUT /users/me (>5s) -> forcing Unauthenticated',
+          );
         }
         await _ref.read(authTokenStoreProvider).clear();
-        _ref.read(authDebugStatusProvider.notifier).set('Auth resolved -> Unauthenticated (profile timeout)');
+        _ref
+            .read(authDebugStatusProvider.notifier)
+            .set('Auth resolved -> Unauthenticated (profile timeout)');
         state = const Unauthenticated();
         return;
       }
-
     } catch (e, st) {
       if (AppEnv.startupDebug) {
         debugPrint('[auth] _init() ERROR -> Unauthenticated. $e');
         debugPrint('$st');
       }
-      _ref.read(authDebugStatusProvider.notifier).set(
-            'Auth ERROR -> Unauthenticated (${e.runtimeType})',
-          );
+      _ref
+          .read(authDebugStatusProvider.notifier)
+          .set('Auth ERROR -> Unauthenticated (${e.runtimeType})');
       await _ref.read(authTokenStoreProvider).clear();
       state = const Unauthenticated();
     } finally {
@@ -122,29 +141,24 @@ class AuthController extends Notifier<AuthState> {
     required String name,
     required String role,
   }) async {
-    final pair = await _ref.read(authRepositoryProvider).register(
-          phone: phone,
-          password: password,
-          name: name,
-          role: role,
-        );
+    final pair = await _ref
+        .read(authRepositoryProvider)
+        .register(phone: phone, password: password, name: name, role: role);
     await _ref.read(authTokenStoreProvider).write(pair);
     final me = await _ref.read(usersRepositoryProvider).getMe();
-    if (AppEnv.startupDebug) debugPrint('[auth] register() -> Authenticated(role=${me.role})');
+    if (AppEnv.startupDebug)
+      debugPrint('[auth] register() -> Authenticated(role=${me.role})');
     state = Authenticated(me);
   }
 
-  Future<void> login({
-    required String phone,
-    required String password,
-  }) async {
-    final pair = await _ref.read(authRepositoryProvider).login(
-          phone: phone,
-          password: password,
-        );
+  Future<void> login({required String phone, required String password}) async {
+    final pair = await _ref
+        .read(authRepositoryProvider)
+        .login(phone: phone, password: password);
     await _ref.read(authTokenStoreProvider).write(pair);
     final me = await _ref.read(usersRepositoryProvider).getMe();
-    if (AppEnv.startupDebug) debugPrint('[auth] login() -> Authenticated(role=${me.role})');
+    if (AppEnv.startupDebug)
+      debugPrint('[auth] login() -> Authenticated(role=${me.role})');
     state = Authenticated(me);
   }
 
@@ -156,6 +170,6 @@ class AuthController extends Notifier<AuthState> {
   }
 }
 
-final authControllerProvider =
-    NotifierProvider<AuthController, AuthState>(AuthController.new);
-
+final authControllerProvider = NotifierProvider<AuthController, AuthState>(
+  AuthController.new,
+);

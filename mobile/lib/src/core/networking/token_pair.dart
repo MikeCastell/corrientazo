@@ -10,6 +10,6 @@ sealed class TokenPair with _$TokenPair {
     required String refreshToken,
   }) = _TokenPair;
 
-  factory TokenPair.fromJson(Map<String, dynamic> json) => _$TokenPairFromJson(json);
+  factory TokenPair.fromJson(Map<String, dynamic> json) =>
+      _$TokenPairFromJson(json);
 }
-

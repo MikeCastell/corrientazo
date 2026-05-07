@@ -28,7 +28,8 @@ class CurrentUser {
   bool get isCustomer => role == UserRole.customer;
   bool get isCook => role == UserRole.cook;
 
-  factory CurrentUser.fromJson(Map<String, dynamic> json) => _$CurrentUserFromJson(json);
+  factory CurrentUser.fromJson(Map<String, dynamic> json) =>
+      _$CurrentUserFromJson(json);
   Map<String, dynamic> toJson() => _$CurrentUserToJson(this);
 }
 
@@ -52,4 +53,3 @@ String _roleToJson(UserRole role) {
       return 'COOK';
   }
 }
-

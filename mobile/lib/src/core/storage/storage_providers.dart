@@ -10,4 +10,3 @@ final flutterSecureStorageProvider = Provider<FlutterSecureStorage>((ref) {
 final secureKvStoreProvider = Provider<SecureKvStore>((ref) {
   return SecureKvStore(ref.watch(flutterSecureStorageProvider));
 });
-

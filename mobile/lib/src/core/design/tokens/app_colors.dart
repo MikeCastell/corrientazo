@@ -64,8 +64,9 @@ class AppColors {
               secondary.withValues(alpha: 0.07),
               accent.withValues(alpha: 0.06),
             ],
-      stops: isDark ? const [0.0, 0.45, 0.72, 0.88, 1.0] : const [0.0, 0.48, 0.74, 0.86, 1.0],
+      stops: isDark
+          ? const [0.0, 0.45, 0.72, 0.88, 1.0]
+          : const [0.0, 0.48, 0.74, 0.86, 1.0],
     );
   }
 }
-

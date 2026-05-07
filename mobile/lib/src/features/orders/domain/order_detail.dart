@@ -79,4 +79,3 @@ class OrderStatusEvent {
 
   Map<String, dynamic> toJson() => _$OrderStatusEventToJson(this);
 }
-

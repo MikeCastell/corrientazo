@@ -17,4 +17,3 @@ class Authenticated extends AuthState {
 
   final CurrentUser user;
 }
-

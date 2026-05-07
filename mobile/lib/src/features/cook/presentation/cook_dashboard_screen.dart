@@ -7,9 +7,20 @@ import '../../../core/design/tokens/app_radius.dart';
 import '../../../core/design/tokens/app_spacing.dart';
 import '../../../core/ui/app_scaffold.dart';
 import '../../../core/ui/states/app_empty_state.dart';
+import '../../../core/ui/states/app_loading_center.dart';
 import '../../../core/routing/app_router.dart';
 import '../application/cook_meals_controller.dart';
+import '../application/cook_orders_controller.dart';
+import '../application/cook_profile_controller.dart';
+import '../data/cook_profile_repository.dart';
 import '../domain/cook_meal.dart';
+import 'widgets/cook_getting_started_card.dart';
+
+bool _profileFeelsComplete(CookProfileDto p) {
+  final bioOk = (p.bio ?? '').trim().length >= 12;
+  final avatarOk = (p.userAvatarUrl ?? '').trim().isNotEmpty;
+  return bioOk || avatarOk;
+}
 
 class CookDashboardScreen extends ConsumerWidget {
   const CookDashboardScreen({super.key});
@@ -17,98 +28,154 @@ class CookDashboardScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final meals = ref.watch(cookMealsControllerProvider);
+    final orders = ref.watch(cookOrdersControllerProvider);
+    final profile = ref.watch(cookProfileControllerProvider);
 
     return AppScaffold(
       title: 'Dashboard',
       body: meals.when(
-        loading: () => const Center(child: CircularProgressIndicator()),
+        loading: () => const AppLoadingCenter(message: 'Cargando tu cocina…'),
         error: (e, _) => AppEmptyState(
           icon: Icons.error_outline,
           title: 'No pudimos cargar tu panel',
           subtitle: e.toString(),
           actionLabel: 'Reintentar',
-          onAction: () => ref.read(cookMealsControllerProvider.notifier).refresh(),
+          onAction: () =>
+              ref.read(cookMealsControllerProvider.notifier).refresh(),
         ),
         data: (items) {
-          final active = items.where((m) => m.isActive).length;
-          final paused = items.where((m) => m.status == CookMealStatus.paused).length;
-          final soldOut = items.where((m) => m.status == CookMealStatus.soldOut).length;
+          return orders.when(
+            loading: () =>
+                const AppLoadingCenter(message: 'Sincronizando pedidos…'),
+            error: (e, _) => AppEmptyState(
+              icon: Icons.error_outline,
+              title: 'No pudimos cargar pedidos',
+              subtitle: e.toString(),
+              actionLabel: 'Reintentar',
+              onAction: () =>
+                  ref.read(cookOrdersControllerProvider.notifier).refresh(),
+            ),
+            data: (orderItems) {
+              return profile.when(
+                loading: () =>
+                    const AppLoadingCenter(message: 'Cargando tu perfil…'),
+                error: (e, _) => AppEmptyState(
+                  icon: Icons.error_outline,
+                  title: 'No pudimos cargar tu perfil',
+                  subtitle: e.toString(),
+                  actionLabel: 'Reintentar',
+                  onAction: () => ref
+                      .read(cookProfileControllerProvider.notifier)
+                      .refresh(),
+                ),
+                data: (prof) {
+                  final active = items.where((m) => m.isActive).length;
+                  final paused = items
+                      .where((m) => m.status == CookMealStatus.paused)
+                      .length;
+                  final soldOut = items
+                      .where((m) => m.status == CookMealStatus.soldOut)
+                      .length;
+                  final hasPublished = items.any(
+                    (m) => m.publicationId != null,
+                  );
+                  final orderCount = orderItems.length;
 
-          return ListView(
-            padding: const EdgeInsets.all(AppSpacing.md),
-            children: [
-              Text(
-                'Operación de hoy',
-                style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                      fontWeight: FontWeight.w900,
-                      letterSpacing: -0.4,
-                    ),
-              ),
-              const SizedBox(height: AppSpacing.xs),
-              Text(
-                'Maneja tus comidas y responde pedidos como un panel real.',
-                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                      color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.65),
-                    ),
-              ),
-              const SizedBox(height: AppSpacing.md),
-              Row(
-                children: [
-                  Expanded(
-                    child: _MetricCard(
-                      title: 'Comidas activas',
-                      value: '$active',
-                      subtitle: 'Publicadas y visibles',
-                      icon: Icons.restaurant_menu,
-                      tone: AppColors.secondary,
-                    ),
-                  ),
-                  const SizedBox(width: AppSpacing.sm),
-                  Expanded(
-                    child: _MetricCard(
-                      title: 'Pedidos',
-                      value: '0',
-                      subtitle: 'Por ahora (sin realtime)',
-                      icon: Icons.inbox_outlined,
-                      tone: AppColors.primary,
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: AppSpacing.sm),
-              Row(
-                children: [
-                  Expanded(
-                    child: _MetricCard(
-                      title: 'Pausadas',
-                      value: '$paused',
-                      subtitle: 'No visibles',
-                      icon: Icons.pause_circle_outline,
-                      tone: AppColors.accentDeep,
-                    ),
-                  ),
-                  const SizedBox(width: AppSpacing.sm),
-                  Expanded(
-                    child: _MetricCard(
-                      title: 'Agotadas',
-                      value: '$soldOut',
-                      subtitle: 'Sin stock',
-                      icon: Icons.bolt,
-                      tone: AppColors.warning,
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: AppSpacing.lg),
-              _CtaCard(
-                title: items.isEmpty ? 'Crea tu primera comida' : 'Crea una nueva comida',
-                subtitle: 'Título, precio, stock e ingredientes. Publica en segundos.',
-                primaryLabel: 'Crear comida',
-                onPrimary: () => context.go(const CookCreateMealRoute().location),
-                secondaryLabel: 'Ver mis comidas',
-                onSecondary: () => context.go(const CookMealsRoute().location),
-              ),
-            ],
+                  return ListView(
+                    padding: const EdgeInsets.all(AppSpacing.md),
+                    children: [
+                      Text(
+                        'Operación de hoy',
+                        style: Theme.of(context).textTheme.headlineSmall
+                            ?.copyWith(
+                              fontWeight: FontWeight.w900,
+                              letterSpacing: -0.4,
+                            ),
+                      ),
+                      const SizedBox(height: AppSpacing.xs),
+                      Text(
+                        'Aquí ves lo que importa: qué cocinas, qué piden, qué falta.',
+                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                          color: Theme.of(
+                            context,
+                          ).colorScheme.onSurface.withValues(alpha: 0.65),
+                        ),
+                      ),
+                      const SizedBox(height: AppSpacing.md),
+                      CookGettingStartedCard(
+                        hasPublishedMeal: hasPublished,
+                        profileFeelsComplete: _profileFeelsComplete(prof),
+                        hasOrders: orderCount > 0,
+                      ),
+                      const SizedBox(height: AppSpacing.md),
+                      Row(
+                        children: [
+                          Expanded(
+                            child: _MetricCard(
+                              title: 'Comidas activas',
+                              value: '$active',
+                              subtitle: 'Publicadas y visibles',
+                              icon: Icons.restaurant_menu,
+                              tone: AppColors.secondary,
+                            ),
+                          ),
+                          const SizedBox(width: AppSpacing.sm),
+                          Expanded(
+                            child: _MetricCard(
+                              title: 'Pedidos',
+                              value: '$orderCount',
+                              subtitle: orderCount == 0
+                                  ? 'Te avisamos cuando llegue uno'
+                                  : 'En tu bandeja de Pedidos',
+                              icon: Icons.inbox_outlined,
+                              tone: AppColors.primary,
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: AppSpacing.sm),
+                      Row(
+                        children: [
+                          Expanded(
+                            child: _MetricCard(
+                              title: 'Pausadas',
+                              value: '$paused',
+                              subtitle: 'No visibles',
+                              icon: Icons.pause_circle_outline,
+                              tone: AppColors.accentDeep,
+                            ),
+                          ),
+                          const SizedBox(width: AppSpacing.sm),
+                          Expanded(
+                            child: _MetricCard(
+                              title: 'Agotadas',
+                              value: '$soldOut',
+                              subtitle: 'Sin stock',
+                              icon: Icons.bolt,
+                              tone: AppColors.warning,
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: AppSpacing.lg),
+                      _CtaCard(
+                        title: items.isEmpty
+                            ? 'Crea tu primera comida'
+                            : 'Crea una nueva comida',
+                        subtitle:
+                            'Título, precio, stock e ingredientes. Publica en segundos.',
+                        primaryLabel: 'Crear comida',
+                        onPrimary: () =>
+                            context.go(const CookCreateMealRoute().location),
+                        secondaryLabel: 'Ver mis comidas',
+                        onSecondary: () =>
+                            context.go(const CookMealsRoute().location),
+                      ),
+                    ],
+                  );
+                },
+              );
+            },
           );
         },
       ),
@@ -159,23 +226,27 @@ class _MetricCard extends StatelessWidget {
               Text(
                 value,
                 style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                      fontWeight: FontWeight.w900,
-                      color: tone,
-                    ),
+                  fontWeight: FontWeight.w900,
+                  color: tone,
+                ),
               ),
             ],
           ),
           const SizedBox(height: AppSpacing.sm),
           Text(
             title,
-            style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w900),
+            style: Theme.of(
+              context,
+            ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w900),
           ),
           const SizedBox(height: 2),
           Text(
             subtitle,
             style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                  color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.65),
-                ),
+              color: Theme.of(
+                context,
+              ).colorScheme.onSurface.withValues(alpha: 0.65),
+            ),
           ),
         ],
       ),
@@ -214,14 +285,18 @@ class _CtaCard extends StatelessWidget {
         children: [
           Text(
             title,
-            style: Theme.of(context).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w900),
+            style: Theme.of(
+              context,
+            ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w900),
           ),
           const SizedBox(height: 6),
           Text(
             subtitle,
             style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                  color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.70),
-                ),
+              color: Theme.of(
+                context,
+              ).colorScheme.onSurface.withValues(alpha: 0.70),
+            ),
           ),
           const SizedBox(height: AppSpacing.md),
           Row(
@@ -246,4 +321,3 @@ class _CtaCard extends StatelessWidget {
     );
   }
 }
-

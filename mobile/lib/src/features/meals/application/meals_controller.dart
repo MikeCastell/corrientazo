@@ -6,4 +6,3 @@ import '../domain/meal_publication.dart';
 final mealsFeedProvider = FutureProvider<List<MealPublication>>((ref) async {
   return ref.watch(mealsRepositoryProvider).listPublished();
 });
-

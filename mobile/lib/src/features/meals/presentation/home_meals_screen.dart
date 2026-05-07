@@ -16,6 +16,7 @@ import '../../../core/ui/marketplace/meal_card_premium.dart';
 import '../application/meals_controller.dart';
 import '../domain/meal_publication.dart';
 import '../../customer/application/customer_orders_controller.dart';
+import '../../customer/presentation/widgets/customer_welcome_banner.dart';
 import '../../orders/domain/order_summary.dart';
 
 class HomeMealsScreen extends ConsumerWidget {
@@ -40,6 +41,8 @@ class HomeMealsScreen extends ConsumerWidget {
         data: (items) => RefreshIndicator(
           onRefresh: () async => ref.refresh(mealsFeedProvider.future),
           child: CustomScrollView(
+            // Pull-to-refresh even when content is short; avoids zero-height slivers on small screens.
+            physics: const AlwaysScrollableScrollPhysics(),
             slivers: [
               SliverToBoxAdapter(
                 child: _FeedHeader(
@@ -47,6 +50,7 @@ class HomeMealsScreen extends ConsumerWidget {
                       ref.read(authControllerProvider.notifier).logout(),
                 ),
               ),
+              const SliverToBoxAdapter(child: CustomerWelcomeBanner()),
               SliverToBoxAdapter(
                 child: orders.maybeWhen(
                   data: (s) {
@@ -67,13 +71,28 @@ class HomeMealsScreen extends ConsumerWidget {
               ),
               const SliverToBoxAdapter(child: _VisualCategories()),
               if (items.isEmpty)
-                const SliverFillRemaining(
-                  hasScrollBody: false,
-                  child: AppEmptyState(
-                    icon: Icons.ramen_dining,
-                    title: 'Nada por ahora',
-                    subtitle:
-                        'Vuelve en unos minutos. Los corrientazos cambian rápido.',
+                // Avoid LayoutBuilder here: inside scroll slivers it can re-enter layout and
+                // trigger _debugRelayoutBoundaryAlreadyMarkedNeedsLayout (red screen).
+                SliverToBoxAdapter(
+                  child: Builder(
+                    builder: (context) {
+                      final viewH = MediaQuery.sizeOf(context).height;
+                      final minH = (viewH - 240).clamp(220.0, 720.0);
+                      return SizedBox(
+                        width: double.infinity,
+                        height: minH,
+                        child: AppEmptyState(
+                          kicker: 'Respira — el barrio cocina a su ritmo',
+                          icon: Icons.ramen_dining,
+                          title: 'Hoy no hay platos publicados',
+                          subtitle:
+                              'Los cocineros suben cupos nuevos durante el día. '
+                              'Vuelve en un rato o prueba refrescar.',
+                          actionLabel: 'Actualizar lista',
+                          onAction: () => ref.refresh(mealsFeedProvider),
+                        ),
+                      );
+                    },
                   ),
                 )
               else ...[
@@ -123,105 +142,104 @@ class _ActiveOrderBanner extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final status = order.status.toUpperCase();
     final eta = _pseudoEtaLabel(order.createdAt, status);
+    final narrow = MediaQuery.sizeOf(context).width < 360;
 
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        final narrow = constraints.maxWidth < 360;
-        final onOpen = () =>
-            context.push(CustomerOrderDetailRoute(order.id).location);
+    void onOpen() =>
+        context.push(CustomerOrderDetailRoute(order.id).location);
 
-        final leading = Container(
-          width: 46,
-          height: 46,
-          decoration: BoxDecoration(
-            color: AppColors.brand.withValues(alpha: 0.10),
-            borderRadius: BorderRadius.circular(AppRadius.md),
-            border: Border.all(
-              color: AppColors.brand.withValues(alpha: 0.18),
-            ),
+    return InkWell(
+      borderRadius: BorderRadius.circular(AppRadius.xl),
+      onTap: onOpen,
+      child: Container(
+        padding: const EdgeInsets.all(AppSpacing.md),
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [
+              AppColors.brand.withValues(alpha: 0.16),
+              AppColors.primary.withValues(alpha: 0.10),
+              Theme.of(context).colorScheme.surface,
+            ],
           ),
-          child: const Icon(Icons.receipt_long, color: AppColors.brand),
-        );
-
-        final textBlock = Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              'Pedido activo',
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                    fontWeight: FontWeight.w900,
-                  ),
-            ),
-            const SizedBox(height: 2),
-            Text(
-              '${_labelForStatus(status)} · ETA $eta',
-              maxLines: 2,
-              overflow: TextOverflow.ellipsis,
-              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                    color: Theme.of(context)
-                        .colorScheme
-                        .onSurface
-                        .withValues(alpha: 0.70),
-                    fontWeight: FontWeight.w700,
-                  ),
-            ),
-          ],
-        );
-
-        return InkWell(
           borderRadius: BorderRadius.circular(AppRadius.xl),
-          onTap: onOpen,
-          child: Container(
-            padding: const EdgeInsets.all(AppSpacing.md),
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-                colors: [
-                  AppColors.brand.withValues(alpha: 0.16),
-                  AppColors.primary.withValues(alpha: 0.10),
-                  Theme.of(context).colorScheme.surface,
+          border: Border.all(color: Theme.of(context).dividerColor),
+        ),
+        child: narrow
+            ? Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Row(
+                    children: [
+                      leading(context),
+                      const SizedBox(width: AppSpacing.sm),
+                      Expanded(child: textBlock(context, status, eta)),
+                    ],
+                  ),
+                  const SizedBox(height: AppSpacing.sm),
+                  FilledButton.tonal(
+                    onPressed: onOpen,
+                    child: const Text('Ver pedido'),
+                  ),
+                ],
+              )
+            : Row(
+                children: [
+                  leading(context),
+                  const SizedBox(width: AppSpacing.sm),
+                  Expanded(child: textBlock(context, status, eta)),
+                  FilledButton.tonal(
+                    onPressed: onOpen,
+                    child: const Text('Ver pedido'),
+                  ),
                 ],
               ),
-              borderRadius: BorderRadius.circular(AppRadius.xl),
-              border: Border.all(color: Theme.of(context).dividerColor),
-            ),
-            child: narrow
-                ? Column(
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: [
-                      Row(
-                        children: [
-                          leading,
-                          const SizedBox(width: AppSpacing.sm),
-                          Expanded(child: textBlock),
-                        ],
-                      ),
-                      const SizedBox(height: AppSpacing.sm),
-                      FilledButton.tonal(
-                        onPressed: onOpen,
-                        child: const Text('Ver pedido'),
-                      ),
-                    ],
-                  )
-                : Row(
-                    children: [
-                      leading,
-                      const SizedBox(width: AppSpacing.sm),
-                      Expanded(child: textBlock),
-                      FilledButton.tonal(
-                        onPressed: onOpen,
-                        child: const Text('Ver pedido'),
-                      ),
-                    ],
-                  ),
-          ),
-        );
-      },
+      ),
     );
   }
+
+  static Widget leading(BuildContext context) => Container(
+        width: 46,
+        height: 46,
+        decoration: BoxDecoration(
+          color: AppColors.brand.withValues(alpha: 0.10),
+          borderRadius: BorderRadius.circular(AppRadius.md),
+          border: Border.all(color: AppColors.brand.withValues(alpha: 0.18)),
+        ),
+        child: const Icon(Icons.receipt_long, color: AppColors.brand),
+      );
+
+  static Widget textBlock(
+    BuildContext context,
+    String status,
+    String eta,
+  ) =>
+      Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'Pedido activo',
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                  fontWeight: FontWeight.w900,
+                ),
+          ),
+          const SizedBox(height: 2),
+          Text(
+            '${_labelForStatus(status)} · ETA $eta',
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
+            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                  color: Theme.of(context)
+                      .colorScheme
+                      .onSurface
+                      .withValues(alpha: 0.70),
+                  fontWeight: FontWeight.w700,
+                ),
+          ),
+        ],
+      );
 }
 
 String _labelForStatus(String s) {

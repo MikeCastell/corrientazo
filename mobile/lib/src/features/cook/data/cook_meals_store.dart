@@ -35,5 +35,6 @@ class CookMealsStore {
   }
 }
 
-final cookMealsStoreProvider = Provider<CookMealsStore>((ref) => CookMealsStore(ref));
-
+final cookMealsStoreProvider = Provider<CookMealsStore>(
+  (ref) => CookMealsStore(ref),
+);

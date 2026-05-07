@@ -21,4 +21,3 @@ class OrderCreateResponse {
 
   Map<String, dynamic> toJson() => _$OrderCreateResponseToJson(this);
 }
-

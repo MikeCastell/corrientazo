@@ -47,5 +47,6 @@ class OrderFlowController extends Notifier<OrderFlowState> {
 }
 
 final orderFlowControllerProvider =
-    NotifierProvider<OrderFlowController, OrderFlowState>(OrderFlowController.new);
-
+    NotifierProvider<OrderFlowController, OrderFlowState>(
+      OrderFlowController.new,
+    );

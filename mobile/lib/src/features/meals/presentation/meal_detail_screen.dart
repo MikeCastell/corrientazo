@@ -7,6 +7,7 @@ import '../../../core/design/tokens/app_colors.dart';
 import '../../../core/design/tokens/app_radius.dart';
 import '../../../core/design/tokens/app_spacing.dart';
 import '../../../core/ui/app_scaffold.dart';
+import '../../../core/ui/states/app_loading_center.dart';
 import '../../../core/ui/marketplace/cook_trust_chip.dart';
 import '../../../core/ui/marketplace/food_image.dart';
 import '../../../core/ui/marketplace/marketplace_utils.dart';
@@ -30,7 +31,7 @@ class MealDetailScreen extends ConsumerWidget {
     return feed.when(
       loading: () => const AppScaffold(
         title: '',
-        body: Center(child: CircularProgressIndicator()),
+        body: AppLoadingCenter(message: 'Cargando este plato…'),
       ),
       error: (e, _) => AppScaffold(
         title: '',

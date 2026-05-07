@@ -9,22 +9,66 @@ import '../../../core/design/tokens/app_spacing.dart';
 import '../../../core/routing/app_router.dart';
 import '../../../core/ui/app_scaffold.dart';
 import '../../../core/ui/states/app_empty_state.dart';
-import '../../auth/application/auth_controller.dart';
-import '../../auth/domain/auth_state.dart';
+import '../../../core/ui/states/app_loading_center.dart';
+import '../../../core/ux/milestone_celebration.dart';
+import '../../../core/ux/ux_milestones_store.dart';
+import '../../orders/domain/order_summary.dart';
 import '../application/cook_orders_controller.dart';
 
-class CookOrdersScreen extends ConsumerWidget {
+class CookOrdersScreen extends ConsumerStatefulWidget {
   const CookOrdersScreen({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<CookOrdersScreen> createState() => _CookOrdersScreenState();
+}
+
+class _CookOrdersScreenState extends ConsumerState<CookOrdersScreen> {
+  bool _milestoneUiBusy = false;
+
+  Future<void> _maybeCelebrate(List<OrderSummary> items) async {
+    if (_milestoneUiBusy || !mounted) return;
+    _milestoneUiBusy = true;
+    try {
+      final store = ref.read(uxMilestonesStoreProvider);
+
+      if (items.isNotEmpty && !store.celebratedCookFirstOrder) {
+        await showMilestoneCelebration(context, MilestoneKind.cookFirstOrder);
+        await store.markCookFirstOrderCelebrated();
+        if (!mounted) return;
+      }
+
+      final store2 = ref.read(uxMilestonesStoreProvider);
+      final hasTerminal = items.any((o) {
+        final u = o.status.toUpperCase();
+        return u == 'DELIVERED' || u == 'PICKED_UP';
+      });
+      if (hasTerminal && !store2.celebratedCookFirstCompleted) {
+        if (!mounted) return;
+        await showMilestoneCelebration(
+          context,
+          MilestoneKind.cookFirstCompleted,
+        );
+        await store2.markCookFirstCompletedCelebrated();
+      }
+    } finally {
+      _milestoneUiBusy = false;
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final orders = ref.watch(cookOrdersControllerProvider);
-    final auth = ref.watch(authControllerProvider);
+
+    ref.listen(cookOrdersControllerProvider, (prev, next) {
+      next.whenData((items) {
+        Future.microtask(() => _maybeCelebrate(items));
+      });
+    });
 
     return AppScaffold(
       title: 'Pedidos',
       body: orders.when(
-        loading: () => const Center(child: CircularProgressIndicator()),
+        loading: () => const AppLoadingCenter(message: 'Trayendo pedidos…'),
         error: (e, _) => AppEmptyState(
           icon: Icons.error_outline,
           title: 'No pudimos cargar pedidos',
@@ -35,17 +79,18 @@ class CookOrdersScreen extends ConsumerWidget {
         ),
         data: (items) {
           if (items.isEmpty) {
-            final who = auth is Authenticated ? auth.user : null;
-            final subtitle = who == null
-                ? 'Cuando te caiga el primer pedido, lo verás aquí. Sin realtime por ahora: usa refrescar.'
-                : 'Estás logueado como ${who.name} (${who.phone}).\n\n'
-                    'Para ver pedidos, un cliente debe pedir un plato publicado por ESTE cocinero. '
-                    'Sin realtime por ahora: usa refrescar.';
-
             return AppEmptyState(
+              kicker: 'Tu horno ya está listo',
               icon: Icons.inbox_outlined,
-              title: 'Aún no tienes pedidos',
-              subtitle: subtitle,
+              title: 'Todavía sin pedidos',
+              subtitle:
+                  'Cuando alguien pida un plato que publicaste, aparece aquí. '
+                  'Tira hacia abajo para refrescar — la lista se actualiza rápido.',
+              actionLabel: 'Publicar un plato',
+              onAction: () => context.go(const CookCreateMealRoute().location),
+              secondaryActionLabel: 'Ir al dashboard',
+              onSecondaryAction: () =>
+                  context.go(const CookDashboardRoute().location),
             );
           }
 
@@ -72,7 +117,8 @@ class CookOrdersScreen extends ConsumerWidget {
                     quantity: o.quantity,
                     fulfillmentType: o.fulfillmentType,
                     mealTitle: o.mealTitle ?? 'Pedido',
-                    onOpen: () => context.push(CookOrderDetailRoute(o.id).location),
+                    onOpen: () =>
+                        context.push(CookOrderDetailRoute(o.id).location),
                     onAction: (action) async {
                       HapticFeedback.selectionClick();
                       await ref
@@ -139,123 +185,122 @@ class _CookOrderCard extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-          Row(
-            children: [
-              Container(
-                width: 44,
-                height: 44,
-                decoration: BoxDecoration(
-                  color: tone.withValues(alpha: 0.10),
-                  borderRadius: BorderRadius.circular(AppRadius.md),
-                  border: Border.all(color: tone.withValues(alpha: 0.18)),
+            Row(
+              children: [
+                Container(
+                  width: 44,
+                  height: 44,
+                  decoration: BoxDecoration(
+                    color: tone.withValues(alpha: 0.10),
+                    borderRadius: BorderRadius.circular(AppRadius.md),
+                    border: Border.all(color: tone.withValues(alpha: 0.18)),
+                  ),
+                  child: Icon(Icons.receipt_long, color: tone),
                 ),
-                child: Icon(Icons.receipt_long, color: tone),
-              ),
-              const SizedBox(width: AppSpacing.sm),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'Pedido #${orderId.substring(0, 6).toUpperCase()}',
-                      style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                        fontWeight: FontWeight.w900,
+                const SizedBox(width: AppSpacing.sm),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Pedido #${orderId.substring(0, 6).toUpperCase()}',
+                        style: Theme.of(context).textTheme.titleMedium
+                            ?.copyWith(fontWeight: FontWeight.w900),
                       ),
-                    ),
-                    const SizedBox(height: 2),
-                    Text(
-                      '$statusLabel · ${_fulfillmentLabel(fulfillmentType)} · $eta',
-                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                        color: Theme.of(
-                          context,
-                        ).colorScheme.onSurface.withValues(alpha: 0.65),
+                      const SizedBox(height: 2),
+                      Text(
+                        '$statusLabel · ${_fulfillmentLabel(fulfillmentType)} · $eta',
+                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                          color: Theme.of(
+                            context,
+                          ).colorScheme.onSurface.withValues(alpha: 0.65),
+                        ),
                       ),
-                    ),
-                  ],
-                ),
-              ),
-              Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 10,
-                  vertical: 6,
-                ),
-                decoration: BoxDecoration(
-                  color: tone.withValues(alpha: 0.10),
-                  borderRadius: BorderRadius.circular(99),
-                  border: Border.all(color: tone.withValues(alpha: 0.18)),
-                ),
-                child: Text(
-                  statusLabel,
-                  style: Theme.of(context).textTheme.labelLarge?.copyWith(
-                    fontWeight: FontWeight.w900,
-                    color: tone,
+                    ],
                   ),
                 ),
-              ),
-            ],
-          ),
-          const SizedBox(height: AppSpacing.sm),
-          Text(
-            mealTitle,
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-            style: Theme.of(
-              context,
-            ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w900),
-          ),
-          const SizedBox(height: 2),
-          Text(
-            'x$quantity · $customerName',
-            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-              color: Theme.of(
-                context,
-              ).colorScheme.onSurface.withValues(alpha: 0.70),
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 10,
+                    vertical: 6,
+                  ),
+                  decoration: BoxDecoration(
+                    color: tone.withValues(alpha: 0.10),
+                    borderRadius: BorderRadius.circular(99),
+                    border: Border.all(color: tone.withValues(alpha: 0.18)),
+                  ),
+                  child: Text(
+                    statusLabel,
+                    style: Theme.of(context).textTheme.labelLarge?.copyWith(
+                      fontWeight: FontWeight.w900,
+                      color: tone,
+                    ),
+                  ),
+                ),
+              ],
             ),
-          ),
-          const SizedBox(height: AppSpacing.sm),
-          _Timeline(status: s),
-          const SizedBox(height: AppSpacing.sm),
-          Row(
-            children: [
-              Expanded(
-                child: Text(
-                  '\$$totalCop',
-                  style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                    fontWeight: FontWeight.w900,
-                    letterSpacing: -0.2,
-                  ),
-                ),
+            const SizedBox(height: AppSpacing.sm),
+            Text(
+              mealTitle,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: Theme.of(
+                context,
+              ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w900),
+            ),
+            const SizedBox(height: 2),
+            Text(
+              'x$quantity · $customerName',
+              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                color: Theme.of(
+                  context,
+                ).colorScheme.onSurface.withValues(alpha: 0.70),
               ),
-              if (actions.isEmpty)
-                Text(
-                  'Sin acciones',
-                  style: Theme.of(context).textTheme.labelLarge?.copyWith(
-                    color: Theme.of(
-                      context,
-                    ).colorScheme.onSurface.withValues(alpha: 0.55),
-                    fontWeight: FontWeight.w800,
-                  ),
-                )
-              else
-                Flexible(
-                  child: Align(
-                    alignment: Alignment.centerRight,
-                    child: Wrap(
-                      spacing: 8,
-                      runSpacing: 8,
-                      children: [
-                        for (final a in actions)
-                          FilledButton.tonal(
-                            onPressed: () => onAction(a.action),
-                            child: Text(a.label),
-                          ),
-                      ],
+            ),
+            const SizedBox(height: AppSpacing.sm),
+            _Timeline(status: s),
+            const SizedBox(height: AppSpacing.sm),
+            Row(
+              children: [
+                Expanded(
+                  child: Text(
+                    '\$$totalCop',
+                    style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                      fontWeight: FontWeight.w900,
+                      letterSpacing: -0.2,
                     ),
                   ),
                 ),
-            ],
-          ),
-        ],
+                if (actions.isEmpty)
+                  Text(
+                    'Sin acciones',
+                    style: Theme.of(context).textTheme.labelLarge?.copyWith(
+                      color: Theme.of(
+                        context,
+                      ).colorScheme.onSurface.withValues(alpha: 0.55),
+                      fontWeight: FontWeight.w800,
+                    ),
+                  )
+                else
+                  Flexible(
+                    child: Align(
+                      alignment: Alignment.centerRight,
+                      child: Wrap(
+                        spacing: 8,
+                        runSpacing: 8,
+                        children: [
+                          for (final a in actions)
+                            FilledButton.tonal(
+                              onPressed: () => onAction(a.action),
+                              child: Text(a.label),
+                            ),
+                        ],
+                      ),
+                    ),
+                  ),
+              ],
+            ),
+          ],
         ),
       ),
     );

@@ -58,7 +58,9 @@ class AppTheme {
         ),
         iconTheme: WidgetStateProperty.resolveWith((states) {
           final selected = states.contains(WidgetState.selected);
-          return IconThemeData(color: selected ? AppColors.brand : AppColors.text2);
+          return IconThemeData(
+            color: selected ? AppColors.brand : AppColors.text2,
+          );
         }),
       ),
       cardTheme: CardThemeData(
@@ -119,16 +121,19 @@ class AppTheme {
         backgroundColor: AppColors.surfaceDark.withValues(alpha: 0.78),
         indicatorColor: AppColors.accent.withValues(alpha: 0.18),
         labelTextStyle: WidgetStateProperty.all(
-          AppTypography.textTheme(Brightness.dark).labelMedium?.copyWith(fontWeight: FontWeight.w900),
+          AppTypography.textTheme(
+            Brightness.dark,
+          ).labelMedium?.copyWith(fontWeight: FontWeight.w900),
         ),
         iconTheme: WidgetStateProperty.resolveWith((states) {
           final selected = states.contains(WidgetState.selected);
           return IconThemeData(
-            color: selected ? AppColors.accent : AppColors.text2Dark.withValues(alpha: 0.85),
+            color: selected
+                ? AppColors.accent
+                : AppColors.text2Dark.withValues(alpha: 0.85),
           );
         }),
       ),
     );
   }
 }
-

@@ -43,7 +43,9 @@ class SecureKvStore {
     try {
       await _storage.write(key: key, value: value);
       if (AppEnv.startupDebug) {
-        debugPrint('[secure_kv] write("$key") done in ${sw.elapsedMilliseconds}ms');
+        debugPrint(
+          '[secure_kv] write("$key") done in ${sw.elapsedMilliseconds}ms',
+        );
       }
     } finally {
       warn.cancel();
@@ -62,7 +64,9 @@ class SecureKvStore {
     try {
       await _storage.delete(key: key);
       if (AppEnv.startupDebug) {
-        debugPrint('[secure_kv] delete("$key") done in ${sw.elapsedMilliseconds}ms');
+        debugPrint(
+          '[secure_kv] delete("$key") done in ${sw.elapsedMilliseconds}ms',
+        );
       }
     } finally {
       warn.cancel();
@@ -81,11 +85,12 @@ class SecureKvStore {
     try {
       await _storage.deleteAll();
       if (AppEnv.startupDebug) {
-        debugPrint('[secure_kv] deleteAll() done in ${sw.elapsedMilliseconds}ms');
+        debugPrint(
+          '[secure_kv] deleteAll() done in ${sw.elapsedMilliseconds}ms',
+        );
       }
     } finally {
       warn.cancel();
     }
   }
 }
-

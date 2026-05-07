@@ -4,10 +4,7 @@ import 'package:shimmer/shimmer.dart';
 import '../../design/tokens/app_colors.dart';
 
 class AppShimmer extends StatelessWidget {
-  const AppShimmer({
-    super.key,
-    required this.child,
-  });
+  const AppShimmer({super.key, required this.child});
 
   final Widget child;
 
@@ -24,4 +21,3 @@ class AppShimmer extends StatelessWidget {
     );
   }
 }
-

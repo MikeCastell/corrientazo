@@ -20,11 +20,14 @@ class AuthTokenStore {
     final refresh = await kv.read(_kRefresh);
     if (access == null || refresh == null) {
       if (AppEnv.startupDebug) {
-        debugPrint('[auth_token_store] read() -> null (missing access/refresh)');
+        debugPrint(
+          '[auth_token_store] read() -> null (missing access/refresh)',
+        );
       }
       return null;
     }
-    if (AppEnv.startupDebug) debugPrint('[auth_token_store] read() -> non-null tokens');
+    if (AppEnv.startupDebug)
+      debugPrint('[auth_token_store] read() -> non-null tokens');
     return TokenPair(accessToken: access, refreshToken: refresh);
   }
 
@@ -45,5 +48,6 @@ class AuthTokenStore {
   }
 }
 
-final authTokenStoreProvider = Provider<AuthTokenStore>((ref) => AuthTokenStore(ref));
-
+final authTokenStoreProvider = Provider<AuthTokenStore>(
+  (ref) => AuthTokenStore(ref),
+);

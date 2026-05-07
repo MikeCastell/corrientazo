@@ -20,9 +20,10 @@ class LocalNotifications {
     await _plugin.initialize(initSettings);
 
     if (Platform.isAndroid) {
-      final androidPlugin =
-          _plugin.resolvePlatformSpecificImplementation<
-              AndroidFlutterLocalNotificationsPlugin>();
+      final androidPlugin = _plugin
+          .resolvePlatformSpecificImplementation<
+            AndroidFlutterLocalNotificationsPlugin
+          >();
       await androidPlugin?.requestNotificationsPermission();
     }
 
@@ -57,4 +58,3 @@ class LocalNotifications {
 final localNotificationsProvider = Provider<LocalNotifications>(
   (ref) => LocalNotifications(),
 );
-

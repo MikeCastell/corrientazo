@@ -13,7 +13,9 @@ class AuthRepository {
     required String name,
     required String role,
   }) {
-    return _ref.read(apiClientProvider).postJson<TokenPair>(
+    return _ref
+        .read(apiClientProvider)
+        .postJson<TokenPair>(
           '/auth/register',
           body: {
             'phone': phone,
@@ -25,20 +27,17 @@ class AuthRepository {
         );
   }
 
-  Future<TokenPair> login({
-    required String phone,
-    required String password,
-  }) {
-    return _ref.read(apiClientProvider).postJson<TokenPair>(
+  Future<TokenPair> login({required String phone, required String password}) {
+    return _ref
+        .read(apiClientProvider)
+        .postJson<TokenPair>(
           '/auth/login',
-          body: {
-            'phone': phone,
-            'password': password,
-          },
+          body: {'phone': phone, 'password': password},
           decode: (json) => TokenPair.fromJson(json as Map<String, dynamic>),
         );
   }
 }
 
-final authRepositoryProvider = Provider<AuthRepository>((ref) => AuthRepository(ref));
-
+final authRepositoryProvider = Provider<AuthRepository>(
+  (ref) => AuthRepository(ref),
+);

@@ -7,6 +7,7 @@ import '../../../core/design/tokens/app_radius.dart';
 import '../../../core/design/tokens/app_spacing.dart';
 import '../../../core/routing/app_router.dart';
 import '../../../core/ui/states/app_empty_state.dart';
+import '../../../core/ui/states/app_loading_center.dart';
 import '../application/customer_orders_controller.dart';
 
 class CustomerOrdersScreen extends ConsumerWidget {
@@ -17,7 +18,7 @@ class CustomerOrdersScreen extends ConsumerWidget {
     final orders = ref.watch(customerOrdersControllerProvider);
 
     return orders.when(
-      loading: () => const Center(child: CircularProgressIndicator()),
+      loading: () => const AppLoadingCenter(message: 'Buscando tus pedidos…'),
       error: (e, _) => AppEmptyState(
         icon: Icons.error_outline,
         title: 'No pudimos cargar tus pedidos',
@@ -29,11 +30,13 @@ class CustomerOrdersScreen extends ConsumerWidget {
       data: (data) {
         if (data.active.isEmpty && data.past.isEmpty) {
           return AppEmptyState(
+            kicker: 'Tu primer pedido está a un toque',
             icon: Icons.receipt_long,
-            title: 'Tus pedidos aparecerán aquí',
+            title: 'Aquí verás cada pedido',
             subtitle:
-                'Cuando hagas tu primer pedido, podrás ver estado y detalles desde esta pestaña.',
-            actionLabel: 'Explorar corrientazos',
+                'Elige un plato en “Hoy”, pide, y vuelve aquí para ver '
+                'confirmación, preparación y cuando esté listo para recoger.',
+            actionLabel: 'Ir al marketplace',
             onAction: () => context.go(const CustomerHomeRoute().location),
           );
         }
@@ -140,69 +143,69 @@ class _OrderCard extends StatelessWidget {
         ),
         child: Row(
           children: [
-          Container(
-            width: 44,
-            height: 44,
-            decoration: BoxDecoration(
-              color: tone.withValues(alpha: 0.10),
-              borderRadius: BorderRadius.circular(AppRadius.md),
-              border: Border.all(color: tone.withValues(alpha: 0.18)),
-            ),
-            child: Icon(
-              isCancelled
-                  ? Icons.close
-                  : isDone
-                  ? Icons.check
-                  : Icons.local_fire_department_outlined,
-              color: tone,
-            ),
-          ),
-          const SizedBox(width: AppSpacing.sm),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'Pedido #${orderId.substring(0, 6).toUpperCase()}',
-                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                    fontWeight: FontWeight.w900,
-                  ),
-                ),
-                const SizedBox(height: 2),
-                Text(
-                  mealTitle == null
-                      ? label
-                      : (quantity == null || quantity == 1)
-                      ? '$label · $mealTitle'
-                      : '$label · x$quantity · $mealTitle',
-                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                    color: Theme.of(
-                      context,
-                    ).colorScheme.onSurface.withValues(alpha: 0.65),
-                  ),
-                ),
-              ],
-            ),
-          ),
-          Container(
-            padding: const EdgeInsets.symmetric(
-              horizontal: AppSpacing.sm,
-              vertical: 8,
-            ),
-            decoration: BoxDecoration(
-              color: tone.withValues(alpha: 0.10),
-              borderRadius: BorderRadius.circular(AppRadius.xl),
-              border: Border.all(color: tone.withValues(alpha: 0.18)),
-            ),
-            child: Text(
-              '\$$totalCop',
-              style: Theme.of(context).textTheme.labelLarge?.copyWith(
-                fontWeight: FontWeight.w900,
+            Container(
+              width: 44,
+              height: 44,
+              decoration: BoxDecoration(
+                color: tone.withValues(alpha: 0.10),
+                borderRadius: BorderRadius.circular(AppRadius.md),
+                border: Border.all(color: tone.withValues(alpha: 0.18)),
+              ),
+              child: Icon(
+                isCancelled
+                    ? Icons.close
+                    : isDone
+                    ? Icons.check
+                    : Icons.local_fire_department_outlined,
                 color: tone,
               ),
             ),
-          ),
-        ],
+            const SizedBox(width: AppSpacing.sm),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Pedido #${orderId.substring(0, 6).toUpperCase()}',
+                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                      fontWeight: FontWeight.w900,
+                    ),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    mealTitle == null
+                        ? label
+                        : (quantity == null || quantity == 1)
+                        ? '$label · $mealTitle'
+                        : '$label · x$quantity · $mealTitle',
+                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                      color: Theme.of(
+                        context,
+                      ).colorScheme.onSurface.withValues(alpha: 0.65),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            Container(
+              padding: const EdgeInsets.symmetric(
+                horizontal: AppSpacing.sm,
+                vertical: 8,
+              ),
+              decoration: BoxDecoration(
+                color: tone.withValues(alpha: 0.10),
+                borderRadius: BorderRadius.circular(AppRadius.xl),
+                border: Border.all(color: tone.withValues(alpha: 0.18)),
+              ),
+              child: Text(
+                '\$$totalCop',
+                style: Theme.of(context).textTheme.labelLarge?.copyWith(
+                  fontWeight: FontWeight.w900,
+                  color: tone,
+                ),
+              ),
+            ),
+          ],
         ),
       ),
     );

@@ -39,9 +39,7 @@ class LiveOrdersPoller extends Notifier<void> {
     Future.microtask(_tick);
     // Request notification permission early (Android 13+). Cooks usually hit this on the
     // first poll via show(); customers only call show() after a status/publication change.
-    Future.microtask(
-      () => ref.read(localNotificationsProvider).initIfNeeded(),
-    );
+    Future.microtask(() => ref.read(localNotificationsProvider).initIfNeeded());
   }
 
   Future<void> _tick() async {
@@ -60,7 +58,9 @@ class LiveOrdersPoller extends Notifier<void> {
         final newOnes = next.where((o) => !prevIds.contains(o.id)).toList();
         if (newOnes.isNotEmpty) {
           HapticFeedback.heavyImpact();
-          await ref.read(localNotificationsProvider).show(
+          await ref
+              .read(localNotificationsProvider)
+              .show(
                 id: DateTime.now().millisecondsSinceEpoch.remainder(1 << 30),
                 title: 'Nuevo pedido',
                 body: '${newOnes.length} pedido(s) entraron. Abre “Pedidos”.',
@@ -86,7 +86,9 @@ class LiveOrdersPoller extends Notifier<void> {
           final prevS = prev?.status.toUpperCase();
 
           final msg = _customerStatusMessage(prevS: prevS, nextS: nextS);
-          await ref.read(localNotificationsProvider).show(
+          await ref
+              .read(localNotificationsProvider)
+              .show(
                 id: DateTime.now().millisecondsSinceEpoch.remainder(1 << 30),
                 title: msg.title,
                 body: msg.body,
@@ -98,7 +100,10 @@ class LiveOrdersPoller extends Notifier<void> {
 
         // Cook updated the meal/publication: detect on ACTIVE orders via order detail.
         // This keeps the experience "alive" without polling lots of endpoints.
-        final active = next.where((o) => !_isTerminal(o.status)).take(3).toList();
+        final active = next
+            .where((o) => !_isTerminal(o.status))
+            .take(3)
+            .toList();
         if (active.isNotEmpty) {
           await _checkPublicationUpdatesForActiveOrders(active);
         }
@@ -130,7 +135,8 @@ class LiveOrdersPoller extends Notifier<void> {
         _lastPublicationByOrderId[o.id] = snap;
         if (prev == null) continue;
 
-        final changed = prev.status != snap.status ||
+        final changed =
+            prev.status != snap.status ||
             prev.stockAvailable != snap.stockAvailable;
         if (!changed) continue;
 
@@ -140,7 +146,9 @@ class LiveOrdersPoller extends Notifier<void> {
             : 'Stock: ${snap.stockAvailable}';
         final body = [status, stock].where((x) => x.isNotEmpty).join(' · ');
 
-        await ref.read(localNotificationsProvider).show(
+        await ref
+            .read(localNotificationsProvider)
+            .show(
               id: DateTime.now().millisecondsSinceEpoch.remainder(1 << 30),
               title: 'Actualización del cocinero',
               body: body.isEmpty
@@ -168,27 +176,33 @@ bool _isTerminal(String s) {
   if (prevS == null) {
     return (
       title: 'Pedido actualizado',
-      body: 'Estado: ${_labelForStatus(nextS)}'
+      body: 'Estado: ${_labelForStatus(nextS)}',
     );
   }
   if (prevS == 'INIT' && nextS == 'CONFIRMED') {
     return (
       title: 'Pedido confirmado',
-      body: 'El cocinero ya aceptó tu pedido. Empezamos.'
+      body: 'El cocinero ya aceptó tu pedido. Empezamos.',
     );
   }
   if (nextS == 'PREPARING') {
-    return (title: 'En preparación', body: 'Tu corrientazo ya se está haciendo.');
+    return (
+      title: 'En preparación',
+      body: 'Tu corrientazo ya se está haciendo.',
+    );
   }
   if (nextS == 'READY_FOR_PICKUP') {
-    return (title: 'Listo para recoger', body: 'Ya puedes pasar por tu pedido.');
+    return (
+      title: 'Listo para recoger',
+      body: 'Ya puedes pasar por tu pedido.',
+    );
   }
   if (nextS == 'DELIVERED' || nextS == 'PICKED_UP') {
     return (title: 'Pedido entregado', body: 'Buen provecho.');
   }
   return (
     title: 'Tu pedido avanzó',
-    body: 'Ahora está: ${_labelForStatus(nextS)}'
+    body: 'Ahora está: ${_labelForStatus(nextS)}',
   );
 }
 
@@ -211,7 +225,10 @@ String _labelForStatus(String s) {
 }
 
 class _PublicationSnapshot {
-  const _PublicationSnapshot({required this.status, required this.stockAvailable});
+  const _PublicationSnapshot({
+    required this.status,
+    required this.stockAvailable,
+  });
   final String? status;
   final int? stockAvailable;
 }
@@ -219,4 +236,3 @@ class _PublicationSnapshot {
 final liveOrdersPollerProvider = NotifierProvider<LiveOrdersPoller, void>(
   LiveOrdersPoller.new,
 );
-

@@ -8,13 +8,15 @@ class UsersRepository {
   final Ref _ref;
 
   Future<CurrentUser> getMe() {
-    return _ref.read(apiClientProvider).getJson<CurrentUser>(
+    return _ref
+        .read(apiClientProvider)
+        .getJson<CurrentUser>(
           '/users/me',
           decode: (json) => CurrentUser.fromJson(json as Map<String, dynamic>),
         );
   }
 }
 
-final usersRepositoryProvider =
-    Provider<UsersRepository>((ref) => UsersRepository(ref));
-
+final usersRepositoryProvider = Provider<UsersRepository>(
+  (ref) => UsersRepository(ref),
+);

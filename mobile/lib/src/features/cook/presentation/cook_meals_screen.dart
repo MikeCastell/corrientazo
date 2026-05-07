@@ -9,6 +9,7 @@ import '../../../core/design/tokens/app_spacing.dart';
 import '../../../core/routing/app_router.dart';
 import '../../../core/ui/app_scaffold.dart';
 import '../../../core/ui/states/app_empty_state.dart';
+import '../../../core/ui/states/app_loading_center.dart';
 import '../application/cook_meals_controller.dart';
 import '../domain/cook_meal.dart';
 
@@ -27,7 +28,7 @@ class CookMealsScreen extends ConsumerWidget {
         icon: const Icon(Icons.add_circle_outline),
       ),
       body: meals.when(
-        loading: () => const Center(child: CircularProgressIndicator()),
+        loading: () => const AppLoadingCenter(message: 'Trayendo tus platos…'),
         error: (e, _) => AppEmptyState(
           icon: Icons.error_outline,
           title: 'No pudimos cargar tus comidas',
@@ -39,12 +40,17 @@ class CookMealsScreen extends ConsumerWidget {
         data: (items) {
           if (items.isEmpty) {
             return AppEmptyState(
+              kicker: 'Empieza con algo que amas cocinar',
               icon: Icons.restaurant_menu,
-              title: 'Aún no has creado comidas',
+              title: 'Tu menú empieza vacío — es normal',
               subtitle:
-                  'Crea tu primer corrientazo con foto, precio y stock. Empieza a vender hoy.',
-              actionLabel: 'Crear comida',
+                  'Un nombre honesto, precio claro y cuántos vas a servir. '
+                  'Publica y los vecinos ya pueden pedir.',
+              actionLabel: 'Publicar mi primer plato',
               onAction: () => context.go(const CookCreateMealRoute().location),
+              secondaryActionLabel: 'Ver dashboard',
+              onSecondaryAction: () =>
+                  context.go(const CookDashboardRoute().location),
             );
           }
 

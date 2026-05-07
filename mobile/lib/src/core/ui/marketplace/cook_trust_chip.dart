@@ -62,10 +62,10 @@ class CookTrustChip extends StatelessWidget {
                           fit: BoxFit.cover,
                           errorBuilder: (context, error, stackTrace) =>
                               const Icon(
-                            Icons.person,
-                            size: 14,
-                            color: AppColors.brand,
-                          ),
+                                Icons.person,
+                                size: 14,
+                                color: AppColors.brand,
+                              ),
                         ),
                       ),
               ),
@@ -136,9 +136,9 @@ class _Pill extends StatelessWidget {
             Text(
               label,
               style: Theme.of(context).textTheme.labelMedium?.copyWith(
-                    color: color,
-                    fontWeight: FontWeight.w700,
-                  ),
+                color: color,
+                fontWeight: FontWeight.w700,
+              ),
             ),
           ],
         ],

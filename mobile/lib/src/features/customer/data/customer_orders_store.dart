@@ -17,7 +17,10 @@ class CustomerOrdersStore {
     try {
       final decoded = jsonDecode(raw);
       if (decoded is List) {
-        return decoded.map((e) => e.toString()).where((e) => e.isNotEmpty).toList();
+        return decoded
+            .map((e) => e.toString())
+            .where((e) => e.isNotEmpty)
+            .toList();
       }
       return const [];
     } catch (_) {
@@ -39,6 +42,6 @@ class CustomerOrdersStore {
   }
 }
 
-final customerOrdersStoreProvider =
-    Provider<CustomerOrdersStore>((ref) => CustomerOrdersStore(ref));
-
+final customerOrdersStoreProvider = Provider<CustomerOrdersStore>(
+  (ref) => CustomerOrdersStore(ref),
+);

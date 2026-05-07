@@ -21,6 +21,40 @@ class CustomerProfileScreen extends ConsumerWidget {
         Container(
           padding: const EdgeInsets.all(AppSpacing.md),
           decoration: BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [
+                AppColors.brand.withValues(alpha: 0.12),
+                Theme.of(context).colorScheme.surface,
+              ],
+            ),
+            borderRadius: BorderRadius.circular(AppRadius.lg),
+            border: Border.all(color: Theme.of(context).dividerColor),
+          ),
+          child: Row(
+            children: [
+              Text('✨', style: Theme.of(context).textTheme.headlineSmall),
+              const SizedBox(width: AppSpacing.sm),
+              Expanded(
+                child: Text(
+                  'Gracias por comer local. Cada pedido apoya una cocina real.',
+                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                    fontWeight: FontWeight.w700,
+                    height: 1.35,
+                    color: Theme.of(
+                      context,
+                    ).colorScheme.onSurface.withValues(alpha: 0.78),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: AppSpacing.sm),
+        Container(
+          padding: const EdgeInsets.all(AppSpacing.md),
+          decoration: BoxDecoration(
             color: Theme.of(context).colorScheme.surface,
             borderRadius: BorderRadius.circular(AppRadius.lg),
             border: Border.all(color: Theme.of(context).dividerColor),
@@ -33,7 +67,9 @@ class CustomerProfileScreen extends ConsumerWidget {
                 decoration: BoxDecoration(
                   color: AppColors.brand.withValues(alpha: 0.10),
                   borderRadius: BorderRadius.circular(AppRadius.md),
-                  border: Border.all(color: AppColors.brand.withValues(alpha: 0.18)),
+                  border: Border.all(
+                    color: AppColors.brand.withValues(alpha: 0.18),
+                  ),
                 ),
                 child: const Icon(Icons.person_outline, color: AppColors.brand),
               ),
@@ -45,32 +81,39 @@ class CustomerProfileScreen extends ConsumerWidget {
                     Text(
                       user?.name ?? 'Tu perfil',
                       style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                            fontWeight: FontWeight.w900,
-                          ),
+                        fontWeight: FontWeight.w900,
+                      ),
                     ),
                     const SizedBox(height: 2),
                     Text(
                       user?.phone ?? '—',
                       style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                            color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.65),
-                          ),
+                        color: Theme.of(
+                          context,
+                        ).colorScheme.onSurface.withValues(alpha: 0.65),
+                      ),
                     ),
                   ],
                 ),
               ),
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 10,
+                  vertical: 6,
+                ),
                 decoration: BoxDecoration(
                   color: AppColors.brand.withValues(alpha: 0.10),
                   borderRadius: BorderRadius.circular(99),
-                  border: Border.all(color: AppColors.brand.withValues(alpha: 0.18)),
+                  border: Border.all(
+                    color: AppColors.brand.withValues(alpha: 0.18),
+                  ),
                 ),
                 child: Text(
                   'Cliente',
                   style: Theme.of(context).textTheme.labelLarge?.copyWith(
-                        fontWeight: FontWeight.w900,
-                        color: AppColors.brand,
-                      ),
+                    fontWeight: FontWeight.w900,
+                    color: AppColors.brand,
+                  ),
                 ),
               ),
             ],
@@ -111,14 +154,18 @@ class CustomerProfileScreen extends ConsumerWidget {
             children: [
               Text(
                 'Preferencias',
-                style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w900),
+                style: Theme.of(
+                  context,
+                ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w900),
               ),
               const SizedBox(height: AppSpacing.xs),
               Text(
                 'Direcciones, métodos de entrega y notificaciones (próximamente).',
                 style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                      color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.65),
-                    ),
+                  color: Theme.of(
+                    context,
+                  ).colorScheme.onSurface.withValues(alpha: 0.65),
+                ),
               ),
             ],
           ),
@@ -139,7 +186,9 @@ class CustomerProfileScreen extends ConsumerWidget {
                 decoration: BoxDecoration(
                   color: AppColors.brand.withValues(alpha: 0.10),
                   borderRadius: BorderRadius.circular(AppRadius.md),
-                  border: Border.all(color: AppColors.brand.withValues(alpha: 0.18)),
+                  border: Border.all(
+                    color: AppColors.brand.withValues(alpha: 0.18),
+                  ),
                 ),
                 child: const Icon(Icons.support_agent, color: AppColors.brand),
               ),
@@ -150,14 +199,18 @@ class CustomerProfileScreen extends ConsumerWidget {
                   children: [
                     Text(
                       'Soporte',
-                      style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w900),
+                      style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                        fontWeight: FontWeight.w900,
+                      ),
                     ),
                     const SizedBox(height: 2),
                     Text(
                       'Ayuda rápida dentro de la app (próximamente).',
                       style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                            color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.65),
-                          ),
+                        color: Theme.of(
+                          context,
+                        ).colorScheme.onSurface.withValues(alpha: 0.65),
+                      ),
                     ),
                   ],
                 ),
@@ -209,7 +262,9 @@ class _MiniStatCard extends StatelessWidget {
             decoration: BoxDecoration(
               color: AppColors.brand.withValues(alpha: 0.10),
               borderRadius: BorderRadius.circular(AppRadius.md),
-              border: Border.all(color: AppColors.brand.withValues(alpha: 0.18)),
+              border: Border.all(
+                color: AppColors.brand.withValues(alpha: 0.18),
+              ),
             ),
             child: Icon(icon, color: AppColors.brand),
           ),
@@ -221,21 +276,27 @@ class _MiniStatCard extends StatelessWidget {
                 Text(
                   title,
                   style: Theme.of(context).textTheme.labelLarge?.copyWith(
-                        fontWeight: FontWeight.w900,
-                        color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.70),
-                      ),
+                    fontWeight: FontWeight.w900,
+                    color: Theme.of(
+                      context,
+                    ).colorScheme.onSurface.withValues(alpha: 0.70),
+                  ),
                 ),
                 const SizedBox(height: 2),
                 Text(
                   value,
-                  style: Theme.of(context).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w900),
+                  style: Theme.of(
+                    context,
+                  ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w900),
                 ),
                 const SizedBox(height: 2),
                 Text(
                   subtitle,
                   style: Theme.of(context).textTheme.labelMedium?.copyWith(
-                        color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.55),
-                      ),
+                    color: Theme.of(
+                      context,
+                    ).colorScheme.onSurface.withValues(alpha: 0.55),
+                  ),
                 ),
               ],
             ),
@@ -245,4 +306,3 @@ class _MiniStatCard extends StatelessWidget {
     );
   }
 }
-

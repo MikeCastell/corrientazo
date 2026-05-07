@@ -10,6 +10,8 @@ import '../../../core/routing/app_router.dart';
 import '../../../core/ui/app_scaffold.dart';
 import '../../../core/food/colombian_food_mock.dart';
 import '../../../core/networking/api_exception.dart';
+import '../../../core/ux/milestone_celebration.dart';
+import '../../../core/ux/ux_milestones_store.dart';
 import '../application/cook_meals_controller.dart';
 import '../domain/cook_meal.dart';
 
@@ -115,6 +117,19 @@ class _CookCreateMealScreenState extends ConsumerState<CookCreateMealScreen> {
 
       await ref.read(cookMealsControllerProvider.notifier).upsert(meal);
       if (!mounted) return;
+
+      if (publish) {
+        final store = ref.read(uxMilestonesStoreProvider);
+        if (!store.celebratedCookFirstPublish) {
+          await showMilestoneCelebration(
+            context,
+            MilestoneKind.cookFirstPublish,
+          );
+          await store.markCookFirstPublishCelebrated();
+          if (!mounted) return;
+        }
+      }
+
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(publish ? 'Comida publicada' : 'Borrador guardado'),

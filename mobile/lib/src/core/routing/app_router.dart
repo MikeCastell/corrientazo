@@ -24,7 +24,8 @@ import '../env/app_env.dart';
 
 final appRouterProvider = Provider<GoRouter>((ref) {
   final authState = ref.watch(authControllerProvider);
-  if (AppEnv.startupDebug) debugPrint('[router] build with authState=${authState.runtimeType}');
+  if (AppEnv.startupDebug)
+    debugPrint('[router] build with authState=${authState.runtimeType}');
 
   return GoRouter(
     initialLocation: const SplashRoute().location,
@@ -47,7 +48,8 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         builder: (context, state) => const RegisterScreen(),
       ),
       StatefulShellRoute.indexedStack(
-        builder: (context, state, navigationShell) => CustomerShell(navigationShell: navigationShell),
+        builder: (context, state, navigationShell) =>
+            CustomerShell(navigationShell: navigationShell),
         branches: [
           StatefulShellBranch(
             routes: [
@@ -64,16 +66,20 @@ final appRouterProvider = Provider<GoRouter>((ref) {
                       return CustomTransitionPage<void>(
                         key: state.pageKey,
                         child: MealDetailScreen(mealPublicationId: id),
-                        transitionsBuilder: (context, animation, secondaryAnimation, child) {
-                          final slide = Tween<Offset>(
-                            begin: const Offset(0.0, 0.04),
-                            end: Offset.zero,
-                          ).chain(CurveTween(curve: Curves.easeOutCubic));
-                          return FadeTransition(
-                            opacity: animation,
-                            child: SlideTransition(position: animation.drive(slide), child: child),
-                          );
-                        },
+                        transitionsBuilder:
+                            (context, animation, secondaryAnimation, child) {
+                              final slide = Tween<Offset>(
+                                begin: const Offset(0.0, 0.04),
+                                end: Offset.zero,
+                              ).chain(CurveTween(curve: Curves.easeOutCubic));
+                              return FadeTransition(
+                                opacity: animation,
+                                child: SlideTransition(
+                                  position: animation.drive(slide),
+                                  child: child,
+                                ),
+                              );
+                            },
                       );
                     },
                   ),
@@ -85,10 +91,17 @@ final appRouterProvider = Provider<GoRouter>((ref) {
                       return CustomTransitionPage<void>(
                         key: state.pageKey,
                         child: OrderSuccessScreen(orderId: id),
-                        transitionsBuilder: (context, animation, secondaryAnimation, child) {
-                          final fade = CurvedAnimation(parent: animation, curve: Curves.easeOutCubic);
-                          return FadeTransition(opacity: fade, child: child);
-                        },
+                        transitionsBuilder:
+                            (context, animation, secondaryAnimation, child) {
+                              final fade = CurvedAnimation(
+                                parent: animation,
+                                curve: Curves.easeOutCubic,
+                              );
+                              return FadeTransition(
+                                opacity: fade,
+                                child: child,
+                              );
+                            },
                       );
                     },
                   ),
@@ -130,7 +143,8 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         ],
       ),
       StatefulShellRoute.indexedStack(
-        builder: (context, state, navigationShell) => CookShell(navigationShell: navigationShell),
+        builder: (context, state, navigationShell) =>
+            CookShell(navigationShell: navigationShell),
         branches: [
           StatefulShellBranch(
             routes: [
@@ -199,7 +213,9 @@ final appRouterProvider = Provider<GoRouter>((ref) {
     redirect: (context, state) {
       final loc = state.matchedLocation;
       final isSplash = loc == const SplashRoute().location;
-      final isAuthRoute = loc == const LoginRoute().location || loc == const RegisterRoute().location;
+      final isAuthRoute =
+          loc == const LoginRoute().location ||
+          loc == const RegisterRoute().location;
       final isUnknown = authState is AuthUnknown;
       final isLoggedIn = authState is Authenticated;
       final role = authState is Authenticated ? authState.user.role : null;
@@ -210,7 +226,9 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       if (isUnknown) {
         final dest = isSplash ? null : const SplashRoute().location;
         if (AppEnv.startupDebug) {
-          debugPrint('[router] redirect (unknown) loc="$loc" -> ${dest ?? "null"}');
+          debugPrint(
+            '[router] redirect (unknown) loc="$loc" -> ${dest ?? "null"}',
+          );
         }
         return dest;
       }
@@ -219,18 +237,21 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       if (isSplash) {
         final dest = isLoggedIn
             ? (role == UserRole.cook
-                ? const CookDashboardRoute().location
-                : const CustomerHomeRoute().location)
+                  ? const CookDashboardRoute().location
+                  : const CustomerHomeRoute().location)
             : const LoginRoute().location;
         if (AppEnv.startupDebug) {
-          debugPrint('[router] redirect (splash resolved) loc="$loc" -> "$dest"');
+          debugPrint(
+            '[router] redirect (splash resolved) loc="$loc" -> "$dest"',
+          );
         }
         return dest;
       }
 
       if (!isLoggedIn && !isAuthRoute) {
         const dest = '/login';
-        if (AppEnv.startupDebug) debugPrint('[router] redirect (need login) loc="$loc" -> "$dest"');
+        if (AppEnv.startupDebug)
+          debugPrint('[router] redirect (need login) loc="$loc" -> "$dest"');
         return dest;
       }
       if (isLoggedIn) {
@@ -242,18 +263,21 @@ final appRouterProvider = Provider<GoRouter>((ref) {
           if (isCookArea) return const CustomerHomeRoute().location;
         }
       }
-      if (AppEnv.startupDebug) debugPrint('[router] redirect (no-op) loc="$loc" -> null');
+      if (AppEnv.startupDebug)
+        debugPrint('[router] redirect (no-op) loc="$loc" -> null');
       return null;
     },
-    errorBuilder: (context, state) => Scaffold(
-      body: Center(child: Text(state.error.toString())),
-    ),
+    errorBuilder: (context, state) =>
+        Scaffold(body: Center(child: Text(state.error.toString()))),
   );
 });
 
 class _GoRouterRefresh extends ChangeNotifier {
   _GoRouterRefresh(this.ref, this.state) {
-    ref.listen<AuthState>(authControllerProvider, (_, next) => notifyListeners());
+    ref.listen<AuthState>(
+      authControllerProvider,
+      (_, next) => notifyListeners(),
+    );
   }
 
   final Ref ref;
@@ -355,4 +379,3 @@ class CookProfileRoute {
   static const name = 'cook_profile';
   String get location => '/k/profile';
 }
-

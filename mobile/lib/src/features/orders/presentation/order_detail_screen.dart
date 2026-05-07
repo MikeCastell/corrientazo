@@ -14,10 +14,10 @@ import '../domain/order_detail.dart';
 
 enum OrderDetailMode { customer, cook }
 
-final orderDetailProvider =
-    FutureProvider.family.autoDispose<OrderDetail, String>((ref, orderId) async {
-  return ref.read(ordersRepositoryProvider).getById(orderId);
-});
+final orderDetailProvider = FutureProvider.family
+    .autoDispose<OrderDetail, String>((ref, orderId) async {
+      return ref.read(ordersRepositoryProvider).getById(orderId);
+    });
 
 class OrderDetailScreen extends ConsumerWidget {
   const OrderDetailScreen({
@@ -92,10 +92,9 @@ class OrderDetailScreen extends ConsumerWidget {
                     status: s,
                     onAction: (action) async {
                       HapticFeedback.selectionClick();
-                      await ref.read(ordersRepositoryProvider).updateStatus(
-                            orderId: o.id,
-                            action: action,
-                          );
+                      await ref
+                          .read(ordersRepositoryProvider)
+                          .updateStatus(orderId: o.id, action: action);
                       ref.invalidate(orderDetailProvider(orderId));
                     },
                   ),
@@ -193,9 +192,9 @@ class _Hero extends StatelessWidget {
                   child: Text(
                     statusLabel,
                     style: Theme.of(context).textTheme.labelLarge?.copyWith(
-                          fontWeight: FontWeight.w900,
-                          color: Colors.white,
-                        ),
+                      fontWeight: FontWeight.w900,
+                      color: Colors.white,
+                    ),
                   ),
                 ),
                 const SizedBox(height: 8),
@@ -204,18 +203,18 @@ class _Hero extends StatelessWidget {
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
                   style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                        fontWeight: FontWeight.w900,
-                        color: Colors.white,
-                        height: 1.05,
-                      ),
+                    fontWeight: FontWeight.w900,
+                    color: Colors.white,
+                    height: 1.05,
+                  ),
                 ),
                 const SizedBox(height: 6),
                 Text(
                   'ETA: $etaLabel',
                   style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                        color: Colors.white.withValues(alpha: 0.86),
-                        fontWeight: FontWeight.w800,
-                      ),
+                    color: Colors.white.withValues(alpha: 0.86),
+                    fontWeight: FontWeight.w800,
+                  ),
                 ),
               ],
             ),
@@ -272,20 +271,18 @@ class _InfoGrid extends StatelessWidget {
             const SizedBox(height: AppSpacing.sm),
             Text(
               'Notas',
-              style: Theme.of(context)
-                  .textTheme
-                  .titleSmall
-                  ?.copyWith(fontWeight: FontWeight.w900),
+              style: Theme.of(
+                context,
+              ).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w900),
             ),
             const SizedBox(height: 4),
             Text(
               notes!,
               style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                    color: Theme.of(context)
-                        .colorScheme
-                        .onSurface
-                        .withValues(alpha: 0.75),
-                  ),
+                color: Theme.of(
+                  context,
+                ).colorScheme.onSurface.withValues(alpha: 0.75),
+              ),
             ),
           ],
         ],
@@ -308,10 +305,9 @@ class _TimelineCard extends StatelessWidget {
         children: [
           Text(
             'Progreso',
-            style: Theme.of(context)
-                .textTheme
-                .titleMedium
-                ?.copyWith(fontWeight: FontWeight.w900),
+            style: Theme.of(
+              context,
+            ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w900),
           ),
           const SizedBox(height: AppSpacing.sm),
           _DotsTimeline(status: status),
@@ -336,19 +332,18 @@ class _TimelineCard extends StatelessWidget {
                     child: Text(
                       _labelForStatus(e.toStatus.toUpperCase()),
                       style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                            fontWeight: FontWeight.w800,
-                          ),
+                        fontWeight: FontWeight.w800,
+                      ),
                     ),
                   ),
                   Text(
                     when,
                     style: Theme.of(context).textTheme.labelMedium?.copyWith(
-                          color: Theme.of(context)
-                              .colorScheme
-                              .onSurface
-                              .withValues(alpha: 0.55),
-                          fontWeight: FontWeight.w800,
-                        ),
+                      color: Theme.of(
+                        context,
+                      ).colorScheme.onSurface.withValues(alpha: 0.55),
+                      fontWeight: FontWeight.w800,
+                    ),
                   ),
                 ],
               ),
@@ -393,10 +388,9 @@ class _CookCard extends StatelessWidget {
                   cookName ?? 'Cocina local',
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: Theme.of(context)
-                      .textTheme
-                      .titleMedium
-                      ?.copyWith(fontWeight: FontWeight.w900),
+                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                    fontWeight: FontWeight.w900,
+                  ),
                 ),
                 const SizedBox(height: 2),
                 Text(
@@ -406,23 +400,21 @@ class _CookCard extends StatelessWidget {
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
                   style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                        color: Theme.of(context)
-                            .colorScheme
-                            .onSurface
-                            .withValues(alpha: 0.70),
-                      ),
+                    color: Theme.of(
+                      context,
+                    ).colorScheme.onSurface.withValues(alpha: 0.70),
+                  ),
                 ),
                 if (cookPhone != null && cookPhone!.trim().isNotEmpty) ...[
                   const SizedBox(height: 6),
                   Text(
                     cookPhone!,
                     style: Theme.of(context).textTheme.labelLarge?.copyWith(
-                          fontWeight: FontWeight.w900,
-                          color: Theme.of(context)
-                              .colorScheme
-                              .onSurface
-                              .withValues(alpha: 0.70),
-                        ),
+                      fontWeight: FontWeight.w900,
+                      color: Theme.of(
+                        context,
+                      ).colorScheme.onSurface.withValues(alpha: 0.70),
+                    ),
                   ),
                 ],
               ],
@@ -435,7 +427,11 @@ class _CookCard extends StatelessWidget {
 }
 
 class _CustomerCard extends StatelessWidget {
-  const _CustomerCard({required this.name, required this.avatarUrl, required this.phone});
+  const _CustomerCard({
+    required this.name,
+    required this.avatarUrl,
+    required this.phone,
+  });
 
   final String? name;
   final String? avatarUrl;
@@ -476,20 +472,18 @@ class _CustomerCard extends StatelessWidget {
               children: [
                 Text(
                   name ?? 'Cliente',
-                  style: Theme.of(context)
-                      .textTheme
-                      .titleMedium
-                      ?.copyWith(fontWeight: FontWeight.w900),
+                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                    fontWeight: FontWeight.w900,
+                  ),
                 ),
                 const SizedBox(height: 2),
                 Text(
                   phone ?? 'Sin teléfono',
                   style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                        color: Theme.of(context)
-                            .colorScheme
-                            .onSurface
-                            .withValues(alpha: 0.70),
-                      ),
+                    color: Theme.of(
+                      context,
+                    ).colorScheme.onSurface.withValues(alpha: 0.70),
+                  ),
                 ),
               ],
             ),
@@ -516,10 +510,9 @@ class _CookActions extends StatelessWidget {
         children: [
           Text(
             'Acciones',
-            style: Theme.of(context)
-                .textTheme
-                .titleMedium
-                ?.copyWith(fontWeight: FontWeight.w900),
+            style: Theme.of(
+              context,
+            ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w900),
           ),
           const SizedBox(height: AppSpacing.sm),
           Wrap(
@@ -540,7 +533,10 @@ class _CookActions extends StatelessWidget {
 }
 
 class _OperationalCard extends StatelessWidget {
-  const _OperationalCard({required this.publicationStatus, required this.stockAvailable});
+  const _OperationalCard({
+    required this.publicationStatus,
+    required this.stockAvailable,
+  });
   final String? publicationStatus;
   final int? stockAvailable;
 
@@ -552,30 +548,28 @@ class _OperationalCard extends StatelessWidget {
         children: [
           Text(
             'Operación',
-            style: Theme.of(context)
-                .textTheme
-                .titleMedium
-                ?.copyWith(fontWeight: FontWeight.w900),
+            style: Theme.of(
+              context,
+            ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w900),
           ),
           const SizedBox(height: AppSpacing.sm),
           if (stockAvailable != null)
             Text(
               'Stock relacionado: $stockAvailable',
-              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                    fontWeight: FontWeight.w800,
-                  ),
+              style: Theme.of(
+                context,
+              ).textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w800),
             ),
           if (publicationStatus != null) ...[
             const SizedBox(height: 4),
             Text(
               'Publicación: ${publicationStatus!.toUpperCase()}',
               style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                    color: Theme.of(context)
-                        .colorScheme
-                        .onSurface
-                        .withValues(alpha: 0.70),
-                    fontWeight: FontWeight.w800,
-                  ),
+                color: Theme.of(
+                  context,
+                ).colorScheme.onSurface.withValues(alpha: 0.70),
+                fontWeight: FontWeight.w800,
+              ),
             ),
           ],
         ],
@@ -623,10 +617,9 @@ class _Pill extends StatelessWidget {
           const SizedBox(width: 6),
           Text(
             label,
-            style: Theme.of(context)
-                .textTheme
-                .labelLarge
-                ?.copyWith(fontWeight: FontWeight.w900),
+            style: Theme.of(
+              context,
+            ).textTheme.labelLarge?.copyWith(fontWeight: FontWeight.w900),
           ),
         ],
       ),
@@ -756,11 +749,12 @@ String _labelForStatus(String s) {
 
 String _pseudoEtaLabel(DateTime createdAt, String status) {
   final mins = DateTime.now().difference(createdAt).inMinutes.abs();
-  if (status == 'READY_FOR_PICKUP' || status == 'PICKED_UP' || status == 'DELIVERED') {
+  if (status == 'READY_FOR_PICKUP' ||
+      status == 'PICKED_UP' ||
+      status == 'DELIVERED') {
     return 'Listo';
   }
   final low = 15 + (mins % 8);
   final high = low + 12;
   return '$low–$high min';
 }
-

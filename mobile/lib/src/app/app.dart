@@ -23,4 +23,3 @@ class CorrientazoApp extends ConsumerWidget {
     );
   }
 }
-

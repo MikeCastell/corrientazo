@@ -27,4 +27,3 @@ class MarketplaceUtils {
     return max(0, h);
   }
 }
-

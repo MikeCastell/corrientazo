@@ -22,4 +22,3 @@ class OrderCreateRequest {
 
   Map<String, dynamic> toJson() => _$OrderCreateRequestToJson(this);
 }
-

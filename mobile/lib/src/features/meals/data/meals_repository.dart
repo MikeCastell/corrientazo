@@ -8,7 +8,9 @@ class MealsRepository {
   final Ref _ref;
 
   Future<List<MealPublication>> listPublished() {
-    return _ref.read(apiClientProvider).getJson<List<MealPublication>>(
+    return _ref
+        .read(apiClientProvider)
+        .getJson<List<MealPublication>>(
           '/meals',
           decode: (json) {
             final list = (json as List).cast<dynamic>();
@@ -20,5 +22,6 @@ class MealsRepository {
   }
 }
 
-final mealsRepositoryProvider = Provider<MealsRepository>((ref) => MealsRepository(ref));
-
+final mealsRepositoryProvider = Provider<MealsRepository>(
+  (ref) => MealsRepository(ref),
+);
