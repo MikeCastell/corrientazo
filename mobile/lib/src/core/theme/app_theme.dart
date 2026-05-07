@@ -50,6 +50,17 @@ class AppTheme {
           ),
         ),
       ),
+      navigationBarTheme: NavigationBarThemeData(
+        backgroundColor: AppColors.surface2.withValues(alpha: 0.94),
+        indicatorColor: AppColors.brand.withValues(alpha: 0.16),
+        labelTextStyle: WidgetStateProperty.all(
+          textTheme.labelMedium?.copyWith(fontWeight: FontWeight.w900),
+        ),
+        iconTheme: WidgetStateProperty.resolveWith((states) {
+          final selected = states.contains(WidgetState.selected);
+          return IconThemeData(color: selected ? AppColors.brand : AppColors.text2);
+        }),
+      ),
       cardTheme: CardThemeData(
         elevation: 0,
         color: AppColors.surface,
@@ -103,6 +114,19 @@ class AppTheme {
             borderRadius: BorderRadius.circular(AppRadius.md),
           ),
         ),
+      ),
+      navigationBarTheme: NavigationBarThemeData(
+        backgroundColor: AppColors.surfaceDark.withValues(alpha: 0.78),
+        indicatorColor: AppColors.accent.withValues(alpha: 0.18),
+        labelTextStyle: WidgetStateProperty.all(
+          AppTypography.textTheme(Brightness.dark).labelMedium?.copyWith(fontWeight: FontWeight.w900),
+        ),
+        iconTheme: WidgetStateProperty.resolveWith((states) {
+          final selected = states.contains(WidgetState.selected);
+          return IconThemeData(
+            color: selected ? AppColors.accent : AppColors.text2Dark.withValues(alpha: 0.85),
+          );
+        }),
       ),
     );
   }

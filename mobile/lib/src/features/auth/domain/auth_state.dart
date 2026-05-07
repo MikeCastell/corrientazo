@@ -1,3 +1,5 @@
+import '../../users/domain/current_user.dart';
+
 sealed class AuthState {
   const AuthState();
 }
@@ -11,6 +13,8 @@ class Unauthenticated extends AuthState {
 }
 
 class Authenticated extends AuthState {
-  const Authenticated();
+  const Authenticated(this.user);
+
+  final CurrentUser user;
 }
 

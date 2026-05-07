@@ -1,36 +1,43 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
 
-import '../../auth/application/auth_controller.dart';
-import '../../auth/domain/auth_state.dart';
-import '../../../core/routing/app_router.dart';
 import '../../../core/design/tokens/app_colors.dart';
 import '../../../core/design/tokens/app_spacing.dart';
+import '../../../core/env/app_env.dart';
+import '../../auth/application/auth_controller.dart';
 
 class SplashScreen extends ConsumerWidget {
   const SplashScreen({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    ref.listen<AuthState>(authControllerProvider, (_, next) {
-      if (next is Authenticated) {
-        context.go(const HomeRoute().location);
-      } else if (next is Unauthenticated) {
-        context.go(const LoginRoute().location);
-      }
-    });
+    final authState = ref.watch(authControllerProvider);
+    final status = ref.watch(authDebugStatusProvider);
 
-    return const Scaffold(
+    if (AppEnv.startupDebug) {
+      // ignore: avoid_print
+      debugPrint('[splash] build authState=${authState.runtimeType} status="$status"');
+    }
+
+    return Scaffold(
       body: Center(
-        child: _SplashMark(),
+        child: _SplashMark(
+          debugStatus: status,
+          authStateLabel: authState.runtimeType.toString(),
+        ),
       ),
     );
   }
 }
 
 class _SplashMark extends StatelessWidget {
-  const _SplashMark();
+  const _SplashMark({
+    required this.debugStatus,
+    required this.authStateLabel,
+  });
+
+  final String debugStatus;
+  final String authStateLabel;
 
   @override
   Widget build(BuildContext context) {
@@ -62,6 +69,36 @@ class _SplashMark extends StatelessWidget {
                 color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.65),
               ),
         ),
+        if (AppEnv.startupDebug) ...[
+          const SizedBox(height: AppSpacing.md),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md, vertical: AppSpacing.sm),
+            decoration: BoxDecoration(
+              color: AppColors.brand.withValues(alpha: 0.06),
+              borderRadius: BorderRadius.circular(14),
+              border: Border.all(color: AppColors.brand.withValues(alpha: 0.14)),
+            ),
+            child: Column(
+              children: [
+                Text(
+                  debugStatus,
+                  textAlign: TextAlign.center,
+                  style: Theme.of(context).textTheme.labelLarge?.copyWith(
+                        fontWeight: FontWeight.w800,
+                        color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.75),
+                      ),
+                ),
+                const SizedBox(height: 6),
+                Text(
+                  'AuthState: $authStateLabel',
+                  style: Theme.of(context).textTheme.labelMedium?.copyWith(
+                        color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.55),
+                      ),
+                ),
+              ],
+            ),
+          ),
+        ],
       ],
     );
   }

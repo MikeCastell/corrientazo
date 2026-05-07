@@ -36,7 +36,8 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
             password: _password.text,
           );
       if (!mounted) return;
-      context.go(const HomeRoute().location);
+      // Role-based redirect will take the user to the right shell.
+      context.go(const SplashRoute().location);
     } catch (e) {
       setState(() => _error = e.toString());
     } finally {
