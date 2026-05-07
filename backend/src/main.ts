@@ -1,5 +1,7 @@
 import "reflect-metadata";
 
+import "dotenv/config";
+
 import cookieParser from "cookie-parser";
 import helmet from "helmet";
 import { ValidationPipe } from "@nestjs/common";
@@ -30,8 +32,17 @@ async function bootstrap() {
   app.useGlobalInterceptors(new CorrelationIdInterceptor());
   app.useGlobalFilters(new HttpExceptionFilter());
 
-  await app.listen(process.env.PORT ? Number(process.env.PORT) : 3000);
+  app.enableShutdownHooks();
+
+  const port = process.env.PORT ? Number(process.env.PORT) : 3000;
+  await app.listen(port, "0.0.0.0");
+  // eslint-disable-next-line no-console
+  console.log(`[api] listening on 0.0.0.0:${port}`);
 }
 
-void bootstrap();
+bootstrap().catch((err) => {
+  // eslint-disable-next-line no-console
+  console.error("[api] bootstrap failed", err);
+  process.exit(1);
+});
 

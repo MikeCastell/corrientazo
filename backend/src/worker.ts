@@ -1,8 +1,10 @@
 import "reflect-metadata";
 
+import "dotenv/config";
+
 import { NestFactory } from "@nestjs/core";
 
-import { QueuesModule } from "./queues/queues.module";
+import { WorkerModule } from "./worker.module";
 
 /**
  * Worker bootstrap:
@@ -10,7 +12,7 @@ import { QueuesModule } from "./queues/queues.module";
  * - No expone HTTP.
  */
 async function bootstrapWorker() {
-  await NestFactory.createApplicationContext(QueuesModule, {
+  await NestFactory.createApplicationContext(WorkerModule, {
     logger: ["log", "error", "warn"],
   });
 }
