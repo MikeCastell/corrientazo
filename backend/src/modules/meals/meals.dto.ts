@@ -90,6 +90,12 @@ export class PublishMealDto {
   @IsOptional()
   @IsString()
   deliveryZoneId?: string;
+
+  @ApiPropertyOptional({ example: "PAUSED", enum: ["PUBLISHED", "PAUSED"] })
+  @IsOptional()
+  @IsString()
+  @IsIn(["PUBLISHED", "PAUSED"])
+  status?: string;
 }
 
 export class UpdateMealPublicationDto {

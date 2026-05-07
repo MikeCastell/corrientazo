@@ -214,7 +214,7 @@ export class MealsService {
         pickup_to: new Date(dto.pickupTo),
         delivery_enabled: dto.deliveryEnabled ?? false,
         delivery_zone_id: dto.deliveryZoneId ?? null,
-        status: "PUBLISHED",
+        status: dto.status ?? "PUBLISHED",
       },
       select: {
         id: true,
@@ -223,6 +223,7 @@ export class MealsService {
         price_cop: true,
         stock_total: true,
         stock_available: true,
+        status: true,
         created_at: true,
       },
     });

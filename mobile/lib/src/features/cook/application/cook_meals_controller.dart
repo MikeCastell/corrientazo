@@ -28,6 +28,7 @@ class CookMealsController extends AsyncNotifier<List<CookMeal>> {
     final availableTo = now.add(const Duration(hours: 4));
     final pickupFrom = now.add(const Duration(minutes: 20));
     final pickupTo = now.add(const Duration(hours: 4));
+    final desiredPubStatus = wantsPublish ? 'PUBLISHED' : 'PAUSED';
 
     if (meal.id.startsWith('m_')) {
       final created = await repo.create(
@@ -37,7 +38,7 @@ class CookMealsController extends AsyncNotifier<List<CookMeal>> {
         tags: meal.ingredients,
         photoUrl: null,
       );
-      if (wantsPublish && meal.stock > 0) {
+      if (meal.stock > 0) {
         await repo.publish(
           created.id,
           priceCop: meal.priceCop,
@@ -48,6 +49,7 @@ class CookMealsController extends AsyncNotifier<List<CookMeal>> {
           pickupTo: pickupTo,
           deliveryEnabled: false,
           deliveryZoneId: null,
+          status: desiredPubStatus,
         );
       }
       await refresh();
@@ -62,18 +64,29 @@ class CookMealsController extends AsyncNotifier<List<CookMeal>> {
       tags: meal.ingredients,
       photoUrl: null,
     );
-    if (wantsPublish && meal.stock > 0) {
-      await repo.publish(
-        meal.id,
-        priceCop: meal.priceCop,
-        stockTotal: meal.stock,
-        availableFrom: availableFrom,
-        availableTo: availableTo,
-        pickupFrom: pickupFrom,
-        pickupTo: pickupTo,
-        deliveryEnabled: false,
-        deliveryZoneId: null,
-      );
+    if (meal.stock > 0) {
+      if (meal.publicationId != null) {
+        await repo.updatePublication(
+          meal.publicationId!,
+          status: desiredPubStatus,
+          priceCop: meal.priceCop,
+          stockTotal: meal.stock,
+          stockAvailable: meal.stock,
+        );
+      } else {
+        await repo.publish(
+          meal.id,
+          priceCop: meal.priceCop,
+          stockTotal: meal.stock,
+          availableFrom: availableFrom,
+          availableTo: availableTo,
+          pickupFrom: pickupFrom,
+          pickupTo: pickupTo,
+          deliveryEnabled: false,
+          deliveryZoneId: null,
+          status: desiredPubStatus,
+        );
+      }
     }
     await refresh();
   }
@@ -88,12 +101,23 @@ class CookMealsController extends AsyncNotifier<List<CookMeal>> {
     final pubId = found.publicationId;
     if (pubId == null) return;
 
+    // Optimistic UI update so the cook sees it instantly.
+    final optimistic = [
+      for (final m in current)
+        if (m.id == id) m.copyWith(status: status) else m,
+    ];
+    state = AsyncData(optimistic);
+
     final repo = ref.read(cookMealsRepositoryProvider);
     final nextStatus = status == CookMealStatus.available
         ? 'PUBLISHED'
         : 'PAUSED';
-    await repo.updatePublication(pubId, status: nextStatus);
-    await refresh();
+    try {
+      await repo.updatePublication(pubId, status: nextStatus);
+    } finally {
+      // Always reconcile from server after.
+      await refresh();
+    }
   }
 
   Future<void> deleteMeal(String id) async {

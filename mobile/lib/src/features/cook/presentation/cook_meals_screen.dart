@@ -68,12 +68,58 @@ class CookMealsScreen extends ConsumerWidget {
 
                   if (action == _CookMealAction.toggleActive) {
                     HapticFeedback.selectionClick();
+                    if (items[i].publicationId == null) {
+                      if (!context.mounted) return;
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text(
+                            'Este plato aún no está publicado. Entra a Editar y publícalo para poder activarlo/pausarlo.',
+                          ),
+                          behavior: SnackBarBehavior.floating,
+                        ),
+                      );
+                      return;
+                    }
+
+                    // Immediate feedback so we know the tap reached this handler.
+                    if (!context.mounted) return;
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text(
+                          'Cambiando estado… (pub: ${items[i].publicationId})',
+                        ),
+                        behavior: SnackBarBehavior.floating,
+                        duration: const Duration(milliseconds: 900),
+                      ),
+                    );
+
                     final next = items[i].status == CookMealStatus.available
                         ? CookMealStatus.paused
                         : CookMealStatus.available;
-                    await ref
-                        .read(cookMealsControllerProvider.notifier)
-                        .setStatus(items[i].id, next);
+                    try {
+                      await ref
+                          .read(cookMealsControllerProvider.notifier)
+                          .setStatus(items[i].id, next);
+                      if (!context.mounted) return;
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: Text(
+                            next == CookMealStatus.paused
+                                ? 'Plato pausado'
+                                : 'Plato activado',
+                          ),
+                          behavior: SnackBarBehavior.floating,
+                        ),
+                      );
+                    } catch (e) {
+                      if (!context.mounted) return;
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: Text('No pudimos cambiar el estado. ($e)'),
+                          behavior: SnackBarBehavior.floating,
+                        ),
+                      );
+                    }
                     return;
                   }
 

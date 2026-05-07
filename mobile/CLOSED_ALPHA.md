@@ -53,6 +53,15 @@ Ese script:
 - Construye el APK release apuntando a tu IP (para teléfono real)
 - Te deja el APK listo para compartir
 
+---
+
+## Dev rápido (emulador)
+Si estás desarrollando en el emulador y no quieres repetir comandos al reiniciar el PC:
+- Abre el emulador
+- Doble clic en `mobile/tools/dev/dev_emulator_start.bat`
+
+Eso levanta backend (Docker) y corre `flutter run` con `API_BASE_URL=http://10.0.2.2:3000`.
+
 ### Cómo construir el APK Release (para compartir)
 Desde `E:/CORRIENTAZO/mobile`:
 

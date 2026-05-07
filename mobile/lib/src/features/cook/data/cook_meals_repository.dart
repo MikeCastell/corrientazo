@@ -77,6 +77,7 @@ class CookMealsRepository {
     required DateTime pickupTo,
     bool deliveryEnabled = false,
     String? deliveryZoneId,
+    String? status,
   }) {
     return _api.postJson<CookMealPublicationDto>(
       '/meals/$mealId/publish',
@@ -89,6 +90,7 @@ class CookMealsRepository {
         'pickupTo': pickupTo.toUtc().toIso8601String(),
         'deliveryEnabled': deliveryEnabled,
         'deliveryZoneId': deliveryZoneId,
+        'status': status,
       },
       decode: (json) =>
           CookMealPublicationDto.fromJson(json as Map<String, dynamic>),
