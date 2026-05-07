@@ -1,6 +1,9 @@
 sealed class ApiException implements Exception {
   const ApiException(this.message);
   final String message;
+
+  @override
+  String toString() => message;
 }
 
 class NetworkException extends ApiException {
@@ -12,11 +15,8 @@ class UnauthorizedException extends ApiException {
 }
 
 class ApiErrorResponseException extends ApiException {
-  const ApiErrorResponseException({
-    required this.code,
-    required String message,
-  }) : super(message);
+  const ApiErrorResponseException({required this.code, required String message})
+    : super(message);
 
   final String code;
 }
-

@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 
 import '../application/auth_controller.dart';
 import '../../../core/routing/app_router.dart';
+import '../../../core/networking/api_exception.dart';
 
 class RegisterScreen extends ConsumerStatefulWidget {
   const RegisterScreen({super.key});
@@ -34,7 +35,9 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
       _error = null;
     });
     try {
-      await ref.read(authControllerProvider.notifier).register(
+      await ref
+          .read(authControllerProvider.notifier)
+          .register(
             phone: _phone.text.trim(),
             password: _password.text,
             name: _name.text.trim(),
@@ -44,7 +47,17 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
       // Role-based redirect will take the user to the right shell.
       context.go(const SplashRoute().location);
     } catch (e) {
-      setState(() => _error = e.toString());
+      String msg;
+      if (e is ApiErrorResponseException) {
+        msg = '${e.message} (${e.code})';
+      } else if (e is NetworkException) {
+        msg = 'No pudimos conectar con el servidor. ${e.message}';
+      } else if (e is ApiException) {
+        msg = e.message;
+      } else {
+        msg = 'Ocurrió un error inesperado. Intenta de nuevo.';
+      }
+      setState(() => _error = msg);
     } finally {
       if (mounted) setState(() => _loading = false);
     }
@@ -83,7 +96,9 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                   DropdownMenuItem(value: 'CUSTOMER', child: Text('Cliente')),
                   DropdownMenuItem(value: 'COOK', child: Text('Cocinero')),
                 ],
-                onChanged: _loading ? null : (v) => setState(() => _role = v ?? 'CUSTOMER'),
+                onChanged: _loading
+                    ? null
+                    : (v) => setState(() => _role = v ?? 'CUSTOMER'),
               ),
               const SizedBox(height: 16),
               if (_error != null)
@@ -108,4 +123,3 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
     );
   }
 }
-
