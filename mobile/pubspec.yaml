@@ -44,6 +44,7 @@ dependencies:
   collection: ^1.19.1
   shimmer: ^3.0.0
   image_picker: ^1.1.2
+  flutter_local_notifications: ^19.4.0
 
 dev_dependencies:
   flutter_test:

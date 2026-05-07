@@ -15,6 +15,8 @@ import '../../../core/ui/marketplace/food_image.dart';
 import '../../../core/ui/marketplace/meal_card_premium.dart';
 import '../application/meals_controller.dart';
 import '../domain/meal_publication.dart';
+import '../../customer/application/customer_orders_controller.dart';
+import '../../orders/domain/order_summary.dart';
 
 class HomeMealsScreen extends ConsumerWidget {
   const HomeMealsScreen({super.key});
@@ -22,6 +24,7 @@ class HomeMealsScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final feed = ref.watch(mealsFeedProvider);
+    final orders = ref.watch(customerOrdersControllerProvider);
 
     return AppScaffold(
       title: 'Disponible hoy',
@@ -42,6 +45,24 @@ class HomeMealsScreen extends ConsumerWidget {
                 child: _FeedHeader(
                   onLogout: () =>
                       ref.read(authControllerProvider.notifier).logout(),
+                ),
+              ),
+              SliverToBoxAdapter(
+                child: orders.maybeWhen(
+                  data: (s) {
+                    if (s.active.isEmpty) return const SizedBox.shrink();
+                    final o = s.active.first;
+                    return Padding(
+                      padding: const EdgeInsets.fromLTRB(
+                        AppSpacing.md,
+                        0,
+                        AppSpacing.md,
+                        AppSpacing.sm,
+                      ),
+                      child: _ActiveOrderBanner(order: o),
+                    );
+                  },
+                  orElse: () => const SizedBox.shrink(),
                 ),
               ),
               const SliverToBoxAdapter(child: _VisualCategories()),
@@ -91,6 +112,146 @@ class HomeMealsScreen extends ConsumerWidget {
       ),
     );
   }
+}
+
+class _ActiveOrderBanner extends ConsumerWidget {
+  const _ActiveOrderBanner({required this.order});
+
+  final OrderSummary order;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final status = order.status.toUpperCase();
+    final eta = _pseudoEtaLabel(order.createdAt, status);
+
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final narrow = constraints.maxWidth < 360;
+        final onOpen = () =>
+            context.push(CustomerOrderDetailRoute(order.id).location);
+
+        final leading = Container(
+          width: 46,
+          height: 46,
+          decoration: BoxDecoration(
+            color: AppColors.brand.withValues(alpha: 0.10),
+            borderRadius: BorderRadius.circular(AppRadius.md),
+            border: Border.all(
+              color: AppColors.brand.withValues(alpha: 0.18),
+            ),
+          ),
+          child: const Icon(Icons.receipt_long, color: AppColors.brand),
+        );
+
+        final textBlock = Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Pedido activo',
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                    fontWeight: FontWeight.w900,
+                  ),
+            ),
+            const SizedBox(height: 2),
+            Text(
+              '${_labelForStatus(status)} · ETA $eta',
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                    color: Theme.of(context)
+                        .colorScheme
+                        .onSurface
+                        .withValues(alpha: 0.70),
+                    fontWeight: FontWeight.w700,
+                  ),
+            ),
+          ],
+        );
+
+        return InkWell(
+          borderRadius: BorderRadius.circular(AppRadius.xl),
+          onTap: onOpen,
+          child: Container(
+            padding: const EdgeInsets.all(AppSpacing.md),
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: [
+                  AppColors.brand.withValues(alpha: 0.16),
+                  AppColors.primary.withValues(alpha: 0.10),
+                  Theme.of(context).colorScheme.surface,
+                ],
+              ),
+              borderRadius: BorderRadius.circular(AppRadius.xl),
+              border: Border.all(color: Theme.of(context).dividerColor),
+            ),
+            child: narrow
+                ? Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      Row(
+                        children: [
+                          leading,
+                          const SizedBox(width: AppSpacing.sm),
+                          Expanded(child: textBlock),
+                        ],
+                      ),
+                      const SizedBox(height: AppSpacing.sm),
+                      FilledButton.tonal(
+                        onPressed: onOpen,
+                        child: const Text('Ver pedido'),
+                      ),
+                    ],
+                  )
+                : Row(
+                    children: [
+                      leading,
+                      const SizedBox(width: AppSpacing.sm),
+                      Expanded(child: textBlock),
+                      FilledButton.tonal(
+                        onPressed: onOpen,
+                        child: const Text('Ver pedido'),
+                      ),
+                    ],
+                  ),
+          ),
+        );
+      },
+    );
+  }
+}
+
+String _labelForStatus(String s) {
+  switch (s) {
+    case 'INIT':
+      return 'Nuevo';
+    case 'CONFIRMED':
+      return 'Confirmado';
+    case 'PREPARING':
+      return 'Preparando';
+    case 'READY_FOR_PICKUP':
+      return 'Listo';
+    case 'DELIVERED':
+    case 'PICKED_UP':
+      return 'Entregado';
+    default:
+      return s;
+  }
+}
+
+String _pseudoEtaLabel(DateTime createdAt, String status) {
+  final mins = DateTime.now().difference(createdAt).inMinutes.abs();
+  if (status == 'READY_FOR_PICKUP' ||
+      status == 'PICKED_UP' ||
+      status == 'DELIVERED') {
+    return 'Listo';
+  }
+  final low = 15 + (mins % 8);
+  final high = low + 12;
+  return '$low–$high min';
 }
 
 class _FeedHeader extends StatelessWidget {

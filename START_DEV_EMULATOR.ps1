@@ -46,6 +46,30 @@ function Get-LanIPv4() {
   return $null
 }
 
+function Get-FlutterAndroidEmulatorIds {
+  param([string]$MobileRoot)
+  Push-Location $MobileRoot
+  $raw = & flutter devices --machine 2>$null
+  $exitCode = $LASTEXITCODE
+  Pop-Location
+  if ($exitCode -ne 0 -or [string]::IsNullOrWhiteSpace($raw)) {
+    return @()
+  }
+  try {
+    $devices = @($raw | ConvertFrom-Json)
+    $list = [System.Collections.Generic.List[string]]::new()
+    foreach ($d in $devices) {
+      $id = [string]$d.id
+      if ($id -match '^emulator-\d+$') {
+        $list.Add($id)
+      }
+    }
+    return ,@($list)
+  } catch {
+    return @()
+  }
+}
+
 $workspaceRoot = (Resolve-Path $PSScriptRoot).Path
 $mobileRoot = Join-Path $workspaceRoot "mobile"
 $composeFile = Join-Path $workspaceRoot "backend\docker-compose.yml"
@@ -120,11 +144,55 @@ Pop-Location
 
 if ($Target -eq "emulator") {
   Title "2) Flutter (emulador)"
-  Write-Host "Si tu emulador NO es emulator-5554, cambia el -d en este script."
   Write-Host "Nota: Impeller no soporta render por software. No usamos --enable-software-rendering."
-  Push-Location $mobileRoot
-  flutter run -d emulator-5554 --dart-define=API_BASE_URL=http://10.0.2.2:3000 --dart-define=STARTUP_DEBUG=true
-  Pop-Location
+  Write-Host ""
+
+  $emuIds = Get-FlutterAndroidEmulatorIds $mobileRoot
+  # Separate argv entries — a single string breaks dart-define parsing on some shells.
+  $flutterEmuDefines = @(
+    '--dart-define=API_BASE_URL=http://10.0.2.2:3000',
+    '--dart-define=STARTUP_DEBUG=true'
+  )
+
+  if ($emuIds.Count -eq 0) {
+    Write-Host "No detecté emuladores Android conectados." -ForegroundColor Yellow
+    Write-Host "Abre uno o más AVD (Device Manager) y vuelve a ejecutar este script." -ForegroundColor Yellow
+    Write-Host ""
+    Push-Location $mobileRoot
+    flutter devices | Out-Host
+    Pop-Location
+    Write-Host ""
+    Write-Host "Intentando flutter run sin -d (elige dispositivo si hay varios)..."
+    Push-Location $mobileRoot
+    & flutter run @flutterEmuDefines
+    Pop-Location
+  }
+  elseif ($emuIds.Count -ge 2) {
+    Write-Host "Se encontraron $($emuIds.Count) emuladores:" -ForegroundColor Green
+    $emuIds | ForEach-Object { Write-Host "  - $_" }
+    Write-Host ""
+    Write-Host "Abriendo UNA ventana de consola por emulador (customer en uno, cook en el otro)." -ForegroundColor Cyan
+    foreach ($id in $emuIds) {
+      Start-Process -FilePath "powershell.exe" `
+        -WorkingDirectory $mobileRoot `
+        -ArgumentList @(
+          "-NoExit",
+          "-NoProfile",
+          "-ExecutionPolicy", "Bypass",
+          "-Command",
+          "`$Host.UI.RawUI.WindowTitle = 'CORRIENTAZO Flutter - $id'; & flutter run -d '$id' @('--dart-define=API_BASE_URL=http://10.0.2.2:3000','--dart-define=STARTUP_DEBUG=true')"
+        )
+    }
+    Write-Host ""
+    Write-Host "Listo: revisa las ventanas nuevas. Cada una tiene su propio 'r' / 'R' para hot reload." -ForegroundColor Green
+  }
+  else {
+    $only = $emuIds[0]
+    Write-Host "Un emulador conectado: $only" -ForegroundColor Green
+    Push-Location $mobileRoot
+    & flutter run -d $only @flutterEmuDefines
+    Pop-Location
+  }
 } else {
   Title "2) Flutter (celular)"
   $api = $null
@@ -141,7 +209,7 @@ if ($Target -eq "emulator") {
   Write-Host ""
   Write-Host "Si tu celular aparece arriba, este comando lo corre con API_BASE_URL=$api"
   Write-Host ""
-  flutter run --dart-define=API_BASE_URL=$api --dart-define=STARTUP_DEBUG=true
+  & flutter run @("--dart-define=API_BASE_URL=$api", '--dart-define=STARTUP_DEBUG=true')
   Pop-Location
 }
 

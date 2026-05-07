@@ -11,7 +11,7 @@ set SCRIPT_DIR=%~dp0
 
 echo.
 echo === CORRIENTAZO - Modo de ejecucion ===
-echo 1) Emulador (rapido)
+echo 1) Emulador (si hay 2+ AVD abiertos, abre 1 ventana Flutter por emulador)
 echo 2) Celular (misma red WiFi)
 echo.
 choice /C 12 /N /M "Elige 1 o 2: "
