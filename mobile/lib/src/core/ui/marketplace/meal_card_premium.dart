@@ -23,6 +23,7 @@ class MealCardPremium extends StatefulWidget {
     this.photoUrl,
     this.cookName,
     this.cookAvatarUrl,
+    this.cookBio,
     required this.onTap,
   });
 
@@ -34,6 +35,7 @@ class MealCardPremium extends StatefulWidget {
   final String? photoUrl;
   final String? cookName;
   final String? cookAvatarUrl;
+  final String? cookBio;
   final VoidCallback onTap;
 
   @override
@@ -201,6 +203,19 @@ class _MealCardPremiumState extends State<MealCardPremium> {
                           _PricePill(priceCop: widget.priceCop),
                         ],
                       ),
+                      if ((widget.cookBio ?? '').trim().isNotEmpty) ...[
+                        const SizedBox(height: 8),
+                        Text(
+                          (widget.cookBio ?? '').trim(),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: Theme.of(context).textTheme.labelLarge
+                              ?.copyWith(
+                                color: Colors.white.withValues(alpha: 0.72),
+                                fontWeight: FontWeight.w700,
+                              ),
+                        ),
+                      ],
                     ],
                   ),
                 ),

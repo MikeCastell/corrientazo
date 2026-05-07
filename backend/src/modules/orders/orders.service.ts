@@ -27,6 +27,7 @@ export class OrdersService {
           stock_available: true,
           available_from: true,
           available_to: true,
+          status: true,
         },
       });
       if (!pub) {
@@ -45,14 +46,39 @@ export class OrdersService {
           statusCode: 409,
         });
       }
+      if (pub.status !== "PUBLISHED") {
+        throw new DomainError({
+          code: ErrorCodes.ORDER_INVALID_STATE_TRANSITION,
+          message: "Publication not published",
+          statusCode: 409,
+        });
+      }
 
-      // Reserva stock atómica (evita sobreventa) con updateMany condicional.
-      const dec = await tx.meal_publications.updateMany({
-        where: { id: publicationId, stock_available: { gte: qty } },
-        data: { stock_available: { decrement: qty } },
-      });
-      if (dec.count !== 1) {
+      // Reserva stock atómica (evita sobreventa) con UPDATE ... WHERE ... RETURNING.
+      // Esto también bloquea la fila de la publicación en Postgres.
+      const rows = await tx.$queryRaw<
+        Array<{ stock_available: number }>
+      >(Prisma.sql`
+        UPDATE meal_publications
+        SET stock_available = stock_available - ${qty},
+            updated_at = NOW()
+        WHERE id = ${publicationId}
+          AND stock_available >= ${qty}
+          AND status = 'PUBLISHED'
+        RETURNING stock_available
+      `);
+
+      if (rows.length !== 1) {
         throw new SoldOutError({ publicationId, qty });
+      }
+
+      const remaining = rows[0]!.stock_available;
+      if (remaining <= 0) {
+        await tx.meal_publications.update({
+          where: { id: publicationId },
+          data: { status: "SOLD_OUT" },
+          select: { id: true },
+        });
       }
 
       const subtotal = pub.price_cop * qty;

@@ -38,6 +38,12 @@ export class CookService {
         data: { name: dto.businessName },
       });
     }
+    if (dto.avatarUrl !== undefined) {
+      await this.prisma.users.update({
+        where: { id: userId },
+        data: { avatar_url: dto.avatarUrl },
+      });
+    }
 
     return this.prisma.cook_profiles.update({
       where: { id: cook.id },

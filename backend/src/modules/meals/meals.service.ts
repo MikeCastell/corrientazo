@@ -17,7 +17,7 @@ export class MealsService {
   async listPublished() {
     // Foundation: lista simple de publicaciones disponibles (sin geo ni ranking)
     const now = new Date();
-    return this.prisma.meal_publications.findMany({
+    const rows = await this.prisma.meal_publications.findMany({
       where: {
         available_from: { lte: now },
         available_to: { gte: now },
@@ -46,11 +46,30 @@ export class MealsService {
         },
         cook_profile: {
           select: {
+            bio: true,
             user: { select: { name: true, avatar_url: true } },
           },
         },
       },
     });
+
+    // Flatten enriched fields for the mobile app.
+    return rows.map((r) => ({
+      id: r.id,
+      meal_id: r.meal_id,
+      cook_profile_id: r.cook_profile_id,
+      price_cop: r.price_cop,
+      stock_available: r.stock_available,
+      available_from: r.available_from,
+      available_to: r.available_to,
+      pickup_from: r.pickup_from,
+      pickup_to: r.pickup_to,
+      title: r.title_override ?? r.meal?.title ?? null,
+      photo_url: r.photo_url ?? r.meal?.photo_url ?? null,
+      cook_name: r.cook_profile?.user?.name ?? null,
+      cook_avatar_url: r.cook_profile?.user?.avatar_url ?? null,
+      cook_bio: r.cook_profile?.bio ?? null,
+    }));
   }
 
   async listCookMeals(cookUserId: string) {

@@ -18,6 +18,7 @@ class MealPublication {
     required this.photoUrl,
     required this.cookName,
     required this.cookAvatarUrl,
+    required this.cookBio,
   });
 
   final String id;
@@ -35,6 +36,7 @@ class MealPublication {
   final String? photoUrl;
   final String? cookName;
   final String? cookAvatarUrl;
+  final String? cookBio;
 
   factory MealPublication.fromJson(Map<String, dynamic> json) =>
       _$MealPublicationFromJson(json);

@@ -7,6 +7,11 @@ export class UpdateCookProfileDto {
   @IsString()
   businessName?: string;
 
+  @ApiPropertyOptional({ example: "http://localhost:3000/uploads/<file>.jpg" })
+  @IsOptional()
+  @IsString()
+  avatarUrl?: string;
+
   @ApiPropertyOptional({ example: "Corrientazos caseros, porción generosa, sazón de barrio." })
   @IsOptional()
   @IsString()

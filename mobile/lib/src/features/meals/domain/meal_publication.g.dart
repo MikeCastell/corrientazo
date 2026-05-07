@@ -21,6 +21,7 @@ MealPublication _$MealPublicationFromJson(Map<String, dynamic> json) =>
       photoUrl: json['photo_url'] as String?,
       cookName: json['cook_name'] as String?,
       cookAvatarUrl: json['cook_avatar_url'] as String?,
+      cookBio: json['cook_bio'] as String?,
     );
 
 Map<String, dynamic> _$MealPublicationToJson(MealPublication instance) =>
@@ -38,4 +39,5 @@ Map<String, dynamic> _$MealPublicationToJson(MealPublication instance) =>
       'photo_url': instance.photoUrl,
       'cook_name': instance.cookName,
       'cook_avatar_url': instance.cookAvatarUrl,
+      'cook_bio': instance.cookBio,
     };
