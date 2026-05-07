@@ -14,6 +14,8 @@ class CorrientazoApp extends ConsumerWidget {
     return MaterialApp.router(
       title: 'CORRIENTAZO',
       theme: AppTheme.light(),
+      darkTheme: AppTheme.dark(),
+      themeMode: ThemeMode.system,
       routerConfig: router,
       debugShowCheckedModeBanner: false,
     );

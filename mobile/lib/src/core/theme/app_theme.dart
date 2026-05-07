@@ -1,26 +1,79 @@
 import 'package:flutter/material.dart';
 
+import '../design/tokens/app_colors.dart';
+import '../design/tokens/app_radius.dart';
+import '../design/tokens/app_typography.dart';
+
 class AppTheme {
   static ThemeData light() {
-    const brand = Color(0xFF0F766E);
-    const bg = Color(0xFFF6F7FB);
-
     final colorScheme = ColorScheme.fromSeed(
-      seedColor: brand,
+      seedColor: AppColors.brand,
       brightness: Brightness.light,
-      surface: Colors.white,
+      surface: AppColors.surface,
     );
 
-    final textTheme = Typography.material2021().black.apply(
-          bodyColor: const Color(0xFF0F172A),
-          displayColor: const Color(0xFF0F172A),
-        );
+    final textTheme = AppTypography.textTheme(Brightness.light);
 
     return ThemeData(
       useMaterial3: true,
       colorScheme: colorScheme,
-      scaffoldBackgroundColor: bg,
+      scaffoldBackgroundColor: AppColors.bg,
       textTheme: textTheme,
+      appBarTheme: const AppBarTheme(
+        centerTitle: false,
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        scrolledUnderElevation: 0,
+      ),
+      dividerColor: AppColors.border,
+      inputDecorationTheme: InputDecorationTheme(
+        filled: true,
+        fillColor: AppColors.surface,
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(AppRadius.md),
+          borderSide: const BorderSide(color: AppColors.border),
+        ),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(AppRadius.md),
+          borderSide: const BorderSide(color: AppColors.border),
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(AppRadius.md),
+          borderSide: const BorderSide(color: AppColors.brand, width: 2),
+        ),
+      ),
+      filledButtonTheme: FilledButtonThemeData(
+        style: FilledButton.styleFrom(
+          minimumSize: const Size.fromHeight(52),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(AppRadius.md),
+          ),
+        ),
+      ),
+      cardTheme: CardThemeData(
+        elevation: 0,
+        color: AppColors.surface,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(AppRadius.md),
+          side: const BorderSide(color: AppColors.border),
+        ),
+      ),
+    );
+  }
+
+  static ThemeData dark() {
+    final colorScheme = ColorScheme.fromSeed(
+      seedColor: AppColors.brand,
+      brightness: Brightness.dark,
+      surface: AppColors.surfaceDark,
+    );
+
+    return ThemeData(
+      useMaterial3: true,
+      colorScheme: colorScheme,
+      scaffoldBackgroundColor: AppColors.bgDark,
+      textTheme: AppTypography.textTheme(Brightness.dark),
+      dividerColor: AppColors.borderDark,
       appBarTheme: const AppBarTheme(
         centerTitle: false,
         backgroundColor: Colors.transparent,
@@ -29,18 +82,26 @@ class AppTheme {
       ),
       inputDecorationTheme: InputDecorationTheme(
         filled: true,
-        fillColor: Colors.white,
+        fillColor: AppColors.surfaceDark,
         border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(14),
-          borderSide: const BorderSide(color: Color(0xFFE6EAF2)),
+          borderRadius: BorderRadius.circular(AppRadius.md),
+          borderSide: const BorderSide(color: AppColors.borderDark),
         ),
         enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(14),
-          borderSide: const BorderSide(color: Color(0xFFE6EAF2)),
+          borderRadius: BorderRadius.circular(AppRadius.md),
+          borderSide: const BorderSide(color: AppColors.borderDark),
         ),
         focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(14),
-          borderSide: const BorderSide(color: brand, width: 2),
+          borderRadius: BorderRadius.circular(AppRadius.md),
+          borderSide: const BorderSide(color: AppColors.brand, width: 2),
+        ),
+      ),
+      filledButtonTheme: FilledButtonThemeData(
+        style: FilledButton.styleFrom(
+          minimumSize: const Size.fromHeight(52),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(AppRadius.md),
+          ),
         ),
       ),
     );
