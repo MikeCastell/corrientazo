@@ -8,6 +8,7 @@ import '../../../core/design/tokens/app_radius.dart';
 import '../../../core/design/tokens/app_spacing.dart';
 import '../../../core/routing/app_router.dart';
 import '../../../core/ui/app_scaffold.dart';
+import '../../../core/food/colombian_food_mock.dart';
 import '../application/cook_meals_controller.dart';
 import '../domain/cook_meal.dart';
 
@@ -17,7 +18,8 @@ class CookCreateMealScreen extends ConsumerStatefulWidget {
   final String? editMealId;
 
   @override
-  ConsumerState<CookCreateMealScreen> createState() => _CookCreateMealScreenState();
+  ConsumerState<CookCreateMealScreen> createState() =>
+      _CookCreateMealScreenState();
 }
 
 class _CookCreateMealScreenState extends ConsumerState<CookCreateMealScreen> {
@@ -40,10 +42,9 @@ class _CookCreateMealScreenState extends ConsumerState<CookCreateMealScreen> {
   void _hydrateIfEditing() {
     final id = widget.editMealId;
     if (id == null) return;
-    final meals = ref.read(cookMealsControllerProvider).maybeWhen(
-          data: (v) => v,
-          orElse: () => null,
-        );
+    final meals = ref
+        .read(cookMealsControllerProvider)
+        .maybeWhen(data: (v) => v, orElse: () => null);
     final found = meals?.where((m) => m.id == id).firstOrNull;
     if (found == null) return;
 
@@ -73,7 +74,10 @@ class _CookCreateMealScreenState extends ConsumerState<CookCreateMealScreen> {
     final status = stock <= 0 ? CookMealStatus.soldOut : CookMealStatus.paused;
     return CookMeal(
       id: id,
-      title: _title.text.trim().isEmpty ? 'Nuevo corrientazo' : _title.text.trim(),
+      publicationId: null,
+      title: _title.text.trim().isEmpty
+          ? 'Nuevo corrientazo'
+          : _title.text.trim(),
       description: _description.text.trim(),
       priceCop: price <= 0 ? 12000 : price,
       stock: stock < 0 ? 0 : stock,
@@ -91,7 +95,9 @@ class _CookCreateMealScreenState extends ConsumerState<CookCreateMealScreen> {
     try {
       final now = DateTime.now();
       final id = widget.editMealId ?? 'm_${now.millisecondsSinceEpoch}';
-      final existing = ref.read(cookMealsControllerProvider).maybeWhen(
+      final existing = ref
+          .read(cookMealsControllerProvider)
+          .maybeWhen(
             data: (v) => v.where((m) => m.id == id).firstOrNull,
             orElse: () => null,
           );
@@ -100,14 +106,18 @@ class _CookCreateMealScreenState extends ConsumerState<CookCreateMealScreen> {
       var meal = _buildDraft(id: id, createdAt: createdAt);
       if (publish) {
         meal = meal.copyWith(
-          status: meal.stock <= 0 ? CookMealStatus.soldOut : CookMealStatus.available,
+          status: meal.stock <= 0
+              ? CookMealStatus.soldOut
+              : CookMealStatus.available,
         );
       }
 
       await ref.read(cookMealsControllerProvider.notifier).upsert(meal);
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(publish ? 'Comida publicada' : 'Borrador guardado')),
+        SnackBar(
+          content: Text(publish ? 'Comida publicada' : 'Borrador guardado'),
+        ),
       );
       context.go(const CookMealsRoute().location);
     } finally {
@@ -127,6 +137,43 @@ class _CookCreateMealScreenState extends ConsumerState<CookCreateMealScreen> {
       body: ListView(
         padding: const EdgeInsets.all(AppSpacing.md),
         children: [
+          if (widget.editMealId == null) ...[
+            Text(
+              'Plantillas rápidas',
+              style: Theme.of(
+                context,
+              ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w900),
+            ),
+            const SizedBox(height: AppSpacing.xs),
+            Text(
+              'Elige una base colombiana real y ajusta en segundos.',
+              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                color: Theme.of(
+                  context,
+                ).colorScheme.onSurface.withValues(alpha: 0.65),
+              ),
+            ),
+            const SizedBox(height: AppSpacing.sm),
+            Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              children: [
+                _TemplateChip(
+                  label: 'Corrientazo res',
+                  onTap: _saving ? null : () => _applyTemplate('tpl-res'),
+                ),
+                _TemplateChip(
+                  label: 'Ajiaco',
+                  onTap: _saving ? null : () => _applyTemplate('tpl-ajiaco'),
+                ),
+                _TemplateChip(
+                  label: 'Lentejas',
+                  onTap: _saving ? null : () => _applyTemplate('tpl-lentejas'),
+                ),
+              ],
+            ),
+            const SizedBox(height: AppSpacing.md),
+          ],
           _PreviewCard(meal: preview),
           const SizedBox(height: AppSpacing.md),
           TextField(
@@ -177,22 +224,26 @@ class _CookCreateMealScreenState extends ConsumerState<CookCreateMealScreen> {
           const SizedBox(height: AppSpacing.md),
           Text(
             'Ingredientes',
-            style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w900),
+            style: Theme.of(
+              context,
+            ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w900),
           ),
           const SizedBox(height: AppSpacing.xs),
           Wrap(
             spacing: 8,
             runSpacing: 8,
             children: [
-              ..._ingredients.map((x) => _IngredientPill(
-                    label: x,
-                    onRemove: _saving
-                        ? null
-                        : () {
-                            HapticFeedback.selectionClick();
-                            setState(() => _ingredients.remove(x));
-                          },
-                  )),
+              ..._ingredients.map(
+                (x) => _IngredientPill(
+                  label: x,
+                  onRemove: _saving
+                      ? null
+                      : () {
+                          HapticFeedback.selectionClick();
+                          setState(() => _ingredients.remove(x));
+                        },
+                ),
+              ),
               _AddIngredientButton(
                 enabled: !_saving,
                 onAdd: (v) {
@@ -225,10 +276,52 @@ class _CookCreateMealScreenState extends ConsumerState<CookCreateMealScreen> {
             'Sin pagos · Sin realtime · Solo estructura operativa.',
             textAlign: TextAlign.center,
             style: Theme.of(context).textTheme.labelLarge?.copyWith(
-                  color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.55),
-                ),
+              color: Theme.of(
+                context,
+              ).colorScheme.onSurface.withValues(alpha: 0.55),
+            ),
           ),
         ],
+      ),
+    );
+  }
+
+  void _applyTemplate(String seed) {
+    HapticFeedback.selectionClick();
+    final f = ColombianFoodMock.forMeal(seed);
+    _title.text = f.title;
+    _description.text = f.description;
+    _ingredients
+      ..clear()
+      ..addAll(f.ingredients.take(5));
+    setState(() {});
+  }
+}
+
+class _TemplateChip extends StatelessWidget {
+  const _TemplateChip({required this.label, required this.onTap});
+  final String label;
+  final VoidCallback? onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(99),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+        decoration: BoxDecoration(
+          color: AppColors.accent.withValues(alpha: 0.10),
+          borderRadius: BorderRadius.circular(99),
+          border: Border.all(color: AppColors.accent.withValues(alpha: 0.18)),
+        ),
+        child: Text(
+          label,
+          style: Theme.of(context).textTheme.labelLarge?.copyWith(
+            fontWeight: FontWeight.w900,
+            color: AppColors.accentDeep,
+          ),
+        ),
       ),
     );
   }
@@ -276,25 +369,37 @@ class _PreviewCard extends StatelessWidget {
                   meal.title,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: Theme.of(context).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w900),
+                  style: Theme.of(
+                    context,
+                  ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w900),
                 ),
                 const SizedBox(height: 2),
                 Text(
-                  meal.description.isEmpty ? 'Descripción (opcional)' : meal.description,
+                  meal.description.isEmpty
+                      ? 'Descripción (opcional)'
+                      : meal.description,
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
                   style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                        color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.65),
-                      ),
+                    color: Theme.of(
+                      context,
+                    ).colorScheme.onSurface.withValues(alpha: 0.65),
+                  ),
                 ),
                 const SizedBox(height: 8),
                 Row(
                   children: [
                     _Pill(label: '\$${meal.priceCop}', tone: AppColors.primary),
                     const SizedBox(width: 8),
-                    _Pill(label: 'Stock ${meal.stock}', tone: AppColors.secondary),
+                    _Pill(
+                      label: 'Stock ${meal.stock}',
+                      tone: AppColors.secondary,
+                    ),
                     const SizedBox(width: 8),
-                    _Pill(label: meal.fulfillmentType, tone: AppColors.accentDeep),
+                    _Pill(
+                      label: meal.fulfillmentType,
+                      tone: AppColors.accentDeep,
+                    ),
                   ],
                 ),
               ],
@@ -323,9 +428,9 @@ class _Pill extends StatelessWidget {
       child: Text(
         label,
         style: Theme.of(context).textTheme.labelLarge?.copyWith(
-              fontWeight: FontWeight.w900,
-              color: tone,
-            ),
+          fontWeight: FontWeight.w900,
+          color: tone,
+        ),
       ),
     );
   }
@@ -350,7 +455,9 @@ class _FulfillmentSelector extends StatelessWidget {
         children: [
           Text(
             'Tipo de entrega',
-            style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w900),
+            style: Theme.of(
+              context,
+            ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w900),
           ),
           const SizedBox(height: AppSpacing.sm),
           Wrap(
@@ -398,8 +505,12 @@ class _Choice extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final bg = selected ? tone.withValues(alpha: 0.12) : Colors.transparent;
-    final border = selected ? tone.withValues(alpha: 0.18) : Theme.of(context).dividerColor;
-    final color = selected ? tone : Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.70);
+    final border = selected
+        ? tone.withValues(alpha: 0.18)
+        : Theme.of(context).dividerColor;
+    final color = selected
+        ? tone
+        : Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.70);
 
     return InkWell(
       onTap: onTap,
@@ -414,9 +525,9 @@ class _Choice extends StatelessWidget {
         child: Text(
           label,
           style: Theme.of(context).textTheme.labelLarge?.copyWith(
-                fontWeight: FontWeight.w900,
-                color: color,
-              ),
+            fontWeight: FontWeight.w900,
+            color: color,
+          ),
         ),
       ),
     );
@@ -443,9 +554,9 @@ class _IngredientPill extends StatelessWidget {
           Text(
             label,
             style: Theme.of(context).textTheme.labelLarge?.copyWith(
-                  fontWeight: FontWeight.w900,
-                  color: AppColors.secondary,
-                ),
+              fontWeight: FontWeight.w900,
+              color: AppColors.secondary,
+            ),
           ),
           const SizedBox(width: 6),
           InkWell(
@@ -454,7 +565,9 @@ class _IngredientPill extends StatelessWidget {
             child: Icon(
               Icons.close,
               size: 18,
-              color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.55),
+              color: Theme.of(
+                context,
+              ).colorScheme.onSurface.withValues(alpha: 0.55),
             ),
           ),
         ],
@@ -494,9 +607,9 @@ class _AddIngredientButton extends StatelessWidget {
         child: Text(
           '+ Ingrediente',
           style: Theme.of(context).textTheme.labelLarge?.copyWith(
-                fontWeight: FontWeight.w900,
-                color: AppColors.accentDeep,
-              ),
+            fontWeight: FontWeight.w900,
+            color: AppColors.accentDeep,
+          ),
         ),
       ),
     );
@@ -545,4 +658,3 @@ class _AddIngredientDialogState extends State<_AddIngredientDialog> {
 extension<T> on Iterable<T> {
   T? get firstOrNull => isEmpty ? null : first;
 }
-

@@ -17,6 +17,10 @@ MealPublication _$MealPublicationFromJson(Map<String, dynamic> json) =>
       availableTo: DateTime.parse(json['available_to'] as String),
       pickupFrom: DateTime.parse(json['pickup_from'] as String),
       pickupTo: DateTime.parse(json['pickup_to'] as String),
+      title: json['title'] as String?,
+      photoUrl: json['photo_url'] as String?,
+      cookName: json['cook_name'] as String?,
+      cookAvatarUrl: json['cook_avatar_url'] as String?,
     );
 
 Map<String, dynamic> _$MealPublicationToJson(MealPublication instance) =>
@@ -30,4 +34,8 @@ Map<String, dynamic> _$MealPublicationToJson(MealPublication instance) =>
       'available_to': instance.availableTo.toIso8601String(),
       'pickup_from': instance.pickupFrom.toIso8601String(),
       'pickup_to': instance.pickupTo.toIso8601String(),
+      'title': instance.title,
+      'photo_url': instance.photoUrl,
+      'cook_name': instance.cookName,
+      'cook_avatar_url': instance.cookAvatarUrl,
     };

@@ -14,6 +14,10 @@ class MealPublication {
     required this.availableTo,
     required this.pickupFrom,
     required this.pickupTo,
+    required this.title,
+    required this.photoUrl,
+    required this.cookName,
+    required this.cookAvatarUrl,
   });
 
   final String id;
@@ -26,9 +30,14 @@ class MealPublication {
   final DateTime pickupFrom;
   final DateTime pickupTo;
 
+  // Enriched feed fields (may be null depending on backend version)
+  final String? title;
+  final String? photoUrl;
+  final String? cookName;
+  final String? cookAvatarUrl;
+
   factory MealPublication.fromJson(Map<String, dynamic> json) =>
       _$MealPublicationFromJson(json);
 
   Map<String, dynamic> toJson() => _$MealPublicationToJson(this);
 }
-

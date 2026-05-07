@@ -3,10 +3,12 @@ import "reflect-metadata";
 import "dotenv/config";
 
 import cookieParser from "cookie-parser";
+import express from "express";
 import helmet from "helmet";
 import { ValidationPipe } from "@nestjs/common";
 import { NestFactory } from "@nestjs/core";
 import { DocumentBuilder, SwaggerModule } from "@nestjs/swagger";
+import { join } from "path";
 
 import { AppModule } from "./app.module";
 import { HttpExceptionFilter } from "./common/filters/http-exception.filter";
@@ -19,6 +21,9 @@ async function bootstrap() {
 
   app.use(helmet());
   app.use(cookieParser());
+
+  // MVP media: serve uploaded files from disk (no CDN yet).
+  app.use("/uploads", express.static(join(process.cwd(), "uploads")));
 
   app.setGlobalPrefix("api/v1");
 

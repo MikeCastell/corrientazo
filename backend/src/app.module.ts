@@ -8,6 +8,8 @@ import { AuthModule } from "./modules/auth/auth.module";
 import { UsersModule } from "./modules/users/users.module";
 import { MealsModule } from "./modules/meals/meals.module";
 import { OrdersModule } from "./modules/orders/orders.module";
+import { CookModule } from "./modules/cook/cook.module";
+import { MediaModule } from "./modules/media/media.module";
 import { RealtimeModule } from "./realtime/realtime.module";
 import { QueuesModule } from "./queues/queues.module";
 
@@ -25,8 +27,10 @@ import { QueuesModule } from "./queues/queues.module";
     HealthModule,
     AuthModule,
     UsersModule,
+    CookModule,
     MealsModule,
     OrdersModule,
+    MediaModule,
   ],
 })
 export class AppModule {}

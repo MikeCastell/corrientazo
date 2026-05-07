@@ -5,6 +5,9 @@ import { PrismaService } from "../../database/prisma/prisma.service";
 import { SoldOutError, DomainError } from "../../common/errors/domain-errors";
 import { ErrorCodes } from "../../common/errors/error-codes";
 import { CreateOrderDto } from "./orders.dto";
+import { OrderStateMachine } from "../../orders/domain/order-state-machine";
+import { OrderAction } from "../../orders/domain/order-state-machine";
+import { OrderStatus } from "../../orders/domain/order-status";
 
 @Injectable()
 export class OrdersService {
@@ -135,8 +138,11 @@ export class OrdersService {
       });
     }
 
-    // Foundation access rule: solo customer ve su orden (cook se añade luego)
-    if (order.customer_id !== requesterUserId) {
+    // MVP access rule: customer o cook dueño del cook_profile
+    if (order.customer_id === requesterUserId) return order;
+
+    const cookProfileId = await this.getCookProfileIdIfCook(requesterUserId);
+    if (!cookProfileId || order.cook_profile_id !== cookProfileId) {
       throw new DomainError({
         code: ErrorCodes.ORDER_ACCESS_DENIED,
         message: "Access denied",
@@ -145,6 +151,155 @@ export class OrdersService {
     }
 
     return order;
+  }
+
+  async listOrders(requesterUserId: string) {
+    const role = await this.getUserRole(requesterUserId);
+    if (role === "COOK") {
+      const cookProfileId = await this.ensureCookProfile(requesterUserId);
+      return this.prisma.orders.findMany({
+        where: { cook_profile_id: cookProfileId },
+        orderBy: { created_at: "desc" },
+        take: 100,
+        select: {
+          id: true,
+          status: true,
+          created_at: true,
+          total_cop: true,
+          // keep response aligned with current Flutter DTOs (MVP)
+        },
+      });
+    }
+
+    return this.prisma.orders.findMany({
+      where: { customer_id: requesterUserId },
+      orderBy: { created_at: "desc" },
+      take: 100,
+      select: {
+        id: true,
+        status: true,
+        created_at: true,
+        total_cop: true,
+        // keep response aligned with current Flutter DTOs (MVP)
+      },
+    });
+  }
+
+  async updateStatusAsCook(cookUserId: string, orderId: string, action: OrderAction) {
+    const cookProfileId = await this.ensureCookProfile(cookUserId);
+
+    return this.prisma.$transaction(async (tx) => {
+      const order = await tx.orders.findUnique({
+        where: { id: orderId },
+        select: { id: true, status: true, cook_profile_id: true },
+      });
+      if (!order) {
+        throw new DomainError({
+          code: ErrorCodes.ORDER_NOT_FOUND,
+          message: "Order not found",
+          statusCode: 404,
+        });
+      }
+      if (order.cook_profile_id !== cookProfileId) {
+        throw new DomainError({
+          code: ErrorCodes.ORDER_ACCESS_DENIED,
+          message: "Access denied",
+          statusCode: 403,
+        });
+      }
+
+      const from = order.status as OrderStatus;
+      if (!OrderStateMachine.canTransition(from, action)) {
+        throw new DomainError({
+          code: ErrorCodes.ORDER_INVALID_STATE_TRANSITION,
+          message: `Invalid transition: ${from} + ${action}`,
+          statusCode: 409,
+        });
+      }
+      const to = OrderStateMachine.getTransition(from, action);
+
+      const updated = await tx.orders.update({
+        where: { id: orderId },
+        data: {
+          status: to,
+          order_status_events: {
+            create: {
+              from_status: from,
+              to_status: to,
+              actor_user_id: cookUserId,
+              meta_json: { source: "api", action },
+            },
+          },
+        },
+        select: { id: true, status: true, updated_at: true },
+      });
+
+      await tx.domain_event_outbox.create({
+        data: {
+          event_type: "order.status.updated",
+          aggregate_type: "order",
+          aggregate_id: updated.id,
+          payload_json: { orderId: updated.id, from, to, action },
+        },
+      });
+
+      return updated;
+    });
+  }
+
+  private async getUserRole(userId: string) {
+    const user = await this.prisma.users.findUnique({
+      where: { id: userId },
+      select: { role: true, status: true },
+    });
+    if (!user || user.status !== "ACTIVE") {
+      throw new DomainError({
+        code: ErrorCodes.ORDER_ACCESS_DENIED,
+        message: "Access denied",
+        statusCode: 403,
+      });
+    }
+    return user.role;
+  }
+
+  private async getCookProfileIdIfCook(userId: string) {
+    const user = await this.prisma.users.findUnique({
+      where: { id: userId },
+      select: { role: true, status: true },
+    });
+    if (!user || user.status !== "ACTIVE" || user.role !== "COOK") return null;
+    const cook = await this.prisma.cook_profiles.findUnique({
+      where: { user_id: userId },
+      select: { id: true },
+    });
+    return cook?.id ?? null;
+  }
+
+  private async ensureCookProfile(userId: string) {
+    const user = await this.prisma.users.findUnique({
+      where: { id: userId },
+      select: { id: true, role: true, status: true },
+    });
+    if (!user || user.status !== "ACTIVE" || user.role !== "COOK") {
+      throw new DomainError({
+        code: ErrorCodes.ORDER_ACCESS_DENIED,
+        message: "Cook access denied",
+        statusCode: 403,
+      });
+    }
+
+    const cook = await this.prisma.cook_profiles.upsert({
+      where: { user_id: userId },
+      update: {},
+      create: {
+        user_id: userId,
+        is_active: true,
+        pickup_enabled: true,
+        delivery_enabled: false,
+      },
+      select: { id: true },
+    });
+    return cook.id;
   }
 }
 

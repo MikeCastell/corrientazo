@@ -8,20 +8,32 @@ import '../../design/tokens/app_elevation.dart';
 import '../../design/tokens/app_radius.dart';
 import '../../design/tokens/app_spacing.dart';
 import 'cook_trust_chip.dart';
+import 'food_image.dart';
 import 'marketplace_utils.dart';
+import '../../food/colombian_food_mock.dart';
 
 class MealCardPremium extends StatefulWidget {
   const MealCardPremium({
     super.key,
     required this.id,
+    required this.mealId,
     required this.priceCop,
     required this.stockAvailable,
+    this.title,
+    this.photoUrl,
+    this.cookName,
+    this.cookAvatarUrl,
     required this.onTap,
   });
 
   final String id;
+  final String mealId;
   final int priceCop;
   final int stockAvailable;
+  final String? title;
+  final String? photoUrl;
+  final String? cookName;
+  final String? cookAvatarUrl;
   final VoidCallback onTap;
 
   @override
@@ -38,8 +50,15 @@ class _MealCardPremiumState extends State<MealCardPremium> {
     final surface = Theme.of(context).colorScheme.surface;
     final shadowBase = isDark ? Colors.black : const Color(0xFF0F172A);
 
-    final eta = MarketplaceUtils.pseudoEtaMinutes(widget.id);
     final km = MarketplaceUtils.pseudoDistanceKm(widget.id);
+
+    final food = ColombianFoodMock.fromPublished(
+      seed: widget.mealId,
+      title: widget.title,
+      photoUrl: widget.photoUrl,
+      cookName: widget.cookName,
+      cookAvatarUrl: widget.cookAvatarUrl,
+    );
 
     final isSoldOut = widget.stockAvailable <= 0;
 
@@ -55,171 +74,168 @@ class _MealCardPremiumState extends State<MealCardPremium> {
                 widget.onTap();
               },
         onHighlightChanged: (v) => setState(() => _pressed = v),
-        borderRadius: BorderRadius.circular(AppRadius.lg),
+        borderRadius: BorderRadius.circular(AppRadius.xl),
         child: Container(
           decoration: BoxDecoration(
             color: surface,
-            borderRadius: BorderRadius.circular(AppRadius.lg),
+            borderRadius: BorderRadius.circular(AppRadius.xl),
             border: Border.all(color: border),
-            boxShadow: isDark ? null : AppElevation.e1(shadowBase),
+            boxShadow: isDark ? null : AppElevation.e2(shadowBase),
           ),
           clipBehavior: Clip.antiAlias,
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // Hero image (placeholder) — future-ready for real photos.
-              Hero(
-                tag: 'mealHero-${widget.id}',
-                child: AspectRatio(
-                  aspectRatio: 16 / 9,
-                  child: Stack(
-                    fit: StackFit.expand,
+          child: SizedBox(
+            height: 360,
+            child: Stack(
+              fit: StackFit.expand,
+              children: [
+                Hero(
+                  tag: 'mealHero-${widget.id}',
+                  child: FoodImage(
+                    asset: food.imageAsset,
+                    fallbackGradient: food.heroGradient,
+                    fallbackIcon: food.heroIcon,
+                  ),
+                ),
+                // cinematic + warm darkness
+                DecoratedBox(
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      begin: Alignment.topCenter,
+                      end: Alignment.bottomCenter,
+                      colors: [
+                        Colors.black.withValues(alpha: 0.10),
+                        Colors.black.withValues(alpha: 0.18),
+                        const Color(0xFF1A0B06).withValues(alpha: 0.60),
+                        Colors.black.withValues(alpha: 0.86),
+                      ],
+                      stops: const [0.0, 0.35, 0.72, 1.0],
+                    ),
+                  ),
+                ),
+                // highlight flare
+                DecoratedBox(
+                  decoration: BoxDecoration(
+                    gradient: RadialGradient(
+                      center: const Alignment(-0.40, -0.55),
+                      radius: 1.05,
+                      colors: [
+                        Colors.white.withValues(alpha: 0.22),
+                        Colors.transparent,
+                      ],
+                    ),
+                  ),
+                ),
+                Positioned(
+                  left: AppSpacing.md,
+                  right: AppSpacing.md,
+                  top: AppSpacing.md,
+                  child: Row(
                     children: [
-                      Container(
-                        decoration: BoxDecoration(
-                          gradient: LinearGradient(
-                            begin: Alignment.topLeft,
-                            end: Alignment.bottomRight,
-                            colors: [
-                              AppColors.primaryDeep.withValues(alpha: isDark ? 0.62 : 0.18),
-                              AppColors.secondaryDeep.withValues(alpha: isDark ? 0.42 : 0.12),
-                              AppColors.accentDeep.withValues(alpha: isDark ? 0.22 : 0.10),
-                            ],
-                          ),
-                        ),
-                        child: const Center(
-                          child: Icon(Icons.restaurant, size: 44, color: Colors.white),
+                      _Badge(
+                        icon: Icons.local_fire_department_outlined,
+                        label: food.badge,
+                        tone: AppColors.primary,
+                      ),
+                      const Spacer(),
+                      _Badge(
+                        icon: Icons.place_outlined,
+                        label: '${km.toStringAsFixed(1)} km',
+                        tone: AppColors.accent,
+                      ),
+                    ],
+                  ),
+                ),
+                Positioned(
+                  left: AppSpacing.md,
+                  top: 64,
+                  child: _AvailabilityBadge(stock: widget.stockAvailable),
+                ),
+                Positioned(
+                  left: AppSpacing.md,
+                  right: AppSpacing.md,
+                  bottom: AppSpacing.md,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        food.category.toUpperCase(),
+                        style: Theme.of(context).textTheme.labelLarge?.copyWith(
+                          color: Colors.white.withValues(alpha: 0.78),
+                          fontWeight: FontWeight.w900,
+                          letterSpacing: 1.0,
                         ),
                       ),
-                      // cinematic lighting
-                      Container(
-                        decoration: BoxDecoration(
-                          gradient: LinearGradient(
-                            begin: Alignment.topCenter,
-                            end: Alignment.bottomCenter,
-                            colors: [
-                              Colors.black.withValues(alpha: 0.00),
-                              Colors.black.withValues(alpha: 0.30),
-                              Colors.black.withValues(alpha: 0.62),
-                            ],
-                            stops: const [0.0, 0.55, 1.0],
-                          ),
-                        ),
-                      ),
-                      Positioned(
-                        left: AppSpacing.md,
-                        right: AppSpacing.md,
-                        bottom: AppSpacing.md,
-                        child: ClipRRect(
-                          borderRadius: BorderRadius.circular(AppRadius.xl),
-                          child: BackdropFilter(
-                            filter: ImageFilter.blur(sigmaX: 14, sigmaY: 14),
-                            child: CookTrustChip(
-                              cookName: 'Hecho cerca de ti',
-                              isVerified: true,
-                              sanitaryLevelLabel: 'Sanitario (próx)',
+                      const SizedBox(height: 6),
+                      Text(
+                        food.title,
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                        style: Theme.of(context).textTheme.headlineSmall
+                            ?.copyWith(
+                              color: Colors.white,
+                              fontWeight: FontWeight.w900,
+                              letterSpacing: -0.6,
+                              height: 1.05,
                             ),
-                          ),
-                        ),
                       ),
-                      Positioned(
-                        top: AppSpacing.md,
-                        left: AppSpacing.md,
-                        child: _Badge(
-                          icon: Icons.timer_outlined,
-                          label: '$eta min',
-                          tone: AppColors.brand,
-                        ),
-                      ),
-                      Positioned(
-                        top: AppSpacing.md,
-                        right: AppSpacing.md,
-                        child: _Badge(
-                          icon: Icons.place_outlined,
-                          label: '${km.toStringAsFixed(1)} km',
-                          tone: AppColors.accent,
-                        ),
-                      ),
-                      Positioned(
-                        bottom: AppSpacing.md,
-                        right: AppSpacing.md,
-                        child: _AvailabilityBadge(
-                          stock: widget.stockAvailable,
-                        ),
-                      ),
-                      if (isSoldOut)
-                        Positioned.fill(
-                          child: Container(
-                            color: Colors.black.withValues(alpha: 0.58),
-                            child: Center(
-                              child: Container(
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: AppSpacing.lg,
-                                  vertical: AppSpacing.sm,
+                      const SizedBox(height: 10),
+                      Row(
+                        children: [
+                          Expanded(
+                            child: ClipRRect(
+                              borderRadius: BorderRadius.circular(AppRadius.xl),
+                              child: BackdropFilter(
+                                filter: ImageFilter.blur(
+                                  sigmaX: 16,
+                                  sigmaY: 16,
                                 ),
-                                decoration: BoxDecoration(
-                                  color: Colors.white.withValues(alpha: 0.10),
-                                  borderRadius: BorderRadius.circular(AppRadius.xl),
-                                  border: Border.all(color: Colors.white.withValues(alpha: 0.20)),
-                                ),
-                                child: Text(
-                                  'Agotado',
-                                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                                        color: Colors.white,
-                                        fontWeight: FontWeight.w900,
-                                        letterSpacing: -0.2,
-                                      ),
+                                child: CookTrustChip(
+                                  cookName: food.cookName,
+                                  isVerified: true,
+                                  sanitaryLevelLabel: 'Sanitario (próx)',
                                 ),
                               ),
                             ),
                           ),
-                        ),
+                          const SizedBox(width: AppSpacing.sm),
+                          _PricePill(priceCop: widget.priceCop),
+                        ],
+                      ),
                     ],
                   ),
                 ),
-              ),
-              Padding(
-                padding: const EdgeInsets.all(AppSpacing.md),
-                child: Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            'Corrientazo del día',
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                if (isSoldOut)
+                  Positioned.fill(
+                    child: Container(
+                      color: Colors.black.withValues(alpha: 0.62),
+                      child: Center(
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: AppSpacing.lg,
+                            vertical: AppSpacing.sm,
+                          ),
+                          decoration: BoxDecoration(
+                            color: Colors.white.withValues(alpha: 0.10),
+                            borderRadius: BorderRadius.circular(AppRadius.xl),
+                            border: Border.all(
+                              color: Colors.white.withValues(alpha: 0.20),
+                            ),
+                          ),
+                          child: Text(
+                            'Agotado',
+                            style: Theme.of(context).textTheme.titleMedium
+                                ?.copyWith(
+                                  color: Colors.white,
                                   fontWeight: FontWeight.w900,
-                                  letterSpacing: -0.3,
+                                  letterSpacing: -0.2,
                                 ),
                           ),
-                          const SizedBox(height: AppSpacing.xs),
-                          Text(
-                            'Disponible hoy · Cupos limitados',
-                            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                                  color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.65),
-                                ),
-                          ),
-                        ],
+                        ),
                       ),
                     ),
-                    const SizedBox(width: AppSpacing.sm),
-                    _PricePill(priceCop: widget.priceCop),
-                  ],
-                ),
-              ),
-              Padding(
-                padding: const EdgeInsets.fromLTRB(AppSpacing.md, 0, AppSpacing.md, AppSpacing.md),
-                child: Row(
-                  children: const [
-                    _PickupSavingsPill(),
-                  ],
-                ),
-              ),
-            ],
+                  ),
+              ],
+            ),
           ),
         ),
       ),
@@ -234,7 +250,10 @@ class _PricePill extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: AppSpacing.sm, vertical: AppSpacing.xs),
+      padding: const EdgeInsets.symmetric(
+        horizontal: AppSpacing.sm,
+        vertical: AppSpacing.xs,
+      ),
       decoration: BoxDecoration(
         color: AppColors.brand,
         borderRadius: BorderRadius.circular(AppRadius.xl),
@@ -242,40 +261,10 @@ class _PricePill extends StatelessWidget {
       child: Text(
         '\$$priceCop',
         style: Theme.of(context).textTheme.titleMedium?.copyWith(
-              color: Colors.white,
-              fontWeight: FontWeight.w900,
-              letterSpacing: -0.2,
-            ),
-      ),
-    );
-  }
-}
-
-class _PickupSavingsPill extends StatelessWidget {
-  const _PickupSavingsPill();
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: AppSpacing.sm, vertical: AppSpacing.xs),
-      decoration: BoxDecoration(
-        color: AppColors.accent.withValues(alpha: 0.10),
-        borderRadius: BorderRadius.circular(AppRadius.xl),
-        border: Border.all(color: AppColors.accent.withValues(alpha: 0.18)),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          const Icon(Icons.store_mall_directory_outlined, size: 16, color: AppColors.accent),
-          const SizedBox(width: 6),
-          Text(
-            'Ahorra al recoger',
-            style: Theme.of(context).textTheme.labelLarge?.copyWith(
-                  color: AppColors.accent,
-                  fontWeight: FontWeight.w800,
-                ),
-          ),
-        ],
+          color: Colors.white,
+          fontWeight: FontWeight.w900,
+          letterSpacing: -0.2,
+        ),
       ),
     );
   }
@@ -291,8 +280,8 @@ class _AvailabilityBadge extends StatelessWidget {
     final label = stock <= 0
         ? 'Agotado'
         : stock <= 3
-            ? 'Últimos $stock'
-            : 'Disponible';
+        ? 'Últimos $stock'
+        : 'Disponible';
 
     return _Badge(
       icon: stock <= 3 ? Icons.bolt : Icons.check_circle_outline,
@@ -303,11 +292,7 @@ class _AvailabilityBadge extends StatelessWidget {
 }
 
 class _Badge extends StatelessWidget {
-  const _Badge({
-    required this.icon,
-    required this.label,
-    required this.tone,
-  });
+  const _Badge({required this.icon, required this.label, required this.tone});
 
   final IconData icon;
   final String label;
@@ -316,7 +301,10 @@ class _Badge extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: AppSpacing.sm, vertical: 8),
+      padding: const EdgeInsets.symmetric(
+        horizontal: AppSpacing.sm,
+        vertical: 8,
+      ),
       decoration: BoxDecoration(
         color: tone.withValues(alpha: 0.12),
         borderRadius: BorderRadius.circular(AppRadius.xl),
@@ -330,13 +318,12 @@ class _Badge extends StatelessWidget {
           Text(
             label,
             style: Theme.of(context).textTheme.labelLarge?.copyWith(
-                  fontWeight: FontWeight.w900,
-                  color: tone,
-                ),
+              fontWeight: FontWeight.w900,
+              color: tone,
+            ),
           ),
         ],
       ),
     );
   }
 }
-

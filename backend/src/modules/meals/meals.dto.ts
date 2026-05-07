@@ -1,4 +1,4 @@
-import { IsArray, IsBoolean, IsInt, IsOptional, IsString, Min } from "class-validator";
+import { IsArray, IsBoolean, IsIn, IsInt, IsOptional, IsString, Min } from "class-validator";
 import { ApiProperty, ApiPropertyOptional } from "@nestjs/swagger";
 
 export class CreateMealDto {
@@ -24,6 +24,34 @@ export class CreateMealDto {
   @ApiProperty({ example: ["Casero", "Almuerzo"] })
   @IsArray()
   tags!: string[];
+}
+
+export class UpdateMealDto {
+  @ApiPropertyOptional({ example: "Corrientazo ejecutivo" })
+  @IsOptional()
+  @IsString()
+  title?: string;
+
+  @ApiPropertyOptional({ example: "Incluye sopa, seco, jugo." })
+  @IsOptional()
+  @IsString()
+  description?: string;
+
+  @ApiPropertyOptional({ example: 12000 })
+  @IsOptional()
+  @IsInt()
+  @Min(0)
+  basePriceCop?: number;
+
+  @ApiPropertyOptional({ example: "http://localhost:3000/uploads/meals/1.jpg" })
+  @IsOptional()
+  @IsString()
+  photoUrl?: string;
+
+  @ApiPropertyOptional({ example: ["Casero", "Almuerzo"] })
+  @IsOptional()
+  @IsArray()
+  tags?: string[];
 }
 
 export class PublishMealDto {
@@ -62,5 +90,31 @@ export class PublishMealDto {
   @IsOptional()
   @IsString()
   deliveryZoneId?: string;
+}
+
+export class UpdateMealPublicationDto {
+  @ApiPropertyOptional({ example: 15000 })
+  @IsOptional()
+  @IsInt()
+  @Min(0)
+  priceCop?: number;
+
+  @ApiPropertyOptional({ example: 25 })
+  @IsOptional()
+  @IsInt()
+  @Min(0)
+  stockTotal?: number;
+
+  @ApiPropertyOptional({ example: 18 })
+  @IsOptional()
+  @IsInt()
+  @Min(0)
+  stockAvailable?: number;
+
+  @ApiPropertyOptional({ example: "PAUSED" })
+  @IsOptional()
+  @IsString()
+  @IsIn(["PUBLISHED", "PAUSED", "ARCHIVED"])
+  status?: string;
 }
 

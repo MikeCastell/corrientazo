@@ -21,3 +21,33 @@ export class CreateOrderDto {
   deliveryAddressId?: string;
 }
 
+export class UpdateOrderStatusDto {
+  @ApiProperty({
+    example: "START_PREPARING",
+    enum: [
+      "CONFIRM",
+      "START_PREPARING",
+      "MARK_READY_PICKUP",
+      "MARK_READY_DISPATCH",
+      "MARK_OUT_FOR_DELIVERY",
+      "MARK_DELIVERED",
+      "MARK_PICKED_UP",
+      "CANCEL_BY_CLIENT",
+      "CANCEL_BY_COOK",
+      "CANCEL_BY_ADMIN",
+    ],
+  })
+  @IsString()
+  action!:
+    | "CONFIRM"
+    | "START_PREPARING"
+    | "MARK_READY_PICKUP"
+    | "MARK_READY_DISPATCH"
+    | "MARK_OUT_FOR_DELIVERY"
+    | "MARK_DELIVERED"
+    | "MARK_PICKED_UP"
+    | "CANCEL_BY_CLIENT"
+    | "CANCEL_BY_COOK"
+    | "CANCEL_BY_ADMIN";
+}
+

@@ -15,6 +15,7 @@ enum CookMealStatus {
 class CookMeal {
   const CookMeal({
     required this.id,
+    required this.publicationId,
     required this.title,
     required this.description,
     required this.priceCop,
@@ -26,6 +27,7 @@ class CookMeal {
   });
 
   final String id;
+  final String? publicationId;
   final String title;
   final String description;
   final int priceCop;
@@ -38,6 +40,7 @@ class CookMeal {
   bool get isActive => status == CookMealStatus.available;
 
   CookMeal copyWith({
+    String? publicationId,
     String? title,
     String? description,
     int? priceCop,
@@ -48,6 +51,7 @@ class CookMeal {
   }) {
     return CookMeal(
       id: id,
+      publicationId: publicationId ?? this.publicationId,
       title: title ?? this.title,
       description: description ?? this.description,
       priceCop: priceCop ?? this.priceCop,
@@ -59,7 +63,7 @@ class CookMeal {
     );
   }
 
-  factory CookMeal.fromJson(Map<String, dynamic> json) => _$CookMealFromJson(json);
+  factory CookMeal.fromJson(Map<String, dynamic> json) =>
+      _$CookMealFromJson(json);
   Map<String, dynamic> toJson() => _$CookMealToJson(this);
 }
-

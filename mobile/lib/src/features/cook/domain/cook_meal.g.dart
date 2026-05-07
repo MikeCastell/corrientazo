@@ -8,6 +8,7 @@ part of 'cook_meal.dart';
 
 CookMeal _$CookMealFromJson(Map<String, dynamic> json) => CookMeal(
   id: json['id'] as String,
+  publicationId: json['publication_id'] as String?,
   title: json['title'] as String,
   description: json['description'] as String,
   priceCop: (json['price_cop'] as num).toInt(),
@@ -22,6 +23,7 @@ CookMeal _$CookMealFromJson(Map<String, dynamic> json) => CookMeal(
 
 Map<String, dynamic> _$CookMealToJson(CookMeal instance) => <String, dynamic>{
   'id': instance.id,
+  'publication_id': instance.publicationId,
   'title': instance.title,
   'description': instance.description,
   'price_cop': instance.priceCop,

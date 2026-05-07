@@ -10,8 +10,11 @@ import '../../../core/ui/states/app_empty_state.dart';
 import '../../../core/design/tokens/app_spacing.dart';
 import '../../../core/design/tokens/app_radius.dart';
 import '../../../core/design/tokens/app_colors.dart';
+import '../../../core/food/colombian_food_mock.dart';
+import '../../../core/ui/marketplace/food_image.dart';
 import '../../../core/ui/marketplace/meal_card_premium.dart';
 import '../application/meals_controller.dart';
+import '../domain/meal_publication.dart';
 
 class HomeMealsScreen extends ConsumerWidget {
   const HomeMealsScreen({super.key});
@@ -35,30 +38,52 @@ class HomeMealsScreen extends ConsumerWidget {
           onRefresh: () async => ref.refresh(mealsFeedProvider.future),
           child: CustomScrollView(
             slivers: [
-              SliverToBoxAdapter(child: _FeedHeader(onLogout: () => ref.read(authControllerProvider.notifier).logout())),
+              SliverToBoxAdapter(
+                child: _FeedHeader(
+                  onLogout: () =>
+                      ref.read(authControllerProvider.notifier).logout(),
+                ),
+              ),
+              const SliverToBoxAdapter(child: _VisualCategories()),
               if (items.isEmpty)
                 const SliverFillRemaining(
                   hasScrollBody: false,
                   child: AppEmptyState(
                     icon: Icons.ramen_dining,
                     title: 'Nada por ahora',
-                    subtitle: 'Vuelve en unos minutos. Los corrientazos cambian rápido.',
+                    subtitle:
+                        'Vuelve en unos minutos. Los corrientazos cambian rápido.',
                   ),
                 )
-              else
+              else ...[
+                SliverToBoxAdapter(child: _FeaturedStrip(items: items)),
                 SliverPadding(
-                  padding: const EdgeInsets.fromLTRB(AppSpacing.md, 0, AppSpacing.md, AppSpacing.md),
+                  padding: const EdgeInsets.fromLTRB(
+                    AppSpacing.md,
+                    AppSpacing.sm,
+                    AppSpacing.md,
+                    AppSpacing.xxl,
+                  ),
                   sliver: SliverList.separated(
                     itemCount: items.length,
-                    separatorBuilder: (context, index) => const SizedBox(height: AppSpacing.sm),
+                    separatorBuilder: (context, index) =>
+                        const SizedBox(height: AppSpacing.lg),
                     itemBuilder: (context, i) => MealCardPremium(
                       id: items[i].id,
+                      mealId: items[i].mealId,
                       priceCop: items[i].priceCop,
                       stockAvailable: items[i].stockAvailable,
-                      onTap: () => context.go('${const HomeRoute().location}/meals/${items[i].id}'),
+                      title: items[i].title,
+                      photoUrl: items[i].photoUrl,
+                      cookName: items[i].cookName,
+                      cookAvatarUrl: items[i].cookAvatarUrl,
+                      onTap: () => context.go(
+                        '${const HomeRoute().location}/meals/${items[i].id}',
+                      ),
                     ),
                   ),
                 ),
+              ],
             ],
           ),
         ),
@@ -75,7 +100,12 @@ class _FeedHeader extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.fromLTRB(AppSpacing.md, AppSpacing.md, AppSpacing.md, AppSpacing.sm),
+      padding: const EdgeInsets.fromLTRB(
+        AppSpacing.md,
+        AppSpacing.md,
+        AppSpacing.md,
+        AppSpacing.sm,
+      ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -88,16 +118,18 @@ class _FeedHeader extends StatelessWidget {
                     Text(
                       'Comida casera cerca de ti',
                       style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                            fontWeight: FontWeight.w900,
-                            letterSpacing: -0.3,
-                          ),
+                        fontWeight: FontWeight.w900,
+                        letterSpacing: -0.3,
+                      ),
                     ),
                     const SizedBox(height: 2),
                     Text(
                       'Hoy · Fresco · Cupos limitados',
                       style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                            color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.65),
-                          ),
+                        color: Theme.of(
+                          context,
+                        ).colorScheme.onSurface.withValues(alpha: 0.65),
+                      ),
                     ),
                   ],
                 ),
@@ -111,7 +143,10 @@ class _FeedHeader extends StatelessWidget {
           ),
           const SizedBox(height: AppSpacing.sm),
           Container(
-            padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md, vertical: 12),
+            padding: const EdgeInsets.symmetric(
+              horizontal: AppSpacing.md,
+              vertical: 12,
+            ),
             decoration: BoxDecoration(
               color: Theme.of(context).colorScheme.surface,
               borderRadius: BorderRadius.circular(AppRadius.xl),
@@ -125,23 +160,30 @@ class _FeedHeader extends StatelessWidget {
                   child: Text(
                     'Buscar corrientazo, sopa, jugo…',
                     style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                          color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.55),
-                        ),
+                      color: Theme.of(
+                        context,
+                      ).colorScheme.onSurface.withValues(alpha: 0.55),
+                    ),
                   ),
                 ),
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: AppSpacing.sm, vertical: 8),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: AppSpacing.sm,
+                    vertical: 8,
+                  ),
                   decoration: BoxDecoration(
                     color: AppColors.brand.withValues(alpha: 0.10),
                     borderRadius: BorderRadius.circular(99),
-                    border: Border.all(color: AppColors.brand.withValues(alpha: 0.18)),
+                    border: Border.all(
+                      color: AppColors.brand.withValues(alpha: 0.18),
+                    ),
                   ),
                   child: Text(
                     'Cerca',
                     style: Theme.of(context).textTheme.labelLarge?.copyWith(
-                          fontWeight: FontWeight.w900,
-                          color: AppColors.brand,
-                        ),
+                      fontWeight: FontWeight.w900,
+                      color: AppColors.brand,
+                    ),
                   ),
                 ),
               ],
@@ -161,18 +203,25 @@ class _MealsLoading extends StatelessWidget {
     return CustomScrollView(
       slivers: [
         SliverToBoxAdapter(child: _FeedHeader(onLogout: () {})),
+        const SliverToBoxAdapter(child: _VisualCategories()),
         SliverPadding(
-          padding: const EdgeInsets.fromLTRB(AppSpacing.md, 0, AppSpacing.md, AppSpacing.md),
+          padding: const EdgeInsets.fromLTRB(
+            AppSpacing.md,
+            0,
+            AppSpacing.md,
+            AppSpacing.md,
+          ),
           sliver: SliverList.separated(
             itemCount: 6,
-            separatorBuilder: (context, index) => const SizedBox(height: AppSpacing.sm),
+            separatorBuilder: (context, index) =>
+                const SizedBox(height: AppSpacing.lg),
             itemBuilder: (context, index) {
               return AppShimmer(
                 child: Container(
-                  height: 220,
+                  height: 360,
                   decoration: BoxDecoration(
                     color: Theme.of(context).colorScheme.surface,
-                    borderRadius: BorderRadius.circular(AppRadius.lg),
+                    borderRadius: BorderRadius.circular(AppRadius.xl),
                   ),
                 ),
               );
@@ -180,6 +229,262 @@ class _MealsLoading extends StatelessWidget {
           ),
         ),
       ],
+    );
+  }
+}
+
+class _FeaturedStrip extends StatelessWidget {
+  const _FeaturedStrip({required this.items});
+
+  final List<MealPublication> items;
+
+  @override
+  Widget build(BuildContext context) {
+    final picks = items.take(5).toList(growable: false);
+    if (picks.isEmpty) return const SizedBox.shrink();
+
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(
+        AppSpacing.md,
+        AppSpacing.xs,
+        AppSpacing.md,
+        AppSpacing.md,
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'Hoy está pesado',
+            style: Theme.of(context).textTheme.titleLarge?.copyWith(
+              fontWeight: FontWeight.w900,
+              letterSpacing: -0.4,
+            ),
+          ),
+          const SizedBox(height: AppSpacing.sm),
+          SizedBox(
+            height: 220,
+            child: ListView.separated(
+              scrollDirection: Axis.horizontal,
+              itemCount: picks.length,
+              separatorBuilder: (context, index) =>
+                  const SizedBox(width: AppSpacing.sm),
+              itemBuilder: (context, i) {
+                final item = picks[i];
+                final food = ColombianFoodMock.forMeal(item.mealId);
+                return _FeaturedTile(
+                  title: food.title,
+                  subtitle: food.subtitle,
+                  imageAsset: food.imageAsset,
+                  icon: food.heroIcon,
+                  gradient: food.heroGradient,
+                  onTap: () => context.go(
+                    '${const HomeRoute().location}/meals/${item.id}',
+                  ),
+                );
+              },
+            ),
+          ),
+          const SizedBox(height: AppSpacing.sm),
+          Text(
+            'Explora el barrio',
+            style: Theme.of(context).textTheme.titleLarge?.copyWith(
+              fontWeight: FontWeight.w900,
+              letterSpacing: -0.4,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _FeaturedTile extends StatelessWidget {
+  const _FeaturedTile({
+    required this.title,
+    required this.subtitle,
+    required this.imageAsset,
+    required this.icon,
+    required this.gradient,
+    required this.onTap,
+  });
+
+  final String title;
+  final String subtitle;
+  final String imageAsset;
+  final IconData icon;
+  final LinearGradient gradient;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(AppRadius.xl),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(AppRadius.xl),
+        child: SizedBox(
+          width: 300,
+          child: Stack(
+            fit: StackFit.expand,
+            children: [
+              FoodImage(
+                asset: imageAsset,
+                fallbackGradient: gradient,
+                fallbackIcon: icon,
+              ),
+              DecoratedBox(
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.topCenter,
+                    end: Alignment.bottomCenter,
+                    colors: [
+                      Colors.black.withValues(alpha: 0.05),
+                      Colors.black.withValues(alpha: 0.35),
+                      Colors.black.withValues(alpha: 0.80),
+                    ],
+                    stops: const [0.0, 0.55, 1.0],
+                  ),
+                ),
+              ),
+              Positioned(
+                left: AppSpacing.md,
+                right: AppSpacing.md,
+                bottom: AppSpacing.md,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      title,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                        color: Colors.white,
+                        fontWeight: FontWeight.w900,
+                        letterSpacing: -0.5,
+                        height: 1.05,
+                      ),
+                    ),
+                    const SizedBox(height: 6),
+                    Text(
+                      subtitle,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                        color: Colors.white.withValues(alpha: 0.78),
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _VisualCategories extends StatelessWidget {
+  const _VisualCategories();
+
+  static const _items = [
+    _VisualCategory(
+      'Corrientazos',
+      'assets/food/corrientazo.png',
+      Icons.restaurant,
+    ),
+    _VisualCategory('Sopas', 'assets/food/ajiaco.png', Icons.soup_kitchen),
+    _VisualCategory('Arepas', 'assets/food/arepas.png', Icons.bakery_dining),
+    _VisualCategory('Fritos', 'assets/food/fritos.png', Icons.fastfood),
+    _VisualCategory('Jugos', 'assets/food/jugos.png', Icons.local_drink),
+    _VisualCategory(
+      'Ejecutivos',
+      'assets/food/bandeja.png',
+      Icons.local_dining,
+    ),
+  ];
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      height: 112,
+      child: ListView.separated(
+        padding: const EdgeInsets.fromLTRB(
+          AppSpacing.md,
+          0,
+          AppSpacing.md,
+          AppSpacing.md,
+        ),
+        scrollDirection: Axis.horizontal,
+        itemCount: _items.length,
+        separatorBuilder: (context, index) =>
+            const SizedBox(width: AppSpacing.sm),
+        itemBuilder: (context, index) => _CategoryTile(category: _items[index]),
+      ),
+    );
+  }
+}
+
+class _VisualCategory {
+  const _VisualCategory(this.label, this.asset, this.icon);
+
+  final String label;
+  final String asset;
+  final IconData icon;
+}
+
+class _CategoryTile extends StatelessWidget {
+  const _CategoryTile({required this.category});
+
+  final _VisualCategory category;
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      width: 132,
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(AppRadius.lg),
+        child: Stack(
+          fit: StackFit.expand,
+          children: [
+            FoodImage(
+              asset: category.asset,
+              fallbackGradient: ColombianFoodMock.forMeal(
+                category.label,
+              ).heroGradient,
+              fallbackIcon: category.icon,
+            ),
+            DecoratedBox(
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
+                  colors: [
+                    Colors.black.withValues(alpha: 0.02),
+                    Colors.black.withValues(alpha: 0.58),
+                  ],
+                ),
+              ),
+            ),
+            Positioned(
+              left: AppSpacing.sm,
+              right: AppSpacing.sm,
+              bottom: AppSpacing.sm,
+              child: Text(
+                category.label,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: Theme.of(context).textTheme.labelLarge?.copyWith(
+                  color: Colors.white,
+                  fontWeight: FontWeight.w900,
+                  letterSpacing: -0.1,
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 }
