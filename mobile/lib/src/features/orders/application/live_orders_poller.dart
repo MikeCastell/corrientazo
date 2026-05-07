@@ -37,6 +37,11 @@ class LiveOrdersPoller extends Notifier<void> {
     _timer ??= Timer.periodic(const Duration(seconds: 12), (_) => _tick());
     // Run an immediate tick on first build for quick UI hydration.
     Future.microtask(_tick);
+    // Request notification permission early (Android 13+). Cooks usually hit this on the
+    // first poll via show(); customers only call show() after a status/publication change.
+    Future.microtask(
+      () => ref.read(localNotificationsProvider).initIfNeeded(),
+    );
   }
 
   Future<void> _tick() async {
