@@ -1,0 +1,21 @@
+/**
+ * Catálogo de códigos de error (estables en el tiempo).
+ * Útil para frontend, analytics y monitoreo.
+ */
+export const ErrorCodes = {
+  AUTH_INVALID_TOKEN: "AUTH_INVALID_TOKEN",
+  AUTH_EXPIRED_TOKEN: "AUTH_EXPIRED_TOKEN",
+
+  ORDER_SOLD_OUT: "ORDER_SOLD_OUT",
+  ORDER_INVALID_STATE_TRANSITION: "ORDER_INVALID_STATE_TRANSITION",
+  ORDER_NOT_FOUND: "ORDER_NOT_FOUND",
+  ORDER_ACCESS_DENIED: "ORDER_ACCESS_DENIED",
+
+  SANITARY_SUSPENDED_COOK: "SANITARY_SUSPENDED_COOK",
+
+  PAYMENT_WEBHOOK_DUPLICATE: "PAYMENT_WEBHOOK_DUPLICATE",
+  PAYMENT_PROVIDER_ERROR: "PAYMENT_PROVIDER_ERROR",
+} as const;
+
+export type ErrorCode = (typeof ErrorCodes)[keyof typeof ErrorCodes];
+
