@@ -12,6 +12,13 @@ services:
       - postgres_data:/var/lib/postgresql/data
     networks:
       - corrientazo_net
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
 
   redis:
     image: redis:7-alpine
@@ -20,6 +27,13 @@ services:
       - redis_data:/data
     networks:
       - corrientazo_net
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
 
   api:
     build:
@@ -29,13 +43,19 @@ services:
     env_file:
       - .env
     depends_on:
-      - postgres
-      - redis
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
     networks:
       - corrientazo_net
-    # No exponer puerto público; Nginx será el entrypoint
-    expose:
-      - "3000"
+    ports:
+      - "3000:3000"
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:3000/api/healthz >/dev/null 2>&1"]
+      interval: 5s
+      timeout: 3s
+      retries: 30
 
   worker:
     build:
@@ -45,25 +65,40 @@ services:
     env_file:
       - .env
     depends_on:
-      - postgres
-      - redis
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
     networks:
       - corrientazo_net
 
-  nginx:
-    image: nginx:1.27-alpine
-    restart: unless-stopped
+  migrate:
+    build:
+      context: .
+      dockerfile: Dockerfile.api
+    restart: "no"
+    env_file:
+      - .env
     depends_on:
-      - api
-    ports:
-      - "80:80"
-      - "443:443"
-    volumes:
-      - ./docker/nginx/nginx.conf:/etc/nginx/nginx.conf:ro
-      # Montar certificados reales en producción
-      - ./docker/nginx/certs:/etc/letsencrypt/live/corrientazo.example.com:ro
+      postgres:
+        condition: service_healthy
     networks:
       - corrientazo_net
+    command: ["sh", "-c", "npx prisma migrate deploy"]
+
+  seed:
+    build:
+      context: .
+      dockerfile: Dockerfile.api
+    restart: "no"
+    env_file:
+      - .env
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+    networks:
+      - corrientazo_net
+    command: ["sh", "-c", "npm run prisma:seed"]
 
 networks:
   corrientazo_net:

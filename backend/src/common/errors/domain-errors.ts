@@ -3,7 +3,7 @@ import { ErrorCodes, ErrorCode } from "./error-codes";
 export class DomainError extends Error {
   public readonly code: ErrorCode;
   public readonly statusCode: number;
-  public readonly details?: Record<string, unknown>;
+  public readonly details: Record<string, unknown> | undefined;
 
   constructor(args: {
     code: ErrorCode;
@@ -14,7 +14,7 @@ export class DomainError extends Error {
     super(args.message);
     this.code = args.code;
     this.statusCode = args.statusCode;
-    this.details = args.details;
+    this.details = args.details === undefined ? undefined : args.details;
   }
 }
 
@@ -25,7 +25,7 @@ export class SoldOutError extends DomainError {
       code: ErrorCodes.ORDER_SOLD_OUT,
       message: "No hay cupos disponibles",
       statusCode: 409,
-      details,
+      ...(details === undefined ? {} : { details }),
     });
   }
 }

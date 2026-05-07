@@ -20,7 +20,6 @@ export class NequiProvider implements PaymentProvider {
     // TODO: integrar con la API de Nequi.
     return {
       providerRef: `nequi_${input.orderId}`,
-      redirectUrl: undefined,
       providerMetadata: { provider: "nequi" },
     };
   }

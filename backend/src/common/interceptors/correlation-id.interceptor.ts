@@ -1,5 +1,6 @@
 import { CallHandler, ExecutionContext, Injectable, NestInterceptor } from "@nestjs/common";
 import { Observable } from "rxjs";
+import type { Request } from "express";
 
 /**
  * CorrelationIdInterceptor:
@@ -15,7 +16,7 @@ import { Observable } from "rxjs";
 export class CorrelationIdInterceptor implements NestInterceptor {
   intercept(context: ExecutionContext, next: CallHandler): Observable<any> {
     const http = context.switchToHttp();
-    const req = http.getRequest<Request & { headers: any; correlationId?: string }>();
+    const req = http.getRequest<Request & { correlationId?: string }>();
     const res = http.getResponse<any>();
 
     const correlationId =

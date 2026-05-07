@@ -1,4 +1,4 @@
-import { PaymentMethod, PaymentStatus } from "../../types";
+import { PaymentMethod, PaymentStatus } from "../types";
 
 export type ProviderCreateResult = {
   providerRef?: string;

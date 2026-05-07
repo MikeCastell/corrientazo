@@ -32,7 +32,7 @@ export class OrdersTrackingGateway
   implements OnGatewayConnection, OnGatewayDisconnect
 {
   @WebSocketServer()
-  server: Server;
+  server!: Server;
 
   async handleConnection(client: Socket) {
     // Recomendado:

@@ -14,7 +14,6 @@ export class DaviplataProvider implements PaymentProvider {
   }): Promise<ProviderCreateResult> {
     return {
       providerRef: `daviplata_${input.orderId}`,
-      redirectUrl: undefined,
       providerMetadata: { provider: "daviplata" },
     };
   }

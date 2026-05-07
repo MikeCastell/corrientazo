@@ -105,67 +105,76 @@ enum OutboxStatus {
 // Core identity
 // =========================
 model users {
-  id              String    @id @default(uuid())
-  role            UserRole  @default(CUSTOMER)
-  status          UserStatus @default(ACTIVE)
+  id     String     @id @default(uuid())
+  role   UserRole   @default(CUSTOMER)
+  status UserStatus @default(ACTIVE)
 
-  phone           String    @unique
-  email           String?   @unique
+  phone String  @unique
+  email String? @unique
 
-  name            String?
-  avatar_url      String?
+  name       String?
+  avatar_url String?
 
-  created_at      DateTime  @default(now())
-  updated_at      DateTime  @updatedAt
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
 
   addresses       addresses[]
   cook_profile    cook_profiles?
-  orders_customer orders[] @relation("orders_customer")
-  orders_cook     orders[] @relation("orders_cook")
-  reviews_written reviews[] @relation("reviews_customer")
-  reviews_received reviews[] @relation("reviews_cook")
-  notifications    notifications[]
+  orders_customer orders[]        @relation("orders_customer")
+  reviews_written reviews[]       @relation("reviews_customer")
+  notifications   notifications[]
 
-  refresh_tokens  refresh_tokens[]
+  refresh_tokens refresh_tokens[]
+  auth_password  auth_passwords?
 
   @@index([role, status])
 }
 
 model refresh_tokens {
-  id           String   @id @default(uuid())
-  user_id      String
-  token_hash   String
+  id         String @id @default(uuid())
+  user_id    String
+  token_hash String
 
-  revoked_at   DateTime?
-  expires_at   DateTime
+  revoked_at DateTime?
+  expires_at DateTime
 
   rotated_from_id String?
 
-  created_at   DateTime @default(now())
-  updated_at   DateTime @updatedAt
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
 
-  user         users @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  user users @relation(fields: [user_id], references: [id], onDelete: Cascade)
 
   @@index([user_id, expires_at])
 }
 
+model auth_passwords {
+  user_id       String @id
+  password_hash String
+
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
+
+  user users @relation(fields: [user_id], references: [id], onDelete: Cascade)
+}
+
 model addresses {
-  id                String   @id @default(uuid())
+  id                String  @id @default(uuid())
   user_id           String
   label             String? // Casa / Oficina / etc.
   formatted_address String?
 
-  lat               Float
-  lng               Float
+  lat Float
+  lng Float
 
-  instructions      String?
-  is_default        Boolean  @default(false)
+  instructions String?
+  is_default   Boolean @default(false)
 
-  created_at        DateTime @default(now())
-  updated_at        DateTime @updatedAt
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
 
-  user              users @relation(fields: [user_id], references: [id], onDelete: Cascade)
-  orders_delivery   orders[] @relation("orders_delivery_address")
+  user            users    @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  orders_delivery orders[] @relation("orders_delivery_address")
 
   @@index([user_id, lat, lng])
 }
@@ -174,77 +183,82 @@ model addresses {
 // Cook & Delivery zones
 // =========================
 model cook_profiles {
-  id                String   @id @default(uuid())
-  user_id           String   @unique
+  id      String @id @default(uuid())
+  user_id String @unique
 
-  bio               String?
+  bio                String?
   kitchen_address_id String?
 
   // Current sanitary level (materialized for fast reads)
   sanitary_level_id String?
-  is_active         Boolean  @default(false)
-  delivery_enabled Boolean  @default(false)
-  pickup_enabled   Boolean  @default(true)
+  is_active         Boolean @default(false)
+  delivery_enabled  Boolean @default(false)
+  pickup_enabled    Boolean @default(true)
 
   // Operational guardrails (JSON to avoid schema churn)
   operational_policy_json Json?
 
-  created_at        DateTime @default(now())
-  updated_at        DateTime @updatedAt
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
 
-  user              users @relation(fields: [user_id], references: [id], onDelete: Cascade)
-  sanitary_level   sanitary_levels? @relation(fields: [sanitary_level_id], references: [id])
+  user           users            @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  sanitary_level sanitary_levels? @relation(fields: [sanitary_level_id], references: [id])
 
-  sanitary_checks   sanitary_checks[]
-  reports_as_cook   reports[] @relation("reports_cook")
-  orders_as_cook    orders[] @relation("orders_cook")
+  sanitary_checks           sanitary_checks[]
+  reports_as_cook           reports[]                   @relation("reports_cook")
+  orders                    orders[]                    @relation("orders_cook_profile")
   cook_reputation_snapshots cook_reputation_snapshots[]
 
   cook_delivery_zones cook_delivery_zones[]
+  meals               meals[]
+  meal_publications   meal_publications[]
+  suspensions         suspensions[]
+  reviews             reviews[]
 
   @@index([is_active, delivery_enabled, pickup_enabled])
 }
 
 model delivery_zones {
-  id          String   @id @default(uuid())
-  name        String
-  city        String?
+  id   String  @id @default(uuid())
+  name String
+  city String?
 
   // Without PostGIS: bounding box + optional radius for approximate checks.
-  min_lat     Float
-  min_lng     Float
-  max_lat     Float
-  max_lng     Float
+  min_lat Float
+  min_lng Float
+  max_lat Float
+  max_lng Float
 
-  center_lat  Float?
-  center_lng  Float?
-  radius_km   Float?
+  center_lat Float?
+  center_lng Float?
+  radius_km  Float?
 
-  is_active   Boolean  @default(true)
-  created_at  DateTime @default(now())
-  updated_at  DateTime @updatedAt
+  is_active  Boolean  @default(true)
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
 
   cook_delivery_zones cook_delivery_zones[]
+  meal_publications   meal_publications[]
 
   @@unique([name, city])
   @@index([is_active, min_lat, max_lat])
 }
 
 model cook_delivery_zones {
-  id             String @id @default(uuid())
-  cook_profile_id String
+  id               String @id @default(uuid())
+  cook_profile_id  String
   delivery_zone_id String
 
   // Policy knobs
   max_delivery_fee_cop Int?
-  enabled_from DateTime?
-  enabled_to   DateTime?
+  enabled_from         DateTime?
+  enabled_to           DateTime?
 
-  created_at     DateTime @default(now())
-  updated_at     DateTime @updatedAt
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
 
-  cook_profile   cook_profiles @relation(fields: [cook_profile_id], references: [id], onDelete: Cascade)
-  delivery_zone  delivery_zones @relation(fields: [delivery_zone_id], references: [id], onDelete: Cascade)
+  cook_profile  cook_profiles  @relation(fields: [cook_profile_id], references: [id], onDelete: Cascade)
+  delivery_zone delivery_zones @relation(fields: [delivery_zone_id], references: [id], onDelete: Cascade)
 
   @@unique([cook_profile_id, delivery_zone_id])
   @@index([delivery_zone_id])
@@ -254,43 +268,43 @@ model cook_delivery_zones {
 // Meals
 // =========================
 model meals {
-  id          String   @id @default(uuid())
+  id              String @id @default(uuid())
   cook_profile_id String
 
   // "Template" fields (stable product)
   title       String
   description String?
 
-  photo_url   String?
+  photo_url String?
 
   // Base price (used if publication does not override)
   base_price_cop Int
 
-  tags         String[] // e.g. ["Sopa", "Casero"]
+  tags String[] // e.g. ["Sopa", "Casero"]
 
-  is_active    Boolean @default(true)
+  is_active Boolean @default(true)
 
-  created_at   DateTime @default(now())
-  updated_at   DateTime @updatedAt
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
 
-  cook_profile cook_profiles @relation(fields: [cook_profile_id], references: [id], onDelete: Cascade)
+  cook_profile cook_profiles       @relation(fields: [cook_profile_id], references: [id], onDelete: Cascade)
   publications meal_publications[]
 
-  reviews      reviews[]
+  reviews reviews[]
 
   @@index([cook_profile_id, is_active])
 }
 
 model meal_publications {
   // Publication = offer window + stock/cups reserved for "today" behavior
-  id          String   @id @default(uuid())
-  meal_id     String
+  id              String @id @default(uuid())
+  meal_id         String
   cook_profile_id String
 
-  title_override String?
+  title_override       String?
   description_override String?
-  price_cop   Int
-  photo_url   String?
+  price_cop            Int
+  photo_url            String?
 
   available_from DateTime
   available_to   DateTime
@@ -301,20 +315,21 @@ model meal_publications {
   delivery_enabled Boolean @default(false)
   delivery_zone_id String?
   // Quantity/cupos
-  stock_total     Int
-  stock_available Int
+  stock_total      Int
+  stock_available  Int
 
-  status      String @default("PUBLISHED") // or enum in next iteration
+  status String @default("PUBLISHED") // or enum in next iteration
 
-  created_at  DateTime @default(now())
-  updated_at  DateTime @updatedAt
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
 
-  meal        meals @relation(fields: [meal_id], references: [id], onDelete: Cascade)
+  meal         meals         @relation(fields: [meal_id], references: [id], onDelete: Cascade)
   cook_profile cook_profiles @relation(fields: [cook_profile_id], references: [id], onDelete: Cascade)
 
   delivery_zone delivery_zones? @relation(fields: [delivery_zone_id], references: [id])
 
   order_items order_items[]
+  orders      orders[]
 
   @@index([cook_profile_id, available_from, available_to])
   @@index([delivery_enabled, delivery_zone_id, pickup_from])
@@ -324,50 +339,51 @@ model meal_publications {
 // Orders & timeline
 // =========================
 model orders {
-  id                String @id @default(uuid())
-  customer_id       String
-  cook_profile_id   String
+  id              String @id @default(uuid())
+  customer_id     String
+  cook_profile_id String
 
   meal_publication_id String
 
-  fulfillment_type  FulfillmentType
+  fulfillment_type FulfillmentType
 
   delivery_address_id String?
 
-  quantity          Int
+  quantity Int
 
   // Pricing snapshots to avoid historical drift
-  subtotal_cop      Int
-  platform_fee_cop  Int
-  delivery_fee_cop  Int?
-  total_cop         Int
+  subtotal_cop     Int
+  platform_fee_cop Int
+  delivery_fee_cop Int?
+  total_cop        Int
 
   // ETA / operations
-  pickup_eta_minutes Int?
+  pickup_eta_minutes   Int?
   delivery_eta_minutes Int?
 
-  notes             String?
+  notes String?
 
-  status            OrderStatus @default(INIT)
-  cancel_reason     String?
+  status        OrderStatus @default(INIT)
+  cancel_reason String?
 
-  created_at        DateTime @default(now())
-  updated_at        DateTime @updatedAt
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
 
-  customer          users @relation("orders_customer", fields: [customer_id], references: [id], onDelete: Cascade)
-  cook_profile      cook_profiles @relation(fields: [cook_profile_id], references: [id], onDelete: Cascade)
+  customer     users         @relation("orders_customer", fields: [customer_id], references: [id], onDelete: Cascade)
+  cook_profile cook_profiles @relation("orders_cook_profile", fields: [cook_profile_id], references: [id], onDelete: Cascade)
 
-  delivery_address  addresses? @relation("orders_delivery_address", fields: [delivery_address_id], references: [id])
+  delivery_address addresses? @relation("orders_delivery_address", fields: [delivery_address_id], references: [id])
 
-  meal_publication  meal_publications @relation(fields: [meal_publication_id], references: [id])
+  meal_publication meal_publications @relation(fields: [meal_publication_id], references: [id])
 
-  order_items       order_items[]
-  payment           payments?
+  order_items         order_items[]
+  payment             payments?
   order_status_events order_status_events[]
 
-  review            reviews?
+  review reviews?
 
-  notifications     notifications[]
+  notifications notifications[]
+  reports       reports[]
 
   @@index([customer_id, created_at])
   @@index([cook_profile_id, status])
@@ -375,39 +391,39 @@ model orders {
 }
 
 model order_items {
-  id                   String @id @default(uuid())
-  order_id             String
+  id                  String @id @default(uuid())
+  order_id            String
   meal_publication_id String
 
-  quantity             Int
+  quantity Int
 
   // Snapshot fields
-  title_snapshot       String
-  unit_price_cop       Int
-  subtotal_cop         Int
+  title_snapshot String
+  unit_price_cop Int
+  subtotal_cop   Int
 
-  created_at           DateTime @default(now())
+  created_at DateTime @default(now())
 
-  order                orders @relation(fields: [order_id], references: [id], onDelete: Cascade)
-  publication          meal_publications @relation(fields: [meal_publication_id], references: [id], onDelete: Restrict)
+  order       orders            @relation(fields: [order_id], references: [id], onDelete: Cascade)
+  publication meal_publications @relation(fields: [meal_publication_id], references: [id], onDelete: Restrict)
 
   @@unique([order_id, meal_publication_id])
   @@index([meal_publication_id])
 }
 
 model order_status_events {
-  id           String @id @default(uuid())
-  order_id     String
+  id       String @id @default(uuid())
+  order_id String
 
-  from_status  OrderStatus?
-  to_status    OrderStatus
+  from_status OrderStatus?
+  to_status   OrderStatus
 
-  occurred_at  DateTime @default(now())
+  occurred_at   DateTime @default(now())
   actor_user_id String? // who triggered the transition
 
-  meta_json    Json?
+  meta_json Json?
 
-  order        orders @relation(fields: [order_id], references: [id], onDelete: Cascade)
+  order orders @relation(fields: [order_id], references: [id], onDelete: Cascade)
 
   @@index([order_id, occurred_at])
 }
@@ -416,43 +432,43 @@ model order_status_events {
 // Payments
 // =========================
 model payments {
-  id              String @id @default(uuid())
-  order_id        String @unique
+  id       String @id @default(uuid())
+  order_id String @unique
 
-  method          PaymentMethod
-  status          PaymentStatus @default(PENDING)
+  method PaymentMethod
+  status PaymentStatus @default(PENDING)
 
-  amount_cop      Int
-  currency        String @default("COP")
+  amount_cop Int
+  currency   String @default("COP")
 
-  paid_at         DateTime?
-  created_at      DateTime @default(now())
-  updated_at      DateTime @updatedAt
+  paid_at    DateTime?
+  created_at DateTime  @default(now())
+  updated_at DateTime  @updatedAt
 
-  order           orders @relation(fields: [order_id], references: [id], onDelete: Cascade)
+  order            orders             @relation(fields: [order_id], references: [id], onDelete: Cascade)
   payment_attempts payment_attempts[]
 
   @@index([status, method])
 }
 
 model payment_attempts {
-  id                 String @id @default(uuid())
-  payment_id         String
+  id         String @id @default(uuid())
+  payment_id String
 
-  method             PaymentMethod
-  status             PaymentStatus
+  method PaymentMethod
+  status PaymentStatus
 
-  provider_name      String
-  provider_ref       String?
+  provider_name String
+  provider_ref  String?
 
-  idempotency_key    String? // provider side if applicable
+  idempotency_key String? // provider side if applicable
 
-  attempt_metadata   Json?
+  attempt_metadata Json?
 
-  created_at         DateTime @default(now())
-  updated_at         DateTime @updatedAt
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
 
-  payment            payments @relation(fields: [payment_id], references: [id], onDelete: Cascade)
+  payment                   payments           @relation(fields: [payment_id], references: [id], onDelete: Cascade)
   payment_webhooks_received payment_webhooks[]
 
   @@index([status, provider_name, created_at])
@@ -462,17 +478,17 @@ model payment_webhooks {
   id                 String @id @default(uuid())
   payment_attempt_id String
 
-  provider_name      String
-  provider_ref       String
+  provider_name String
+  provider_ref  String
 
-  raw_payload_json   Json?
-  signature_valid    Boolean @default(true)
+  raw_payload_json Json?
+  signature_valid  Boolean @default(true)
 
   // webhook processing state (idempotency by provider_ref)
-  processed_at       DateTime?
-  created_at         DateTime @default(now())
+  processed_at DateTime?
+  created_at   DateTime  @default(now())
 
-  payment_attempt   payment_attempts @relation(fields: [payment_attempt_id], references: [id], onDelete: Cascade)
+  payment_attempt payment_attempts @relation(fields: [payment_attempt_id], references: [id], onDelete: Cascade)
 
   @@unique([provider_name, provider_ref])
   @@index([processed_at])
@@ -482,30 +498,30 @@ model payment_webhooks {
 // Reviews & reputation
 // =========================
 model reviews {
-  id            String @id @default(uuid())
-  order_id      String @unique
+  id       String @id @default(uuid())
+  order_id String @unique
 
-  customer_id   String
+  customer_id     String
   cook_profile_id String
-  meal_id       String?
+  meal_id         String?
 
-  rating        Int // 1..5
-  comment       String?
-  tags           String[] // e.g. ["higiene", "sabor"]
+  rating  Int // 1..5
+  comment String?
+  tags    String[] // e.g. ["higiene", "sabor"]
 
-  created_at    DateTime @default(now())
+  created_at DateTime @default(now())
 
   // Relations
-  order         orders @relation(fields: [order_id], references: [id], onDelete: Cascade)
-  customer      users @relation("reviews_customer", fields: [customer_id], references: [id], onDelete: Cascade)
-  cook_profile  cook_profiles @relation(fields: [cook_profile_id], references: [id], onDelete: Cascade)
-  meal          meals? @relation(fields: [meal_id], references: [id])
+  order        orders        @relation(fields: [order_id], references: [id], onDelete: Cascade)
+  customer     users         @relation("reviews_customer", fields: [customer_id], references: [id], onDelete: Cascade)
+  cook_profile cook_profiles @relation(fields: [cook_profile_id], references: [id], onDelete: Cascade)
+  meal         meals?        @relation(fields: [meal_id], references: [id])
 
   @@index([cook_profile_id, created_at])
 }
 
 model cook_reputation_snapshots {
-  id          String @id @default(uuid())
+  id              String @id @default(uuid())
   cook_profile_id String
 
   // Materialized scores for ranking
@@ -516,7 +532,7 @@ model cook_reputation_snapshots {
   hygiene_score Decimal @db.Decimal(10, 4)
   report_count  Int
 
-  updated_at   DateTime @default(now())
+  updated_at DateTime @default(now())
 
   cook_profile cook_profiles @relation(fields: [cook_profile_id], references: [id], onDelete: Cascade)
 
@@ -527,23 +543,23 @@ model cook_reputation_snapshots {
 // Notifications
 // =========================
 model notifications {
-  id          String @id @default(uuid())
-  user_id     String
+  id      String @id @default(uuid())
+  user_id String
 
-  type        NotificationType
-  title       String?
-  body        String?
+  type         NotificationType
+  title        String?
+  body         String?
   payload_json Json?
 
-  order_id    String?
-  is_read      Boolean @default(false)
-  read_at      DateTime?
+  order_id String?
+  is_read  Boolean   @default(false)
+  read_at  DateTime?
 
-  created_at  DateTime @default(now())
-  updated_at  DateTime @updatedAt
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
 
-  user         users @relation(fields: [user_id], references: [id], onDelete: Cascade)
-  order        orders? @relation(fields: [order_id], references: [id])
+  user  users   @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  order orders? @relation(fields: [order_id], references: [id])
 
   @@index([user_id, created_at])
   @@index([type, created_at])
@@ -553,33 +569,33 @@ model notifications {
 // Sanitary system
 // =========================
 model sanitary_levels {
-  id               String @id @default(uuid())
-  level_number     Int @unique
-  name             String
-  description      String?
+  id           String  @id @default(uuid())
+  level_number Int     @unique
+  name         String
+  description  String?
 
   // Checklist definition versioned
-  checklist_json   Json
+  checklist_json      Json
   evidence_rules_json Json?
 
-  created_at       DateTime @default(now())
-  updated_at       DateTime @updatedAt
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
 
-  sanitary_checks  sanitary_checks[]
-  cook_profiles    cook_profiles[]
+  sanitary_checks sanitary_checks[]
+  cook_profiles   cook_profiles[]
 
   @@index([level_number])
 }
 
 model sanitary_checks {
-  id                 String @id @default(uuid())
-  cook_profile_id    String
-  sanitary_level_id  String
+  id                String @id @default(uuid())
+  cook_profile_id   String
+  sanitary_level_id String
 
-  status             SanitaryCheckStatus @default(PENDING)
+  status SanitaryCheckStatus @default(PENDING)
 
-  completed_at       DateTime?
-  reviewed_at        DateTime?
+  completed_at         DateTime?
+  reviewed_at          DateTime?
   reviewed_by_admin_id String?
 
   // Store user input + evidence metadata
@@ -587,59 +603,59 @@ model sanitary_checks {
   evidence_urls_json Json?
   checklist_version  String?
 
-  created_at         DateTime @default(now())
-  updated_at         DateTime @updatedAt
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
 
-  cook_profile       cook_profiles @relation(fields: [cook_profile_id], references: [id], onDelete: Cascade)
-  sanitary_level     sanitary_levels @relation(fields: [sanitary_level_id], references: [id])
-  reports_for_cook   reports[]
+  cook_profile     cook_profiles   @relation(fields: [cook_profile_id], references: [id], onDelete: Cascade)
+  sanitary_level   sanitary_levels @relation(fields: [sanitary_level_id], references: [id])
+  reports_for_cook reports[]
 
   @@index([cook_profile_id, status])
 }
 
 model reports {
-  id                String @id @default(uuid())
+  id String @id @default(uuid())
 
-  reporter_user_id String
-  cook_profile_id  String
-  order_id         String?
+  reporter_user_id  String
+  cook_profile_id   String
+  order_id          String?
   sanitary_check_id String?
 
-  type              SanitaryReportType
-  status            SanitaryReportStatus @default(OPEN)
-  severity          Int @default(1) // 1..5
+  type     SanitaryReportType
+  status   SanitaryReportStatus @default(OPEN)
+  severity Int                  @default(1) // 1..5
 
-  description       String?
+  description        String?
   evidence_urls_json Json?
 
-  created_at        DateTime @default(now())
-  updated_at        DateTime @updatedAt
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
 
   resolved_by_admin_id String?
-  resolved_at       DateTime?
+  resolved_at          DateTime?
 
   // Relations
-  cook_profile      cook_profiles @relation("reports_cook", fields: [cook_profile_id], references: [id], onDelete: Cascade)
-  sanitary_check    sanitary_checks? @relation(fields: [sanitary_check_id], references: [id], onDelete: SetNull)
-  order             orders? @relation(fields: [order_id], references: [id], onDelete: SetNull)
+  cook_profile   cook_profiles    @relation("reports_cook", fields: [cook_profile_id], references: [id], onDelete: Cascade)
+  sanitary_check sanitary_checks? @relation(fields: [sanitary_check_id], references: [id], onDelete: SetNull)
+  order          orders?          @relation(fields: [order_id], references: [id], onDelete: SetNull)
 }
 
 model suspensions {
   id              String @id @default(uuid())
   cook_profile_id String
 
-  status          SuspensionStatus @default(ACTIVE)
-  reason_type     SanitaryReportType?
-  reason_text     String?
+  status      SuspensionStatus    @default(ACTIVE)
+  reason_type SanitaryReportType?
+  reason_text String?
 
-  started_at      DateTime @default(now())
-  ends_at         DateTime?
-  revoked_at      DateTime?
+  started_at DateTime  @default(now())
+  ends_at    DateTime?
+  revoked_at DateTime?
 
-  created_at      DateTime @default(now())
-  updated_at      DateTime @updatedAt
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
 
-  cook_profile    cook_profiles @relation(fields: [cook_profile_id], references: [id], onDelete: Cascade)
+  cook_profile cook_profiles @relation(fields: [cook_profile_id], references: [id], onDelete: Cascade)
 
   @@index([cook_profile_id, status])
 }
@@ -648,38 +664,37 @@ model suspensions {
 // Idempotency & Outbox
 // =========================
 model idempotency_keys {
-  id                String @id @default(uuid())
-  user_id           String
-  action            String // e.g. "create_order"
-  idempotency_key   String
+  id              String @id @default(uuid())
+  user_id         String
+  action          String // e.g. "create_order"
+  idempotency_key String
 
-  request_hash     String?
-  response_json    Json?
+  request_hash  String?
+  response_json Json?
 
-  expires_at       DateTime
-  created_at       DateTime @default(now())
+  expires_at DateTime
+  created_at DateTime @default(now())
 
   @@unique([user_id, action, idempotency_key])
   @@index([expires_at])
 }
 
 model domain_event_outbox {
-  id            String @id @default(uuid())
-  event_type    String
+  id         String @id @default(uuid())
+  event_type String
 
   aggregate_type String?
   aggregate_id   String?
 
-  payload_json  Json
-  status        OutboxStatus @default(NEW)
+  payload_json Json
+  status       OutboxStatus @default(NEW)
 
-  attempts       Int @default(0)
+  attempts Int @default(0)
 
-  created_at     DateTime @default(now())
-  processed_at   DateTime?
-  last_error     String?
+  created_at   DateTime  @default(now())
+  processed_at DateTime?
+  last_error   String?
 
   @@index([status, created_at])
   @@index([aggregate_type, aggregate_id])
 }
-
