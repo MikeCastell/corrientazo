@@ -13,12 +13,14 @@ class AppScaffold extends StatelessWidget {
     required this.body,
     this.trailing,
     this.bottomNavigationBar,
+    this.showTopBar = true,
   });
 
   final String title;
   final Widget body;
   final Widget? trailing;
   final Widget? bottomNavigationBar;
+  final bool showTopBar;
 
   @override
   Widget build(BuildContext context) {
@@ -31,69 +33,71 @@ class AppScaffold extends StatelessWidget {
     return Scaffold(
       extendBodyBehindAppBar: true,
       bottomNavigationBar: bottomNavigationBar,
-      appBar: PreferredSize(
-        preferredSize: const Size.fromHeight(68),
-        child: SafeArea(
-          bottom: false,
-          child: Padding(
-            padding: const EdgeInsets.fromLTRB(
-              AppSpacing.md,
-              AppSpacing.sm,
-              AppSpacing.md,
-              AppSpacing.sm,
-            ),
-            child: ClipRRect(
-              borderRadius: BorderRadius.circular(AppRadius.lg),
-              child: BackdropFilter(
-                filter: ImageFilter.blur(sigmaX: 18, sigmaY: 18),
-                child: Container(
-                  decoration: BoxDecoration(
-                    color: glass,
-                    border: Border.all(color: border),
+      appBar: showTopBar
+          ? PreferredSize(
+              preferredSize: const Size.fromHeight(68),
+              child: SafeArea(
+                bottom: false,
+                child: Padding(
+                  padding: const EdgeInsets.fromLTRB(
+                    AppSpacing.md,
+                    AppSpacing.sm,
+                    AppSpacing.md,
+                    AppSpacing.sm,
+                  ),
+                  child: ClipRRect(
                     borderRadius: BorderRadius.circular(AppRadius.lg),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withValues(
-                          alpha: isDark ? 0.22 : 0.08,
-                        ),
-                        blurRadius: isDark ? 24 : 18,
-                        offset: const Offset(0, 10),
-                      ),
-                      BoxShadow(
-                        color: AppColors.brand.withValues(
-                          alpha: isDark ? 0.10 : 0.06,
-                        ),
-                        blurRadius: 26,
-                        offset: const Offset(0, 14),
-                      ),
-                    ],
-                  ),
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: AppSpacing.md,
-                  ),
-                  child: Row(
-                    children: [
-                      Expanded(
-                        child: Text(
-                          title,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: Theme.of(context).textTheme.titleLarge
-                              ?.copyWith(
-                                fontWeight: FontWeight.w900,
-                                letterSpacing: -0.3,
+                    child: BackdropFilter(
+                      filter: ImageFilter.blur(sigmaX: 18, sigmaY: 18),
+                      child: Container(
+                        decoration: BoxDecoration(
+                          color: glass,
+                          border: Border.all(color: border),
+                          borderRadius: BorderRadius.circular(AppRadius.lg),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withValues(
+                                alpha: isDark ? 0.22 : 0.08,
                               ),
+                              blurRadius: isDark ? 24 : 18,
+                              offset: const Offset(0, 10),
+                            ),
+                            BoxShadow(
+                              color: AppColors.brand.withValues(
+                                alpha: isDark ? 0.10 : 0.06,
+                              ),
+                              blurRadius: 26,
+                              offset: const Offset(0, 14),
+                            ),
+                          ],
+                        ),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: AppSpacing.md,
+                        ),
+                        child: Row(
+                          children: [
+                            Expanded(
+                              child: Text(
+                                title,
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: Theme.of(context).textTheme.titleLarge
+                                    ?.copyWith(
+                                      fontWeight: FontWeight.w900,
+                                      letterSpacing: -0.3,
+                                    ),
+                              ),
+                            ),
+                            if (trailing != null) ...[trailing!],
+                          ],
                         ),
                       ),
-                      if (trailing != null) ...[trailing!],
-                    ],
+                    ),
                   ),
                 ),
               ),
-            ),
-          ),
-        ),
-      ),
+            )
+          : null,
       body: SafeArea(
         top: false,
         child: Stack(
@@ -135,7 +139,10 @@ class AppScaffold extends StatelessWidget {
                 alpha: isDark ? 0.10 : 0.07,
               ),
             ),
-            Padding(padding: const EdgeInsets.only(top: 84), child: body),
+            Padding(
+              padding: EdgeInsets.only(top: showTopBar ? 84 : 0),
+              child: body,
+            ),
           ],
         ),
       ),

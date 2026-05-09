@@ -1,0 +1,296 @@
+<!DOCTYPE html>
+
+<html class="light" lang="es"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            "colors": {
+                    "on-tertiary-fixed-variant": "#004b70",
+                    "surface-container-highest": "#f4ded3",
+                    "surface-tint": "#994700",
+                    "on-surface-variant": "#574236",
+                    "on-error-container": "#93000a",
+                    "primary": "#994700",
+                    "surface-bright": "#fff8f5",
+                    "outline": "#8b7264",
+                    "surface": "#fff8f5",
+                    "tertiary-fixed-dim": "#8dcdff",
+                    "secondary": "#b22c11",
+                    "surface-container-lowest": "#ffffff",
+                    "error": "#ba1a1a",
+                    "inverse-primary": "#ffb68b",
+                    "secondary-fixed-dim": "#ffb4a4",
+                    "on-secondary-fixed": "#3e0500",
+                    "inverse-surface": "#3a2e27",
+                    "on-primary-container": "#592600",
+                    "on-primary-fixed-variant": "#743400",
+                    "tertiary-container": "#00a7f2",
+                    "on-secondary": "#ffffff",
+                    "on-secondary-container": "#5c0b00",
+                    "on-secondary-fixed-variant": "#8d1600",
+                    "surface-dim": "#ebd6cb",
+                    "surface-container-low": "#fff1ea",
+                    "secondary-container": "#fb6041",
+                    "on-tertiary": "#ffffff",
+                    "on-surface": "#241913",
+                    "tertiary": "#006493",
+                    "on-tertiary-container": "#003956",
+                    "surface-variant": "#f4ded3",
+                    "on-primary-fixed": "#321300",
+                    "on-background": "#241913",
+                    "on-error": "#ffffff",
+                    "on-tertiary-fixed": "#001e30",
+                    "background": "#fff8f5",
+                    "surface-container": "#ffeadf",
+                    "secondary-fixed": "#ffdad3",
+                    "outline-variant": "#dec1b1",
+                    "on-primary": "#ffffff",
+                    "error-container": "#ffdad6",
+                    "primary-fixed-dim": "#ffb68b",
+                    "primary-container": "#f57c1f",
+                    "inverse-on-surface": "#ffede5",
+                    "primary-fixed": "#ffdbc8",
+                    "surface-container-high": "#fae4d9",
+                    "tertiary-fixed": "#cae6ff"
+            },
+            "borderRadius": {
+                    "DEFAULT": "0.25rem",
+                    "lg": "0.5rem",
+                    "xl": "0.75rem",
+                    "full": "9999px"
+            },
+            "spacing": {
+                    "xl": "32px",
+                    "xs": "4px",
+                    "margin-desktop": "64px",
+                    "sm": "8px",
+                    "unit": "8px",
+                    "lg": "24px",
+                    "gutter": "16px",
+                    "margin-mobile": "20px",
+                    "md": "16px"
+            },
+            "fontFamily": {
+                    "headline-lg": ["Plus Jakarta Sans"],
+                    "label-md": ["Plus Jakarta Sans"],
+                    "headline-lg-mobile": ["Plus Jakarta Sans"],
+                    "body-md": ["Plus Jakarta Sans"],
+                    "headline-md": ["Plus Jakarta Sans"],
+                    "label-lg": ["Plus Jakarta Sans"],
+                    "body-lg": ["Plus Jakarta Sans"],
+                    "display-lg": ["Plus Jakarta Sans"]
+            },
+            "fontSize": {
+                    "headline-lg": ["32px", {"lineHeight": "40px", "letterSpacing": "-0.01em", "fontWeight": "700"}],
+                    "label-md": ["12px", {"lineHeight": "16px", "fontWeight": "600"}],
+                    "headline-lg-mobile": ["28px", {"lineHeight": "36px", "fontWeight": "700"}],
+                    "body-md": ["16px", {"lineHeight": "24px", "fontWeight": "400"}],
+                    "headline-md": ["24px", {"lineHeight": "32px", "fontWeight": "700"}],
+                    "label-lg": ["14px", {"lineHeight": "20px", "letterSpacing": "0.05em", "fontWeight": "600"}],
+                    "body-lg": ["18px", {"lineHeight": "28px", "fontWeight": "400"}],
+                    "display-lg": ["48px", {"lineHeight": "56px", "letterSpacing": "-0.02em", "fontWeight": "800"}]
+            }
+          },
+        },
+      }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        body {
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            background-color: #fff8f5; /* surface-bright / Warm Cream */
+        }
+        .hide-scrollbar::-webkit-scrollbar {
+            display: none;
+        }
+        .hide-scrollbar {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="text-on-surface antialiased">
+<!-- TopAppBar -->
+<header class="fixed top-0 left-0 w-full z-50 bg-background dark:bg-on-background px-margin-mobile md:px-margin-desktop py-sm flex justify-between items-center transition-opacity hover:opacity-80">
+<div class="flex items-center gap-md">
+<div class="w-10 h-10 rounded-full overflow-hidden border-2 border-primary-container">
+<img alt="User Profile" class="w-full h-full object-cover" data-alt="A professional close-up portrait of a friendly young man with a warm smile, set against a soft-focus indoor background. The lighting is high-key and natural, emphasizing a bright, trustworthy aesthetic that aligns with the premium service feel of the food delivery app. The image features a clean, high-resolution finish with warm skin tones." src="https://lh3.googleusercontent.com/aida-public/AB6AXuDW2llDiGyLA1uFRVn_17CgKTLbFBdtqnYxlb1DC63T5Aagh4Iuu-CIe16A5RztFg-X0NYfzyVT_gvOObCHS9M5xfVyBefteEDlCxiJnnrugSna0igPtNem2wF6WBwbgZo8WqaYxAsqsbM7jfJolWExPa9nlCLUaLlEM1u9ipkNFp7FN064Vu4lAMuJ0aX4msVr1ScU5bEoa6N0Kb0Vh8WIWXJOevKoo0CI835h7pkvjrHMf3KbPxoSdvttRLIDktfbJ-Zu3UAf6Cw"/>
+</div>
+</div>
+<h1 class="font-headline-md text-headline-md font-bold text-primary-container dark:text-primary-fixed tracking-tight">CORRIENTAZO</h1>
+<button class="text-primary dark:text-primary-fixed-dim active:scale-95 duration-150">
+<span class="material-symbols-outlined text-[28px]">notifications</span>
+</button>
+</header>
+<main class="pt-24 pb-32 max-w-[1280px] mx-auto px-margin-mobile md:px-margin-desktop space-y-xl">
+<!-- Active Order Card -->
+<section>
+<div class="bg-primary-container rounded-xl p-md flex items-center gap-md shadow-md">
+<div class="bg-white/20 p-sm rounded-lg">
+<span class="material-symbols-outlined text-white text-[32px]" style="font-variation-settings: 'FILL' 1;">delivery_dining</span>
+</div>
+<div class="flex-1">
+<p class="font-label-lg text-label-lg text-white opacity-90">Pedido en curso</p>
+<h2 class="font-headline-sm text-headline-sm text-white font-bold">Tu Ajiaco está en camino</h2>
+</div>
+<button class="bg-white text-primary px-lg py-xs rounded-full font-label-lg text-label-lg shadow-sm active:scale-95 transition-transform">
+                    Rastrear
+                </button>
+</div>
+</section>
+<!-- Search Bar -->
+<section>
+<div class="relative group">
+<span class="material-symbols-outlined absolute left-md top-1/2 -translate-y-1/2 text-outline">search</span>
+<input class="w-full pl-12 pr-md py-4 bg-white border border-outline-variant rounded-xl focus:border-primary-container focus:ring-1 focus:ring-primary-container outline-none transition-all placeholder:text-outline font-body-md text-body-md" placeholder="¿Qué se te antoja hoy?" type="text"/>
+</div>
+</section>
+<!-- Categories -->
+<section>
+<div class="flex overflow-x-auto gap-md hide-scrollbar pb-xs">
+<div class="flex flex-col items-center gap-xs min-w-[80px]">
+<div class="w-16 h-16 rounded-full bg-primary-container flex items-center justify-center text-white shadow-sm">
+<span class="material-symbols-outlined text-[32px]">restaurant</span>
+</div>
+<span class="font-label-md text-label-md text-on-surface">Corrientazos</span>
+</div>
+<div class="flex flex-col items-center gap-xs min-w-[80px]">
+<div class="w-16 h-16 rounded-full bg-white border border-outline-variant flex items-center justify-center text-primary shadow-sm">
+<span class="material-symbols-outlined text-[32px]">soup_kitchen</span>
+</div>
+<span class="font-label-md text-label-md text-on-surface-variant">Sopas</span>
+</div>
+<div class="flex flex-col items-center gap-xs min-w-[80px]">
+<div class="w-16 h-16 rounded-full bg-white border border-outline-variant flex items-center justify-center text-primary shadow-sm">
+<span class="material-symbols-outlined text-[32px]">breakfast_dining</span>
+</div>
+<span class="font-label-md text-label-md text-on-surface-variant">Arepas</span>
+</div>
+<div class="flex flex-col items-center gap-xs min-w-[80px]">
+<div class="w-16 h-16 rounded-full bg-white border border-outline-variant flex items-center justify-center text-primary shadow-sm">
+<span class="material-symbols-outlined text-[32px]">bakery_dining</span>
+</div>
+<span class="font-label-md text-label-md text-on-surface-variant">Fritos</span>
+</div>
+<div class="flex flex-col items-center gap-xs min-w-[80px]">
+<div class="w-16 h-16 rounded-full bg-white border border-outline-variant flex items-center justify-center text-primary shadow-sm">
+<span class="material-symbols-outlined text-[32px]">local_drink</span>
+</div>
+<span class="font-label-md text-label-md text-on-surface-variant">Jugos</span>
+</div>
+</div>
+</section>
+<!-- Recommended Section (Cinematic Card) -->
+<section>
+<div class="flex items-center justify-between mb-md">
+<h3 class="font-headline-md text-headline-md text-on-surface">Recomendados</h3>
+<span class="text-primary font-label-lg text-label-lg cursor-pointer hover:opacity-80">Ver todo</span>
+</div>
+<div class="relative w-full h-80 rounded-2xl overflow-hidden shadow-lg group cursor-pointer">
+<img alt="Bandeja Paisa" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" data-alt="A cinematic, top-down professional food photograph of an authentic Colombian Bandeja Paisa. The plate is overflowing with perfectly cooked red beans, white rice, ground meat, a crispy pork rind, fried egg, ripe plantain, avocado, and a small arepa. The lighting is warm and golden, casting soft shadows on a rustic wooden table, creating an appetizing and communal atmosphere that embodies the Modern Latin Soul style." src="https://lh3.googleusercontent.com/aida-public/AB6AXuBhp-ur5rf3Ww0BZKWxb5MxdCHKtd0KFqOVGgJ2jm_tWwXb-OmfQJ6Aj_EB0LiIWgOOCNO1S-82H9LamCuudSJS_Ydo7NNLK4tCoRUIwMJY5QGlcVDa1jxpEq-Ck6dyhUdt-EML9X8lltmcjjt2xwNC3IznKc7N1FJBWgMncw-4LsuaHWjtrIX2Zmge4FeNkFDy3s0MSIznkyv38TabgmlsvkcoZT6erQfnb7BBkMgIFYZldtcvYefGhFYjUkfW1hMNXDs7nTCPHVg"/>
+<div class="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent"></div>
+<div class="absolute bottom-0 left-0 p-lg w-full">
+<div class="flex gap-sm mb-sm">
+<span class="bg-primary-container text-white px-md py-1 rounded-full text-label-md font-label-md">Destacado</span>
+<span class="bg-white/20 backdrop-blur-md text-white px-md py-1 rounded-full text-label-md font-label-md">Popular</span>
+</div>
+<h4 class="font-headline-lg text-headline-lg text-white mb-xs">Bandeja Paisa Auténtica</h4>
+<p class="text-white/80 font-body-md text-body-md mb-md">El sabor tradicional de Antioquia en un solo plato.</p>
+<div class="flex items-center justify-between">
+<span class="text-white font-headline-md text-headline-md">$32.000</span>
+<button class="bg-primary-container text-white p-sm rounded-full active:scale-95 duration-200">
+<span class="material-symbols-outlined">add_shopping_cart</span>
+</button>
+</div>
+</div>
+</div>
+</section>
+<!-- Platos del Día -->
+<section>
+<div class="flex items-center justify-between mb-md">
+<h3 class="font-headline-md text-headline-md text-on-surface">Platos del Día</h3>
+<span class="text-primary font-label-lg text-label-lg cursor-pointer">Menú completo</span>
+</div>
+<div class="grid grid-cols-1 md:grid-cols-2 gap-lg">
+<!-- Card 1 -->
+<div class="bg-white rounded-xl overflow-hidden flex shadow-md group cursor-pointer hover:shadow-xl transition-all">
+<div class="w-1/3 relative">
+<img alt="Sancocho Trifásico" class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300" data-alt="A vibrant, close-up shot of a steaming bowl of Sancocho Trifásico, a traditional Colombian soup. The image shows rich yellow broth, chunks of corn on the cob, potatoes, and tender meat. It is presented in a traditional clay bowl on a bright, warm surface. The lighting is bright and natural, highlighting the steam and fresh textures of the food." src="https://lh3.googleusercontent.com/aida-public/AB6AXuCRoE22hET_tWVRprI7LVyvk5o4MHutD1dlqs7ocpvVNsIeIK1wp2qEgDaqGzgPQXSr1SSSyMvGpkrAZy2tXYypXOnwloYk7jC3bFb06jOqsEPAawoxuSY4ZkkWyZmPzHqytEmuKUrcKxxVn4MwHuzfOxbinaf0dSExcCS4e9HjFSC-xAGnjiGLU0ODvPS6PzAtjn6skFuJZ_Qdh-6hv8cPLgZLS3PjZ5A-OJiwAPNKNiHMdA7rybD7dJ9YKVjT42p28RSektEJhnw"/>
+</div>
+<div class="w-2/3 p-md flex flex-col justify-between">
+<div>
+<div class="flex justify-between items-start">
+<h5 class="font-headline-sm text-headline-sm text-on-surface">Sancocho Trifásico</h5>
+<span class="material-symbols-outlined text-secondary" style="font-variation-settings: 'FILL' 1;">favorite</span>
+</div>
+<p class="text-on-surface-variant font-body-md text-body-md line-clamp-2 mt-xs">Tres carnes, yuca, plátano y mazorca. Acompañado de arroz y aguacate.</p>
+</div>
+<div class="flex items-center justify-between mt-md">
+<span class="font-headline-md text-headline-md text-primary">$24.500</span>
+<div class="flex items-center gap-xs">
+<span class="material-symbols-outlined text-primary text-sm" style="font-variation-settings: 'FILL' 1;">star</span>
+<span class="text-on-surface-variant font-label-md text-label-md">4.9</span>
+</div>
+</div>
+</div>
+</div>
+<!-- Card 2 -->
+<div class="bg-white rounded-xl overflow-hidden flex shadow-md group cursor-pointer hover:shadow-xl transition-all">
+<div class="w-1/3 relative">
+<img alt="Pollo a la Plancha" class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300" data-alt="A clean, appetizing display of grilled chicken breast with golden grill marks, served alongside a fresh green salad and golden-brown french fries. The dish is presented on a minimalist white ceramic plate, creating a high-contrast and fresh look. The background is a soft cream, maintaining the brand's warm and modern digital philosophy." src="https://lh3.googleusercontent.com/aida-public/AB6AXuCjAuxAKAcolza7agQV5PuRA3e0tdHFR_1WU6ilkiO71LI7utcur5COOqCXGj1RPZXF7JIdc0IBHq3fY9wfGb50uhlYuStWjUU42WY7jyufkC1MzTGkaJYpOhJfG4z2J83TTmBhbm529C2_atzkCCYYB4F9iAkSktiOm9buYLEAywzW6W1UQQU8ODJnxVFk3licjKtMFAAJY6-H-cmchBNLuLTF5sNMsC0DY2TQwx2lj1rVFs9EB2dLxHCJ3h4CLpd9FjV6EZTpd9o"/>
+</div>
+<div class="w-2/3 p-md flex flex-col justify-between">
+<div>
+<div class="flex justify-between items-start">
+<h5 class="font-headline-sm text-headline-sm text-on-surface">Pollo a la Plancha</h5>
+<span class="material-symbols-outlined text-outline">favorite</span>
+</div>
+<p class="text-on-surface-variant font-body-md text-body-md line-clamp-2 mt-xs">Pechuga marinada a las finas hierbas con ensalada fresca y papas fritas.</p>
+</div>
+<div class="flex items-center justify-between mt-md">
+<span class="font-headline-md text-headline-md text-primary">$18.900</span>
+<div class="flex items-center gap-xs">
+<span class="material-symbols-outlined text-primary text-sm" style="font-variation-settings: 'FILL' 1;">star</span>
+<span class="text-on-surface-variant font-label-md text-label-md">4.7</span>
+</div>
+</div>
+</div>
+</div>
+</div>
+</section>
+</main>
+<!-- BottomNavBar -->
+<nav class="fixed bottom-0 left-0 w-full z-50 flex justify-around items-center px-lg py-md pb-safe shadow-lg bg-surface dark:bg-inverse-surface rounded-t-xl">
+<a class="flex flex-col items-center justify-center bg-primary-container text-on-primary rounded-full px-4 py-1 scale-90 duration-200" href="#">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">home</span>
+<span class="font-label-md text-label-md">Inicio</span>
+</a>
+<a class="flex flex-col items-center justify-center text-on-surface-variant dark:text-outline-variant px-4 py-1 hover:bg-surface-container-low transition-colors" href="#">
+<span class="material-symbols-outlined">search</span>
+<span class="font-label-md text-label-md">Explorar</span>
+</a>
+<a class="flex flex-col items-center justify-center text-on-surface-variant dark:text-outline-variant px-4 py-1 hover:bg-surface-container-low transition-colors" href="#">
+<span class="material-symbols-outlined">shopping_bag</span>
+<span class="font-label-md text-label-md">Pedidos</span>
+</a>
+<a class="flex flex-col items-center justify-center text-on-surface-variant dark:text-outline-variant px-4 py-1 hover:bg-surface-container-low transition-colors" href="#">
+<span class="material-symbols-outlined">person</span>
+<span class="font-label-md text-label-md">Perfil</span>
+</a>
+</nav>
+</body></html>

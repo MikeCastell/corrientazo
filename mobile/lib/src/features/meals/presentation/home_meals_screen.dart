@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
@@ -28,7 +29,8 @@ class HomeMealsScreen extends ConsumerWidget {
     final orders = ref.watch(customerOrdersControllerProvider);
 
     return AppScaffold(
-      title: 'Disponible hoy',
+      title: '',
+      showTopBar: false,
       body: RefreshIndicator(
         onRefresh: () async => ref.refresh(mealsFeedProvider.future),
         child: CustomScrollView(
@@ -36,7 +38,7 @@ class HomeMealsScreen extends ConsumerWidget {
           physics: const AlwaysScrollableScrollPhysics(),
           slivers: [
             SliverToBoxAdapter(
-              child: _FeedHeader(
+              child: _EditorialHeader(
                 onLogout: () =>
                     ref.read(authControllerProvider.notifier).logout(),
               ),
@@ -60,7 +62,7 @@ class HomeMealsScreen extends ConsumerWidget {
                 orElse: () => const SizedBox.shrink(),
               ),
             ),
-            const SliverToBoxAdapter(child: _VisualCategories()),
+            const SliverToBoxAdapter(child: _EditorialCategories()),
             ...feed.when(
               loading: () => const <Widget>[
                 SliverToBoxAdapter(child: _MealsLoadingInline()),
@@ -108,6 +110,52 @@ class HomeMealsScreen extends ConsumerWidget {
 
                 return <Widget>[
                   SliverToBoxAdapter(child: _FeaturedStrip(items: items)),
+                  SliverToBoxAdapter(
+                    child: Padding(
+                      padding: const EdgeInsets.fromLTRB(
+                        AppSpacing.md,
+                        AppSpacing.sm,
+                        AppSpacing.md,
+                        AppSpacing.sm,
+                      ),
+                      child: Row(
+                        children: [
+                          Expanded(
+                            child: Text(
+                              'Platos del día',
+                              style: Theme.of(context).textTheme.titleLarge
+                                  ?.copyWith(
+                                    fontWeight: FontWeight.w900,
+                                    letterSpacing: -0.4,
+                                  ),
+                            ),
+                          ),
+                          TextButton(
+                            onPressed: () {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(
+                                  content: Text(
+                                    'Menú completo (próximamente).',
+                                  ),
+                                  behavior: SnackBarBehavior.floating,
+                                ),
+                              );
+                            },
+                            child: Text(
+                              'Menú completo',
+                              style: Theme.of(context).textTheme.labelLarge
+                                  ?.copyWith(
+                                    fontWeight: FontWeight.w900,
+                                    color: AppColors.primary.withValues(
+                                      alpha: 0.90,
+                                    ),
+                                  ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
                   SliverPadding(
                     padding: const EdgeInsets.fromLTRB(
                       AppSpacing.md,
@@ -126,6 +174,8 @@ class HomeMealsScreen extends ConsumerWidget {
                         priceCop: items[i].priceCop,
                         stockAvailable: items[i].stockAvailable,
                         title: items[i].title,
+                        description: items[i].description,
+                        tags: items[i].tags,
                         photoUrl: items[i].photoUrl,
                         cookName: items[i].cookName,
                         cookAvatarUrl: items[i].cookAvatarUrl,
@@ -315,104 +365,171 @@ String _pseudoEtaLabel(DateTime createdAt, String status) {
   return '$low–$high min';
 }
 
-class _FeedHeader extends StatelessWidget {
-  const _FeedHeader({required this.onLogout});
+class _EditorialHeader extends StatelessWidget {
+  const _EditorialHeader({required this.onLogout});
 
   final VoidCallback onLogout;
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(
-        AppSpacing.md,
-        AppSpacing.md,
-        AppSpacing.md,
-        AppSpacing.sm,
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'Comida casera cerca de ti',
-                      style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                        fontWeight: FontWeight.w900,
-                        letterSpacing: -0.3,
-                      ),
-                    ),
-                    const SizedBox(height: 2),
-                    Text(
-                      'Hoy · Fresco · Cupos limitados',
-                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                        color: Theme.of(
-                          context,
-                        ).colorScheme.onSurface.withValues(alpha: 0.65),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              IconButton(
-                tooltip: 'Cerrar sesión',
-                onPressed: onLogout,
-                icon: const Icon(Icons.logout),
-              ),
-            ],
+    final scheme = Theme.of(context).colorScheme;
+    final locationTone = const Color(0xFF6B4A3A).withValues(alpha: 0.62);
+    final subtitleTone = const Color(0xFF6B4A3A).withValues(alpha: 0.78);
+
+    return TweenAnimationBuilder<double>(
+      tween: Tween(begin: 0.0, end: 1.0),
+      duration: const Duration(milliseconds: 260),
+      curve: Curves.easeOutCubic,
+      builder: (context, t, child) {
+        return Opacity(
+          opacity: t,
+          child: Transform.translate(
+            offset: Offset(0, (1 - t) * 6),
+            child: child,
           ),
-          const SizedBox(height: AppSpacing.sm),
-          Container(
-            padding: const EdgeInsets.symmetric(
-              horizontal: AppSpacing.md,
-              vertical: 12,
-            ),
-            decoration: BoxDecoration(
-              color: Theme.of(context).colorScheme.surface,
-              borderRadius: BorderRadius.circular(AppRadius.xl),
-              border: Border.all(color: Theme.of(context).dividerColor),
-            ),
-            child: Row(
+        );
+      },
+      child: Padding(
+        padding: EdgeInsets.fromLTRB(
+          AppSpacing.lg,
+          MediaQuery.paddingOf(context).top + AppSpacing.lg,
+          AppSpacing.lg,
+          AppSpacing.md,
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
               children: [
-                const Icon(Icons.search, color: AppColors.brand),
-                const SizedBox(width: AppSpacing.sm),
+                Icon(Icons.place_outlined, size: 16, color: locationTone),
+                const SizedBox(width: 6),
                 Expanded(
                   child: Text(
-                    'Buscar corrientazo, sopa, jugo…',
-                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                      color: Theme.of(
-                        context,
-                      ).colorScheme.onSurface.withValues(alpha: 0.55),
+                    'Bogotá • Almuerzos caseros cerca de ti',
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: Theme.of(context).textTheme.labelLarge?.copyWith(
+                      letterSpacing: 0.8,
+                      fontWeight: FontWeight.w800,
+                      color: locationTone,
                     ),
                   ),
                 ),
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: AppSpacing.sm,
-                    vertical: 8,
-                  ),
-                  decoration: BoxDecoration(
-                    color: AppColors.brand.withValues(alpha: 0.10),
-                    borderRadius: BorderRadius.circular(99),
-                    border: Border.all(
-                      color: AppColors.brand.withValues(alpha: 0.18),
-                    ),
-                  ),
-                  child: Text(
-                    'Cerca',
-                    style: Theme.of(context).textTheme.labelLarge?.copyWith(
-                      fontWeight: FontWeight.w900,
-                      color: AppColors.brand,
-                    ),
+                IconButton(
+                  tooltip: 'Cerrar sesión',
+                  onPressed: onLogout,
+                  icon: Icon(
+                    Icons.logout,
+                    size: 18,
+                    color: scheme.onSurface.withValues(alpha: 0.55),
                   ),
                 ),
               ],
             ),
+            const SizedBox(height: AppSpacing.md),
+            Text(
+              '¿Qué se te antoja hoy? 🍲',
+              style: Theme.of(context).textTheme.displaySmall?.copyWith(
+                fontWeight: FontWeight.w900,
+                letterSpacing: -0.9,
+                height: 1.05,
+                color: scheme.onSurface.withValues(alpha: 0.92),
+              ),
+            ),
+            const SizedBox(height: 10),
+            Text(
+              'Comida casera hecha por cooks reales cerca de ti',
+              style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                fontWeight: FontWeight.w700,
+                height: 1.25,
+                color: subtitleTone,
+              ),
+            ),
+            const SizedBox(height: AppSpacing.lg),
+            _SearchBarPremium(
+              placeholder: 'Busca corrientazos, sopas, bandejas…',
+              onTap: () {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text('Búsqueda (próximamente).'),
+                    behavior: SnackBarBehavior.floating,
+                  ),
+                );
+              },
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _SearchBarPremium extends StatelessWidget {
+  const _SearchBarPremium({required this.placeholder, required this.onTap});
+
+  final String placeholder;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final surface = (isDark ? AppColors.surfaceDark : AppColors.surface)
+        .withValues(alpha: isDark ? 0.84 : 0.92);
+    final border = isDark ? AppColors.borderDark : AppColors.border;
+
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(999),
+        child: Container(
+          padding: const EdgeInsets.symmetric(
+            horizontal: AppSpacing.lg,
+            vertical: 16,
           ),
-        ],
+          decoration: BoxDecoration(
+            color: surface,
+            borderRadius: BorderRadius.circular(999),
+            border: Border.all(color: border.withValues(alpha: 0.85)),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: isDark ? 0.0 : 0.05),
+                blurRadius: 22,
+                offset: const Offset(0, 14),
+              ),
+              BoxShadow(
+                color: AppColors.primary.withValues(
+                  alpha: isDark ? 0.06 : 0.05,
+                ),
+                blurRadius: 30,
+                offset: const Offset(0, 18),
+              ),
+            ],
+          ),
+          child: Row(
+            children: [
+              Icon(
+                Icons.search,
+                size: 20,
+                color: AppColors.brand.withValues(alpha: 0.72),
+              ),
+              const SizedBox(width: AppSpacing.sm),
+              Expanded(
+                child: Text(
+                  placeholder,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                    color: Theme.of(
+                      context,
+                    ).colorScheme.onSurface.withValues(alpha: 0.55),
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }
@@ -425,8 +542,9 @@ class _FeaturedStrip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final picks = items.take(5).toList(growable: false);
-    if (picks.isEmpty) return const SizedBox.shrink();
+    if (items.isEmpty) return const SizedBox.shrink();
+    final hero = items.first;
+    final food = ColombianFoodMock.forMeal(hero.mealId);
 
     return Padding(
       padding: const EdgeInsets.fromLTRB(
@@ -438,44 +556,48 @@ class _FeaturedStrip extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            'Hoy está pesado',
-            style: Theme.of(context).textTheme.titleLarge?.copyWith(
-              fontWeight: FontWeight.w900,
-              letterSpacing: -0.4,
-            ),
-          ),
-          const SizedBox(height: AppSpacing.sm),
-          SizedBox(
-            height: 220,
-            child: ListView.separated(
-              scrollDirection: Axis.horizontal,
-              itemCount: picks.length,
-              separatorBuilder: (context, index) =>
-                  const SizedBox(width: AppSpacing.sm),
-              itemBuilder: (context, i) {
-                final item = picks[i];
-                final food = ColombianFoodMock.forMeal(item.mealId);
-                return _FeaturedTile(
-                  title: food.title,
-                  subtitle: food.subtitle,
-                  imageAsset: food.imageAsset,
-                  icon: food.heroIcon,
-                  gradient: food.heroGradient,
-                  onTap: () => context.go(
-                    '${const HomeRoute().location}/meals/${item.id}',
+          Row(
+            children: [
+              Expanded(
+                child: Text(
+                  'Recomendados',
+                  style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                    fontWeight: FontWeight.w900,
+                    letterSpacing: -0.4,
                   ),
-                );
-              },
-            ),
+                ),
+              ),
+              TextButton(
+                onPressed: () {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text('Recomendados (próximamente).'),
+                      behavior: SnackBarBehavior.floating,
+                    ),
+                  );
+                },
+                child: Text(
+                  'Ver todo',
+                  style: Theme.of(context).textTheme.labelLarge?.copyWith(
+                    fontWeight: FontWeight.w900,
+                    color: AppColors.primary.withValues(alpha: 0.90),
+                  ),
+                ),
+              ),
+            ],
           ),
           const SizedBox(height: AppSpacing.sm),
-          Text(
-            'Explora el barrio',
-            style: Theme.of(context).textTheme.titleLarge?.copyWith(
-              fontWeight: FontWeight.w900,
-              letterSpacing: -0.4,
-            ),
+          _FeaturedHeroCard(
+            title: hero.title ?? food.title,
+            subtitle: (hero.description ?? food.subtitle).trim().isEmpty
+                ? food.subtitle
+                : (hero.description ?? food.subtitle),
+            priceCop: hero.priceCop,
+            imageAsset: food.imageAsset,
+            icon: food.heroIcon,
+            gradient: food.heroGradient,
+            onTap: () =>
+                context.go('${const HomeRoute().location}/meals/${hero.id}'),
           ),
         ],
       ),
@@ -483,10 +605,11 @@ class _FeaturedStrip extends StatelessWidget {
   }
 }
 
-class _FeaturedTile extends StatelessWidget {
-  const _FeaturedTile({
+class _FeaturedHeroCard extends StatelessWidget {
+  const _FeaturedHeroCard({
     required this.title,
     required this.subtitle,
+    required this.priceCop,
     required this.imageAsset,
     required this.icon,
     required this.gradient,
@@ -495,6 +618,7 @@ class _FeaturedTile extends StatelessWidget {
 
   final String title;
   final String subtitle;
+  final int priceCop;
   final String imageAsset;
   final IconData icon;
   final LinearGradient gradient;
@@ -502,143 +626,32 @@ class _FeaturedTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final shadowColor = Colors.black.withValues(alpha: isDark ? 0.0 : 0.08);
+
     return InkWell(
       onTap: onTap,
       borderRadius: BorderRadius.circular(AppRadius.xl),
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(AppRadius.xl),
-        child: SizedBox(
-          width: 300,
-          child: Stack(
-            fit: StackFit.expand,
-            children: [
-              FoodImage(
-                asset: imageAsset,
-                fallbackGradient: gradient,
-                fallbackIcon: icon,
-              ),
-              DecoratedBox(
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    begin: Alignment.topCenter,
-                    end: Alignment.bottomCenter,
-                    colors: [
-                      Colors.black.withValues(alpha: 0.05),
-                      Colors.black.withValues(alpha: 0.35),
-                      Colors.black.withValues(alpha: 0.80),
-                    ],
-                    stops: const [0.0, 0.55, 1.0],
-                  ),
-                ),
-              ),
-              Positioned(
-                left: AppSpacing.md,
-                right: AppSpacing.md,
-                bottom: AppSpacing.md,
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      title,
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
-                      style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                        color: Colors.white,
-                        fontWeight: FontWeight.w900,
-                        letterSpacing: -0.5,
-                        height: 1.05,
-                      ),
-                    ),
-                    const SizedBox(height: 6),
-                    Text(
-                      subtitle,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                        color: Colors.white.withValues(alpha: 0.78),
-                        fontWeight: FontWeight.w700,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
+      child: Container(
+        height: 320,
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(AppRadius.xl),
+          boxShadow: [
+            BoxShadow(
+              color: shadowColor,
+              blurRadius: 28,
+              offset: const Offset(0, 18),
+            ),
+          ],
         ),
-      ),
-    );
-  }
-}
-
-class _VisualCategories extends StatelessWidget {
-  const _VisualCategories();
-
-  static const _items = [
-    _VisualCategory(
-      'Corrientazos',
-      'assets/food/corrientazo.png',
-      Icons.restaurant,
-    ),
-    _VisualCategory('Sopas', 'assets/food/ajiaco.png', Icons.soup_kitchen),
-    _VisualCategory('Arepas', 'assets/food/arepas.png', Icons.bakery_dining),
-    _VisualCategory('Fritos', 'assets/food/fritos.png', Icons.fastfood),
-    _VisualCategory('Jugos', 'assets/food/jugos.png', Icons.local_drink),
-    _VisualCategory(
-      'Ejecutivos',
-      'assets/food/bandeja.png',
-      Icons.local_dining,
-    ),
-  ];
-
-  @override
-  Widget build(BuildContext context) {
-    return SizedBox(
-      height: 112,
-      child: ListView.separated(
-        padding: const EdgeInsets.fromLTRB(
-          AppSpacing.md,
-          0,
-          AppSpacing.md,
-          AppSpacing.md,
-        ),
-        scrollDirection: Axis.horizontal,
-        itemCount: _items.length,
-        separatorBuilder: (context, index) =>
-            const SizedBox(width: AppSpacing.sm),
-        itemBuilder: (context, index) => _CategoryTile(category: _items[index]),
-      ),
-    );
-  }
-}
-
-class _VisualCategory {
-  const _VisualCategory(this.label, this.asset, this.icon);
-
-  final String label;
-  final String asset;
-  final IconData icon;
-}
-
-class _CategoryTile extends StatelessWidget {
-  const _CategoryTile({required this.category});
-
-  final _VisualCategory category;
-
-  @override
-  Widget build(BuildContext context) {
-    return SizedBox(
-      width: 132,
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(AppRadius.lg),
+        clipBehavior: Clip.antiAlias,
         child: Stack(
           fit: StackFit.expand,
           children: [
             FoodImage(
-              asset: category.asset,
-              fallbackGradient: ColombianFoodMock.forMeal(
-                category.label,
-              ).heroGradient,
-              fallbackIcon: category.icon,
+              asset: imageAsset,
+              fallbackGradient: gradient,
+              fallbackIcon: icon,
             ),
             DecoratedBox(
               decoration: BoxDecoration(
@@ -646,30 +659,324 @@ class _CategoryTile extends StatelessWidget {
                   begin: Alignment.topCenter,
                   end: Alignment.bottomCenter,
                   colors: [
-                    Colors.black.withValues(alpha: 0.02),
-                    Colors.black.withValues(alpha: 0.58),
+                    Colors.black.withValues(alpha: 0.04),
+                    Colors.black.withValues(alpha: 0.22),
+                    const Color(0xFF1A0B06).withValues(alpha: 0.62),
+                    Colors.black.withValues(alpha: 0.88),
                   ],
+                  stops: const [0.0, 0.35, 0.72, 1.0],
                 ),
               ),
             ),
             Positioned(
-              left: AppSpacing.sm,
-              right: AppSpacing.sm,
-              bottom: AppSpacing.sm,
-              child: Text(
-                category.label,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: Theme.of(context).textTheme.labelLarge?.copyWith(
-                  color: Colors.white,
-                  fontWeight: FontWeight.w900,
-                  letterSpacing: -0.1,
-                ),
+              left: AppSpacing.md,
+              right: AppSpacing.md,
+              top: AppSpacing.md,
+              child: Row(
+                children: const [
+                  _FeaturedChip(label: 'Destacado'),
+                  SizedBox(width: 8),
+                  _FeaturedChip(label: 'Popular', translucent: true),
+                ],
+              ),
+            ),
+            Positioned(
+              left: AppSpacing.md,
+              right: AppSpacing.md,
+              bottom: AppSpacing.md,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    title,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                      color: Colors.white,
+                      fontWeight: FontWeight.w900,
+                      letterSpacing: -0.6,
+                      height: 1.05,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    subtitle,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                      color: Colors.white.withValues(alpha: 0.78),
+                      height: 1.25,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  Row(
+                    children: [
+                      Text(
+                        _formatCop(priceCop),
+                        style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                          color: Colors.white,
+                          fontWeight: FontWeight.w900,
+                          letterSpacing: -0.4,
+                        ),
+                      ),
+                      const Spacer(),
+                      Container(
+                        width: 44,
+                        height: 44,
+                        decoration: BoxDecoration(
+                          color: AppColors.primary.withValues(alpha: 0.92),
+                          shape: BoxShape.circle,
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withValues(alpha: 0.14),
+                              blurRadius: 18,
+                              offset: const Offset(0, 12),
+                            ),
+                          ],
+                        ),
+                        child: const Icon(
+                          Icons.shopping_bag_outlined,
+                          color: Colors.white,
+                          size: 20,
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
               ),
             ),
           ],
         ),
       ),
+    );
+  }
+}
+
+class _FeaturedChip extends StatelessWidget {
+  const _FeaturedChip({required this.label, this.translucent = false});
+
+  final String label;
+  final bool translucent;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+      decoration: BoxDecoration(
+        color: translucent
+            ? Colors.white.withValues(alpha: 0.18)
+            : AppColors.primary.withValues(alpha: 0.92),
+        borderRadius: BorderRadius.circular(999),
+        border: translucent
+            ? Border.all(color: Colors.white.withValues(alpha: 0.20))
+            : null,
+      ),
+      child: Text(
+        label,
+        style: Theme.of(context).textTheme.labelMedium?.copyWith(
+          color: Colors.white,
+          fontWeight: FontWeight.w900,
+          letterSpacing: 0.2,
+        ),
+      ),
+    );
+  }
+}
+
+String _formatCop(int value) {
+  final raw = value.toString();
+  final b = StringBuffer();
+  for (var i = 0; i < raw.length; i++) {
+    final idxFromEnd = raw.length - i;
+    b.write(raw[i]);
+    if (idxFromEnd > 1 && idxFromEnd % 3 == 1) b.write('.');
+  }
+  return '\$${b.toString()}';
+}
+
+class _EditorialCategories extends StatefulWidget {
+  const _EditorialCategories();
+
+  static const _items = <_CategoryItem>[
+    _CategoryItem('Corrientazos', Icons.restaurant),
+    _CategoryItem('Sopas', Icons.soup_kitchen),
+    _CategoryItem('Arepas', Icons.breakfast_dining),
+    _CategoryItem('Fritos', Icons.bakery_dining),
+    _CategoryItem('Jugos', Icons.local_drink),
+    _CategoryItem('Ejecutivos', Icons.lunch_dining),
+  ];
+
+  @override
+  State<_EditorialCategories> createState() => _EditorialCategoriesState();
+}
+
+class _EditorialCategoriesState extends State<_EditorialCategories> {
+  int _active = 0;
+
+  void _select(int index) {
+    if (_active == index) return;
+    HapticFeedback.selectionClick();
+    setState(() => _active = index);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(
+        AppSpacing.lg,
+        0,
+        AppSpacing.lg,
+        AppSpacing.lg,
+      ),
+      child: SizedBox(
+        height: 96,
+        child: ListView.separated(
+          scrollDirection: Axis.horizontal,
+          itemCount: _EditorialCategories._items.length,
+          separatorBuilder: (context, index) =>
+              const SizedBox(width: AppSpacing.sm),
+          itemBuilder: (context, index) {
+            final item = _EditorialCategories._items[index];
+            final active = index == _active;
+            return _CategoryCircle(
+              label: item.label,
+              icon: item.icon,
+              active: active,
+              onTap: () => _select(index),
+            );
+          },
+        ),
+      ),
+    );
+  }
+}
+
+class _CategoryItem {
+  const _CategoryItem(this.label, this.icon);
+
+  final String label;
+  final IconData icon;
+}
+
+class _CategoryCircle extends StatelessWidget {
+  const _CategoryCircle({
+    required this.label,
+    required this.icon,
+    required this.active,
+    required this.onTap,
+  });
+
+  final String label;
+  final IconData icon;
+  final bool active;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final baseText = const Color(0xFF6B4A3A).withValues(alpha: 0.86);
+
+    final circleBg = active
+        ? AppColors.primary.withValues(alpha: 0.92)
+        : (isDark ? AppColors.surfaceDark : AppColors.surface).withValues(
+            alpha: isDark ? 0.76 : 0.96,
+          );
+    final circleBorder = active
+        ? Colors.transparent
+        : (isDark ? AppColors.borderDark : AppColors.border).withValues(
+            alpha: 0.80,
+          );
+    final iconColor = active
+        ? AppColors.bg
+        : AppColors.brand.withValues(alpha: isDark ? 0.75 : 0.78);
+    final labelColor = active
+        ? baseText.withValues(alpha: 0.92)
+        : baseText.withValues(alpha: 0.74);
+
+    final baseShadow = Colors.black.withValues(alpha: isDark ? 0.0 : 0.030);
+
+    return TweenAnimationBuilder<double>(
+      tween: Tween(begin: 0.0, end: active ? 1.0 : 0.0),
+      duration: const Duration(milliseconds: 210),
+      curve: Curves.easeOutCubic,
+      builder: (context, t, _) {
+        final scale = 1.0 + (0.018 * t);
+        final shadowA = (0.020 + 0.040 * t).clamp(0.0, 0.070);
+        return Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Transform.scale(
+              scale: scale,
+              child: AnimatedContainer(
+                duration: const Duration(milliseconds: 210),
+                curve: Curves.easeOutCubic,
+                width: 64,
+                height: 64,
+                decoration: BoxDecoration(
+                  color: circleBg,
+                  shape: BoxShape.circle,
+                  border: Border.all(color: circleBorder),
+                  boxShadow: [
+                    BoxShadow(
+                      color: baseShadow.withValues(alpha: shadowA),
+                      blurRadius: 20,
+                      offset: const Offset(0, 12),
+                    ),
+                    if (active)
+                      BoxShadow(
+                        color: AppColors.primary.withValues(alpha: 0.14),
+                        blurRadius: 26,
+                        offset: const Offset(0, 16),
+                      ),
+                  ],
+                ),
+                child: Material(
+                  color: Colors.transparent,
+                  child: InkWell(
+                    onTap: onTap,
+                    customBorder: const CircleBorder(),
+                    splashColor: Colors.white.withValues(
+                      alpha: active ? 0.10 : 0.06,
+                    ),
+                    highlightColor: Colors.white.withValues(
+                      alpha: active ? 0.06 : 0.04,
+                    ),
+                    child: Center(
+                      child: AnimatedOpacity(
+                        duration: const Duration(milliseconds: 180),
+                        curve: Curves.easeOutCubic,
+                        opacity: active ? 1.0 : 0.90,
+                        child: Icon(icon, size: 30, color: iconColor),
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ),
+            const SizedBox(height: 8),
+            SizedBox(
+              width: 80,
+              child: AnimatedOpacity(
+                duration: const Duration(milliseconds: 180),
+                curve: Curves.easeOutCubic,
+                opacity: active ? 1.0 : 0.92,
+                child: Text(
+                  label,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  textAlign: TextAlign.center,
+                  style: Theme.of(context).textTheme.labelMedium?.copyWith(
+                    fontWeight: active ? FontWeight.w900 : FontWeight.w800,
+                    letterSpacing: -0.1,
+                    color: labelColor,
+                  ),
+                ),
+              ),
+            ),
+          ],
+        );
+      },
     );
   }
 }

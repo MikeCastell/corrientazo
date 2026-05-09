@@ -1,5 +1,3 @@
-import 'dart:ui';
-
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
@@ -7,7 +5,6 @@ import '../../design/tokens/app_colors.dart';
 import '../../design/tokens/app_elevation.dart';
 import '../../design/tokens/app_radius.dart';
 import '../../design/tokens/app_spacing.dart';
-import 'cook_trust_chip.dart';
 import 'food_image.dart';
 import 'marketplace_utils.dart';
 import '../../food/colombian_food_mock.dart';
@@ -20,6 +17,8 @@ class MealCardPremium extends StatefulWidget {
     required this.priceCop,
     required this.stockAvailable,
     this.title,
+    this.description,
+    this.tags,
     this.photoUrl,
     this.cookName,
     this.cookAvatarUrl,
@@ -32,6 +31,8 @@ class MealCardPremium extends StatefulWidget {
   final int priceCop;
   final int stockAvailable;
   final String? title;
+  final String? description;
+  final List<String>? tags;
   final String? photoUrl;
   final String? cookName;
   final String? cookAvatarUrl;
@@ -61,6 +62,12 @@ class _MealCardPremiumState extends State<MealCardPremium> {
       cookName: widget.cookName,
       cookAvatarUrl: widget.cookAvatarUrl,
     );
+    final desc = (widget.description ?? '').trim();
+    final tagList = (widget.tags ?? const <String>[])
+        .map((e) => e.trim())
+        .where((e) => e.isNotEmpty)
+        .take(3)
+        .toList(growable: false);
 
     final isSoldOut = widget.stockAvailable <= 0;
 
@@ -180,43 +187,55 @@ class _MealCardPremiumState extends State<MealCardPremium> {
                               height: 1.05,
                             ),
                       ),
+                      const SizedBox(height: 8),
+                      Text(
+                        'Por ${food.cookName}',
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                          color: Colors.white.withValues(alpha: 0.82),
+                          fontWeight: FontWeight.w800,
+                          letterSpacing: -0.1,
+                        ),
+                      ),
+                      if (desc.isNotEmpty) ...[
+                        const SizedBox(height: 6),
+                        Text(
+                          desc,
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                          style: Theme.of(context).textTheme.bodyMedium
+                              ?.copyWith(
+                                color: Colors.white.withValues(alpha: 0.74),
+                                height: 1.25,
+                                fontWeight: FontWeight.w700,
+                              ),
+                        ),
+                      ],
                       const SizedBox(height: 10),
                       Row(
                         children: [
                           Expanded(
-                            child: ClipRRect(
-                              borderRadius: BorderRadius.circular(AppRadius.xl),
-                              child: BackdropFilter(
-                                filter: ImageFilter.blur(
-                                  sigmaX: 16,
-                                  sigmaY: 16,
-                                ),
-                                child: CookTrustChip(
-                                  cookName: food.cookName,
-                                  cookAvatarUrl: widget.cookAvatarUrl,
-                                  isVerified: true,
-                                  sanitaryLevelLabel: 'Sanitario (próx)',
-                                ),
-                              ),
+                            child: Wrap(
+                              spacing: 8,
+                              runSpacing: 8,
+                              children: [
+                                if (widget.stockAvailable > 0 &&
+                                    widget.stockAvailable <= 3)
+                                  _TagPill(
+                                    label:
+                                        '🔥 Últimas ${widget.stockAvailable}',
+                                  ),
+                                for (final t in tagList) _TagPill(label: t),
+                                if (tagList.isEmpty)
+                                  const _TagPill(label: 'Casero'),
+                              ],
                             ),
                           ),
                           const SizedBox(width: AppSpacing.sm),
                           _PricePill(priceCop: widget.priceCop),
                         ],
                       ),
-                      if ((widget.cookBio ?? '').trim().isNotEmpty) ...[
-                        const SizedBox(height: 8),
-                        Text(
-                          (widget.cookBio ?? '').trim(),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: Theme.of(context).textTheme.labelLarge
-                              ?.copyWith(
-                                color: Colors.white.withValues(alpha: 0.72),
-                                fontWeight: FontWeight.w700,
-                              ),
-                        ),
-                      ],
                     ],
                   ),
                 ),
@@ -280,6 +299,37 @@ class _PricePill extends StatelessWidget {
           color: Colors.white,
           fontWeight: FontWeight.w900,
           letterSpacing: -0.2,
+        ),
+      ),
+    );
+  }
+}
+
+class _TagPill extends StatelessWidget {
+  const _TagPill({required this.label});
+
+  final String label;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(
+        horizontal: AppSpacing.sm,
+        vertical: 7,
+      ),
+      decoration: BoxDecoration(
+        color: Colors.white.withValues(alpha: 0.10),
+        borderRadius: BorderRadius.circular(AppRadius.xl),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.18)),
+      ),
+      child: Text(
+        label,
+        maxLines: 1,
+        overflow: TextOverflow.ellipsis,
+        style: Theme.of(context).textTheme.labelLarge?.copyWith(
+          color: Colors.white.withValues(alpha: 0.86),
+          fontWeight: FontWeight.w800,
+          letterSpacing: -0.1,
         ),
       ),
     );
