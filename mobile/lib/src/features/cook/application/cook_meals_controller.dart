@@ -26,9 +26,11 @@ class CookMealsController extends AsyncNotifier<List<CookMeal>> {
     final wantsPublish = meal.status == CookMealStatus.available;
     final now = DateTime.now();
     final availableFrom = now.subtract(const Duration(minutes: 5));
-    final availableTo = now.add(const Duration(hours: 4));
+    // Longer window so cooks don't “expire” invisibly during testing / overnight.
+    // Backend feed shows only publications where now is within [available_from, available_to].
+    final availableTo = now.add(const Duration(hours: 12));
     final pickupFrom = now.add(const Duration(minutes: 20));
-    final pickupTo = now.add(const Duration(hours: 4));
+    final pickupTo = now.add(const Duration(hours: 12));
     final desiredPubStatus = wantsPublish ? 'PUBLISHED' : 'PAUSED';
 
     if (meal.id.startsWith('m_')) {

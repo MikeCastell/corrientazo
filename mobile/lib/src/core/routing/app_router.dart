@@ -22,6 +22,32 @@ import '../../features/users/domain/current_user.dart';
 import '../ui/shells/role_shells.dart';
 import '../env/app_env.dart';
 
+CustomTransitionPage<T> _fadeSlidePage<T>({
+  required GoRouterState state,
+  required Widget child,
+  Offset begin = const Offset(0.0, 0.03),
+}) {
+  return CustomTransitionPage<T>(
+    key: state.pageKey,
+    child: child,
+    transitionsBuilder: (context, animation, secondaryAnimation, child) {
+      final curved = CurvedAnimation(
+        parent: animation,
+        curve: Curves.easeOutCubic,
+        reverseCurve: Curves.easeInCubic,
+      );
+      final slide = Tween<Offset>(
+        begin: begin,
+        end: Offset.zero,
+      ).chain(CurveTween(curve: Curves.easeOutCubic));
+      return FadeTransition(
+        opacity: curved,
+        child: SlideTransition(position: animation.drive(slide), child: child),
+      );
+    },
+  );
+}
+
 final appRouterProvider = Provider<GoRouter>((ref) {
   final authState = ref.watch(authControllerProvider);
   if (AppEnv.startupDebug)
@@ -35,17 +61,29 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: const SplashRoute().location,
         name: SplashRoute.name,
-        builder: (context, state) => const SplashScreen(),
+        pageBuilder: (context, state) => _fadeSlidePage<void>(
+          state: state,
+          child: const SplashScreen(),
+          begin: const Offset(0.0, 0.01),
+        ),
       ),
       GoRoute(
         path: const LoginRoute().location,
         name: LoginRoute.name,
-        builder: (context, state) => const LoginScreen(),
+        pageBuilder: (context, state) => _fadeSlidePage<void>(
+          state: state,
+          child: const LoginScreen(),
+          begin: const Offset(0.0, 0.02),
+        ),
       ),
       GoRoute(
         path: const RegisterRoute().location,
         name: RegisterRoute.name,
-        builder: (context, state) => const RegisterScreen(),
+        pageBuilder: (context, state) => _fadeSlidePage<void>(
+          state: state,
+          child: const RegisterScreen(),
+          begin: const Offset(0.0, 0.02),
+        ),
       ),
       StatefulShellRoute.indexedStack(
         builder: (context, state, navigationShell) =>
@@ -56,30 +94,20 @@ final appRouterProvider = Provider<GoRouter>((ref) {
               GoRoute(
                 path: const CustomerHomeRoute().location,
                 name: CustomerHomeRoute.name,
-                builder: (context, state) => const HomeMealsScreen(),
+                pageBuilder: (context, state) => _fadeSlidePage<void>(
+                  state: state,
+                  child: const HomeMealsScreen(),
+                ),
                 routes: [
                   GoRoute(
                     path: 'meals/:id',
                     name: MealDetailRoute.name,
                     pageBuilder: (context, state) {
                       final id = state.pathParameters['id']!;
-                      return CustomTransitionPage<void>(
-                        key: state.pageKey,
+                      return _fadeSlidePage<void>(
+                        state: state,
                         child: MealDetailScreen(mealPublicationId: id),
-                        transitionsBuilder:
-                            (context, animation, secondaryAnimation, child) {
-                              final slide = Tween<Offset>(
-                                begin: const Offset(0.0, 0.04),
-                                end: Offset.zero,
-                              ).chain(CurveTween(curve: Curves.easeOutCubic));
-                              return FadeTransition(
-                                opacity: animation,
-                                child: SlideTransition(
-                                  position: animation.drive(slide),
-                                  child: child,
-                                ),
-                              );
-                            },
+                        begin: const Offset(0.0, 0.04),
                       );
                     },
                   ),
@@ -88,20 +116,10 @@ final appRouterProvider = Provider<GoRouter>((ref) {
                     name: OrderSuccessRoute.name,
                     pageBuilder: (context, state) {
                       final id = state.pathParameters['id']!;
-                      return CustomTransitionPage<void>(
-                        key: state.pageKey,
+                      return _fadeSlidePage<void>(
+                        state: state,
                         child: OrderSuccessScreen(orderId: id),
-                        transitionsBuilder:
-                            (context, animation, secondaryAnimation, child) {
-                              final fade = CurvedAnimation(
-                                parent: animation,
-                                curve: Curves.easeOutCubic,
-                              );
-                              return FadeTransition(
-                                opacity: fade,
-                                child: child,
-                              );
-                            },
+                        begin: const Offset(0.0, 0.02),
                       );
                     },
                   ),
@@ -114,16 +132,23 @@ final appRouterProvider = Provider<GoRouter>((ref) {
               GoRoute(
                 path: const CustomerOrdersRoute().location,
                 name: CustomerOrdersRoute.name,
-                builder: (context, state) => const CustomerOrdersScreen(),
+                pageBuilder: (context, state) => _fadeSlidePage<void>(
+                  state: state,
+                  child: const CustomerOrdersScreen(),
+                ),
                 routes: [
                   GoRoute(
                     path: ':id',
                     name: CustomerOrderDetailRoute.name,
-                    builder: (context, state) {
+                    pageBuilder: (context, state) {
                       final id = state.pathParameters['id']!;
-                      return OrderDetailScreen(
-                        orderId: id,
-                        mode: OrderDetailMode.customer,
+                      return _fadeSlidePage<void>(
+                        state: state,
+                        child: OrderDetailScreen(
+                          orderId: id,
+                          mode: OrderDetailMode.customer,
+                        ),
+                        begin: const Offset(0.02, 0.0),
                       );
                     },
                   ),
@@ -136,7 +161,10 @@ final appRouterProvider = Provider<GoRouter>((ref) {
               GoRoute(
                 path: const CustomerProfileRoute().location,
                 name: CustomerProfileRoute.name,
-                builder: (context, state) => const CustomerProfileScreen(),
+                pageBuilder: (context, state) => _fadeSlidePage<void>(
+                  state: state,
+                  child: const CustomerProfileScreen(),
+                ),
               ),
             ],
           ),
@@ -151,7 +179,10 @@ final appRouterProvider = Provider<GoRouter>((ref) {
               GoRoute(
                 path: const CookDashboardRoute().location,
                 name: CookDashboardRoute.name,
-                builder: (context, state) => const CookDashboardScreen(),
+                pageBuilder: (context, state) => _fadeSlidePage<void>(
+                  state: state,
+                  child: const CookDashboardScreen(),
+                ),
               ),
             ],
           ),
@@ -160,7 +191,10 @@ final appRouterProvider = Provider<GoRouter>((ref) {
               GoRoute(
                 path: const CookMealsRoute().location,
                 name: CookMealsRoute.name,
-                builder: (context, state) => const CookMealsScreen(),
+                pageBuilder: (context, state) => _fadeSlidePage<void>(
+                  state: state,
+                  child: const CookMealsScreen(),
+                ),
               ),
             ],
           ),
@@ -169,9 +203,12 @@ final appRouterProvider = Provider<GoRouter>((ref) {
               GoRoute(
                 path: const CookCreateMealRoute().location,
                 name: CookCreateMealRoute.name,
-                builder: (context, state) {
+                pageBuilder: (context, state) {
                   final editId = state.uri.queryParameters['edit'];
-                  return CookCreateMealScreen(editMealId: editId);
+                  return _fadeSlidePage<void>(
+                    state: state,
+                    child: CookCreateMealScreen(editMealId: editId),
+                  );
                 },
               ),
             ],
@@ -181,16 +218,23 @@ final appRouterProvider = Provider<GoRouter>((ref) {
               GoRoute(
                 path: const CookOrdersRoute().location,
                 name: CookOrdersRoute.name,
-                builder: (context, state) => const CookOrdersScreen(),
+                pageBuilder: (context, state) => _fadeSlidePage<void>(
+                  state: state,
+                  child: const CookOrdersScreen(),
+                ),
                 routes: [
                   GoRoute(
                     path: ':id',
                     name: CookOrderDetailRoute.name,
-                    builder: (context, state) {
+                    pageBuilder: (context, state) {
                       final id = state.pathParameters['id']!;
-                      return OrderDetailScreen(
-                        orderId: id,
-                        mode: OrderDetailMode.cook,
+                      return _fadeSlidePage<void>(
+                        state: state,
+                        child: OrderDetailScreen(
+                          orderId: id,
+                          mode: OrderDetailMode.cook,
+                        ),
+                        begin: const Offset(0.02, 0.0),
                       );
                     },
                   ),
@@ -203,7 +247,10 @@ final appRouterProvider = Provider<GoRouter>((ref) {
               GoRoute(
                 path: const CookProfileRoute().location,
                 name: CookProfileRoute.name,
-                builder: (context, state) => const CookProfileScreen(),
+                pageBuilder: (context, state) => _fadeSlidePage<void>(
+                  state: state,
+                  child: const CookProfileScreen(),
+                ),
               ),
             ],
           ),

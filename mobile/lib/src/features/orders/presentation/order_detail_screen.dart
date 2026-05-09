@@ -371,55 +371,43 @@ class _CookCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return _Card(
-      child: Row(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          CookTrustChip(
-            cookName: cookName ?? 'Cocina local',
-            cookAvatarUrl: cookAvatarUrl,
-            isVerified: true,
-            sanitaryLevelLabel: 'Casero',
-          ),
-          const SizedBox(width: AppSpacing.sm),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  cookName ?? 'Cocina local',
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                    fontWeight: FontWeight.w900,
-                  ),
-                ),
-                const SizedBox(height: 2),
-                Text(
-                  cookBio == null || cookBio!.trim().isEmpty
-                      ? 'Comida casera, hecha al momento.'
-                      : cookBio!,
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                    color: Theme.of(
-                      context,
-                    ).colorScheme.onSurface.withValues(alpha: 0.70),
-                  ),
-                ),
-                if (cookPhone != null && cookPhone!.trim().isNotEmpty) ...[
-                  const SizedBox(height: 6),
-                  Text(
-                    cookPhone!,
-                    style: Theme.of(context).textTheme.labelLarge?.copyWith(
-                      fontWeight: FontWeight.w900,
-                      color: Theme.of(
-                        context,
-                      ).colorScheme.onSurface.withValues(alpha: 0.70),
-                    ),
-                  ),
-                ],
-              ],
+          Align(
+            alignment: Alignment.centerLeft,
+            child: CookTrustChip(
+              cookName: cookName ?? 'Cocina local',
+              cookAvatarUrl: cookAvatarUrl,
+              isVerified: true,
+              sanitaryLevelLabel: 'Casero',
             ),
           ),
+          const SizedBox(height: AppSpacing.sm),
+          Text(
+            cookBio == null || cookBio!.trim().isEmpty
+                ? 'Comida casera, hecha al momento.'
+                : cookBio!,
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
+            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+              color: Theme.of(
+                context,
+              ).colorScheme.onSurface.withValues(alpha: 0.70),
+            ),
+          ),
+          if (cookPhone != null && cookPhone!.trim().isNotEmpty) ...[
+            const SizedBox(height: 6),
+            Text(
+              cookPhone!,
+              style: Theme.of(context).textTheme.labelLarge?.copyWith(
+                fontWeight: FontWeight.w900,
+                color: Theme.of(
+                  context,
+                ).colorScheme.onSurface.withValues(alpha: 0.70),
+              ),
+            ),
+          ],
         ],
       ),
     );

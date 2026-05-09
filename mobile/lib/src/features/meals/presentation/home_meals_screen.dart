@@ -29,105 +29,150 @@ class HomeMealsScreen extends ConsumerWidget {
 
     return AppScaffold(
       title: 'Disponible hoy',
-      body: feed.when(
-        loading: () => const _MealsLoading(),
-        error: (e, _) => AppEmptyState(
-          icon: Icons.wifi_off_outlined,
-          title: 'No pudimos cargar el feed',
-          subtitle: 'Revisa tu conexión e inténtalo de nuevo.',
-          actionLabel: 'Reintentar',
-          onAction: () => ref.refresh(mealsFeedProvider),
-        ),
-        data: (items) => RefreshIndicator(
-          onRefresh: () async => ref.refresh(mealsFeedProvider.future),
-          child: CustomScrollView(
-            // Pull-to-refresh even when content is short; avoids zero-height slivers on small screens.
-            physics: const AlwaysScrollableScrollPhysics(),
-            slivers: [
-              SliverToBoxAdapter(
-                child: _FeedHeader(
-                  onLogout: () =>
-                      ref.read(authControllerProvider.notifier).logout(),
-                ),
+      body: RefreshIndicator(
+        onRefresh: () async => ref.refresh(mealsFeedProvider.future),
+        child: CustomScrollView(
+          // Pull-to-refresh even when content is short; avoids zero-height slivers on small screens.
+          physics: const AlwaysScrollableScrollPhysics(),
+          slivers: [
+            SliverToBoxAdapter(
+              child: _FeedHeader(
+                onLogout: () =>
+                    ref.read(authControllerProvider.notifier).logout(),
               ),
-              const SliverToBoxAdapter(child: CustomerWelcomeBanner()),
-              SliverToBoxAdapter(
-                child: orders.maybeWhen(
-                  data: (s) {
-                    if (s.active.isEmpty) return const SizedBox.shrink();
-                    final o = s.active.first;
-                    return Padding(
-                      padding: const EdgeInsets.fromLTRB(
-                        AppSpacing.md,
-                        0,
-                        AppSpacing.md,
-                        AppSpacing.sm,
-                      ),
-                      child: _ActiveOrderBanner(order: o),
-                    );
-                  },
-                  orElse: () => const SizedBox.shrink(),
-                ),
-              ),
-              const SliverToBoxAdapter(child: _VisualCategories()),
-              if (items.isEmpty)
-                // Avoid LayoutBuilder here: inside scroll slivers it can re-enter layout and
-                // trigger _debugRelayoutBoundaryAlreadyMarkedNeedsLayout (red screen).
-                SliverToBoxAdapter(
-                  child: Builder(
-                    builder: (context) {
-                      final viewH = MediaQuery.sizeOf(context).height;
-                      final minH = (viewH - 240).clamp(220.0, 720.0);
-                      return SizedBox(
-                        width: double.infinity,
-                        height: minH,
-                        child: AppEmptyState(
-                          kicker: 'Respira — el barrio cocina a su ritmo',
-                          icon: Icons.ramen_dining,
-                          title: 'Hoy no hay platos publicados',
-                          subtitle:
-                              'Los cocineros suben cupos nuevos durante el día. '
-                              'Vuelve en un rato o prueba refrescar.',
-                          actionLabel: 'Actualizar lista',
-                          onAction: () => ref.refresh(mealsFeedProvider),
-                        ),
-                      );
-                    },
-                  ),
-                )
-              else ...[
-                SliverToBoxAdapter(child: _FeaturedStrip(items: items)),
-                SliverPadding(
-                  padding: const EdgeInsets.fromLTRB(
-                    AppSpacing.md,
-                    AppSpacing.sm,
-                    AppSpacing.md,
-                    AppSpacing.xxl,
-                  ),
-                  sliver: SliverList.separated(
-                    itemCount: items.length,
-                    separatorBuilder: (context, index) =>
-                        const SizedBox(height: AppSpacing.lg),
-                    itemBuilder: (context, i) => MealCardPremium(
-                      id: items[i].id,
-                      mealId: items[i].mealId,
-                      priceCop: items[i].priceCop,
-                      stockAvailable: items[i].stockAvailable,
-                      title: items[i].title,
-                      photoUrl: items[i].photoUrl,
-                      cookName: items[i].cookName,
-                      cookAvatarUrl: items[i].cookAvatarUrl,
-                      cookBio: items[i].cookBio,
-                      onTap: () => context.go(
-                        '${const HomeRoute().location}/meals/${items[i].id}',
-                      ),
+            ),
+            const SliverToBoxAdapter(child: CustomerWelcomeBanner()),
+            SliverToBoxAdapter(
+              child: orders.maybeWhen(
+                data: (s) {
+                  if (s.active.isEmpty) return const SizedBox.shrink();
+                  final o = s.active.first;
+                  return Padding(
+                    padding: const EdgeInsets.fromLTRB(
+                      AppSpacing.md,
+                      0,
+                      AppSpacing.md,
+                      AppSpacing.sm,
                     ),
+                    child: _ActiveOrderBanner(order: o),
+                  );
+                },
+                orElse: () => const SizedBox.shrink(),
+              ),
+            ),
+            const SliverToBoxAdapter(child: _VisualCategories()),
+            ...feed.when(
+              loading: () => const <Widget>[
+                SliverToBoxAdapter(child: _MealsLoadingInline()),
+              ],
+              error: (e, _) => <Widget>[
+                SliverToBoxAdapter(
+                  child: AppEmptyState(
+                    icon: Icons.wifi_off_outlined,
+                    title: 'No pudimos cargar el feed',
+                    subtitle: 'Revisa tu conexión e inténtalo de nuevo.',
+                    actionLabel: 'Reintentar',
+                    onAction: () => ref.refresh(mealsFeedProvider),
                   ),
                 ),
               ],
-            ],
-          ),
+              data: (items) {
+                if (items.isEmpty) {
+                  return <Widget>[
+                    // Avoid LayoutBuilder here: inside scroll slivers it can re-enter layout and
+                    // trigger _debugRelayoutBoundaryAlreadyMarkedNeedsLayout (red screen).
+                    SliverToBoxAdapter(
+                      child: Builder(
+                        builder: (context) {
+                          final viewH = MediaQuery.sizeOf(context).height;
+                          final minH = (viewH - 240).clamp(220.0, 720.0);
+                          return SizedBox(
+                            width: double.infinity,
+                            height: minH,
+                            child: AppEmptyState(
+                              kicker: 'Respira — el barrio cocina a su ritmo',
+                              icon: Icons.ramen_dining,
+                              title: 'Hoy no hay platos publicados',
+                              subtitle:
+                                  'Los cocineros suben cupos nuevos durante el día. '
+                                  'Vuelve en un rato o prueba refrescar.',
+                              actionLabel: 'Actualizar lista',
+                              onAction: () => ref.refresh(mealsFeedProvider),
+                            ),
+                          );
+                        },
+                      ),
+                    ),
+                  ];
+                }
+
+                return <Widget>[
+                  SliverToBoxAdapter(child: _FeaturedStrip(items: items)),
+                  SliverPadding(
+                    padding: const EdgeInsets.fromLTRB(
+                      AppSpacing.md,
+                      AppSpacing.sm,
+                      AppSpacing.md,
+                      AppSpacing.xxl,
+                    ),
+                    sliver: SliverList.separated(
+                      itemCount: items.length,
+                      separatorBuilder: (context, index) =>
+                          const SizedBox(height: AppSpacing.lg),
+                      itemBuilder: (context, i) => MealCardPremium(
+                        key: ValueKey('feed-${items[i].id}'),
+                        id: items[i].id,
+                        mealId: items[i].mealId,
+                        priceCop: items[i].priceCop,
+                        stockAvailable: items[i].stockAvailable,
+                        title: items[i].title,
+                        photoUrl: items[i].photoUrl,
+                        cookName: items[i].cookName,
+                        cookAvatarUrl: items[i].cookAvatarUrl,
+                        cookBio: items[i].cookBio,
+                        onTap: () => context.go(
+                          '${const HomeRoute().location}/meals/${items[i].id}',
+                        ),
+                      ),
+                    ),
+                  ),
+                ];
+              },
+            ),
+          ],
         ),
+      ),
+    );
+  }
+}
+
+class _MealsLoadingInline extends StatelessWidget {
+  const _MealsLoadingInline();
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(
+        AppSpacing.md,
+        AppSpacing.sm,
+        AppSpacing.md,
+        AppSpacing.lg,
+      ),
+      child: Column(
+        children: List.generate(3, (i) {
+          return Padding(
+            padding: EdgeInsets.only(bottom: i == 2 ? 0 : AppSpacing.lg),
+            child: AppShimmer(
+              child: Container(
+                height: 320,
+                decoration: BoxDecoration(
+                  color: Theme.of(context).colorScheme.surface,
+                  borderRadius: BorderRadius.circular(AppRadius.xl),
+                ),
+              ),
+            ),
+          );
+        }),
       ),
     );
   }
@@ -144,8 +189,7 @@ class _ActiveOrderBanner extends ConsumerWidget {
     final eta = _pseudoEtaLabel(order.createdAt, status);
     final narrow = MediaQuery.sizeOf(context).width < 360;
 
-    void onOpen() =>
-        context.push(CustomerOrderDetailRoute(order.id).location);
+    void onOpen() => context.push(CustomerOrderDetailRoute(order.id).location);
 
     return InkWell(
       borderRadius: BorderRadius.circular(AppRadius.xl),
@@ -199,21 +243,17 @@ class _ActiveOrderBanner extends ConsumerWidget {
   }
 
   static Widget leading(BuildContext context) => Container(
-        width: 46,
-        height: 46,
-        decoration: BoxDecoration(
-          color: AppColors.brand.withValues(alpha: 0.10),
-          borderRadius: BorderRadius.circular(AppRadius.md),
-          border: Border.all(color: AppColors.brand.withValues(alpha: 0.18)),
-        ),
-        child: const Icon(Icons.receipt_long, color: AppColors.brand),
-      );
+    width: 46,
+    height: 46,
+    decoration: BoxDecoration(
+      color: AppColors.brand.withValues(alpha: 0.10),
+      borderRadius: BorderRadius.circular(AppRadius.md),
+      border: Border.all(color: AppColors.brand.withValues(alpha: 0.18)),
+    ),
+    child: const Icon(Icons.receipt_long, color: AppColors.brand),
+  );
 
-  static Widget textBlock(
-    BuildContext context,
-    String status,
-    String eta,
-  ) =>
+  static Widget textBlock(BuildContext context, String status, String eta) =>
       Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -221,9 +261,9 @@ class _ActiveOrderBanner extends ConsumerWidget {
             'Pedido activo',
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
-            style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                  fontWeight: FontWeight.w900,
-                ),
+            style: Theme.of(
+              context,
+            ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w900),
           ),
           const SizedBox(height: 2),
           Text(
@@ -231,12 +271,11 @@ class _ActiveOrderBanner extends ConsumerWidget {
             maxLines: 2,
             overflow: TextOverflow.ellipsis,
             style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                  color: Theme.of(context)
-                      .colorScheme
-                      .onSurface
-                      .withValues(alpha: 0.70),
-                  fontWeight: FontWeight.w700,
-                ),
+              color: Theme.of(
+                context,
+              ).colorScheme.onSurface.withValues(alpha: 0.70),
+              fontWeight: FontWeight.w700,
+            ),
           ),
         ],
       );
@@ -371,44 +410,6 @@ class _FeedHeader extends StatelessWidget {
           ),
         ],
       ),
-    );
-  }
-}
-
-class _MealsLoading extends StatelessWidget {
-  const _MealsLoading();
-
-  @override
-  Widget build(BuildContext context) {
-    return CustomScrollView(
-      slivers: [
-        SliverToBoxAdapter(child: _FeedHeader(onLogout: () {})),
-        const SliverToBoxAdapter(child: _VisualCategories()),
-        SliverPadding(
-          padding: const EdgeInsets.fromLTRB(
-            AppSpacing.md,
-            0,
-            AppSpacing.md,
-            AppSpacing.md,
-          ),
-          sliver: SliverList.separated(
-            itemCount: 6,
-            separatorBuilder: (context, index) =>
-                const SizedBox(height: AppSpacing.lg),
-            itemBuilder: (context, index) {
-              return AppShimmer(
-                child: Container(
-                  height: 360,
-                  decoration: BoxDecoration(
-                    color: Theme.of(context).colorScheme.surface,
-                    borderRadius: BorderRadius.circular(AppRadius.xl),
-                  ),
-                ),
-              );
-            },
-          ),
-        ),
-      ],
     );
   }
 }

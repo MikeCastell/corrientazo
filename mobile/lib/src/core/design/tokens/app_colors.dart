@@ -2,15 +2,17 @@ import 'package:flutter/material.dart';
 
 /// Semantic color tokens for CORRIENTAZO.
 class AppColors {
-  // Gastronomic urban identity (rojo/verde/amarillo) — premium & warm.
-  // Primary: rojo cálido (salsa/plancha), Secondary: verde fresco (cilantro/lima),
-  // Accent: amarillo energético (maíz/aji), Neutrals: crema cálida.
-  static const primary = Color(0xFFE23A2E); // warm red
-  static const primaryDeep = Color(0xFFB9241B);
-  static const secondary = Color(0xFF1F8A4C); // fresh green
-  static const secondaryDeep = Color(0xFF16683A);
-  static const accent = Color(0xFFF3B62B); // energetic yellow
-  static const accentDeep = Color(0xFFCC951C);
+  // Brand palette
+  // - Primario: Mango Orange  #F57C1F
+  // - Secundario: Tomato Red  #D9482B
+  // - Acento: Fresh Green    #1F8A43
+  // - Fondo: Warm Cream      #F5EBDD
+  static const primary = Color(0xFFF57C1F); // Mango Orange
+  static const primaryDeep = Color(0xFFCF5F0C);
+  static const secondary = Color(0xFFD9482B); // Tomato Red
+  static const secondaryDeep = Color(0xFFB9351C);
+  static const accent = Color(0xFF1F8A43); // Fresh Green
+  static const accentDeep = Color(0xFF166F35);
 
   // Keep existing naming used across UI.
   static const brand = primary;
@@ -22,7 +24,7 @@ class AppColors {
   static const night2 = Color(0xFF1A1210);
 
   // Neutrals
-  static const bg = Color(0xFFFFF7ED); // warm cream
+  static const bg = Color(0xFFF5EBDD); // warm cream
   static const surface = Color(0xFFFFFFFF);
   static const surface2 = Color(0xFFFFFBF5);
   static const border = Color(0xFFF1E3D6);
@@ -58,7 +60,7 @@ class AppColors {
               accent.withValues(alpha: 0.08),
             ]
           : [
-              const Color(0xFFFFF7ED),
+              bg,
               const Color(0xFFFFFBF5),
               primary.withValues(alpha: 0.08),
               secondary.withValues(alpha: 0.07),

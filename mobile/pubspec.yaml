@@ -68,7 +68,9 @@ dev_dependencies:
 flutter_launcher_icons:
   android: true
   ios: true
-  image_path: "web/icons/Icon-512.png"
+  image_path: "assets/branding/logo.png"
+  adaptive_icon_background: "#F5EBDD"
+  adaptive_icon_foreground: "assets/branding/logo.png"
   min_sdk_android: 21
 
 # For information on the generic Dart part of this file, see the
@@ -84,6 +86,7 @@ flutter:
 
   assets:
     - assets/food/
+    - assets/branding/
 
   # To add assets to your application, add an assets section, like this:
   # assets:

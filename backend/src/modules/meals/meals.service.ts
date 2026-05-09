@@ -75,7 +75,7 @@ export class MealsService {
   async listCookMeals(cookUserId: string) {
     const cook = await this.ensureCookProfile(cookUserId);
     return this.prisma.meals.findMany({
-      where: { cook_profile_id: cook.id },
+      where: { cook_profile_id: cook.id, is_active: true },
       orderBy: { created_at: "desc" },
       select: {
         id: true,
@@ -200,11 +200,38 @@ export class MealsService {
       });
     }
 
-    await this.prisma.meals.delete({
-      where: { id: mealId },
+    // Hard delete can fail if there are orders referencing a publication:
+    // orders.meal_publication_id has ON DELETE RESTRICT.
+    // In that case, we do a safe "archive": deactivate the template and archive publications.
+    const pubIds = await this.prisma.meal_publications.findMany({
+      where: { meal_id: mealId },
+      select: { id: true },
     });
+    const ids = pubIds.map((p) => p.id);
 
-    return { ok: true, id: mealId };
+    const refs =
+      ids.length === 0
+        ? 0
+        : await this.prisma.orders.count({
+            where: { meal_publication_id: { in: ids } },
+          });
+
+    if (refs > 0) {
+      await this.prisma.meals.update({
+        where: { id: mealId },
+        data: { is_active: false },
+      });
+      if (ids.length > 0) {
+        await this.prisma.meal_publications.updateMany({
+          where: { id: { in: ids } },
+          data: { status: "ARCHIVED" },
+        });
+      }
+      return { ok: true, id: mealId, archived: true, orders: refs };
+    }
+
+    await this.prisma.meals.delete({ where: { id: mealId } });
+    return { ok: true, id: mealId, archived: false };
   }
 
   async publishMeal(cookUserId: string, mealId: string, dto: PublishMealDto) {
