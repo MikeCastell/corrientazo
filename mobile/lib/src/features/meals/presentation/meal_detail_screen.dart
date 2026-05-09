@@ -145,11 +145,8 @@ class MealDetailScreen extends ConsumerWidget {
                             ? 'Sazón casera, como en casa.'
                             : (item.cookBio ?? '').trim(),
                         onTap: () {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(
-                              content: Text('Perfil del cook (próximamente).'),
-                              behavior: SnackBarBehavior.floating,
-                            ),
+                          context.go(
+                            PublicCookProfileRoute(item.cookProfileId).location,
                           );
                         },
                       ),

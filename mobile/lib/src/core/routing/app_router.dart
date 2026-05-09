@@ -13,6 +13,7 @@ import '../../features/auth/application/auth_controller.dart';
 import '../../features/meals/presentation/home_meals_screen.dart';
 import '../../features/customer/presentation/customer_orders_screen.dart';
 import '../../features/customer/presentation/customer_profile_screen.dart';
+import '../../features/customer/presentation/public_cook_profile_screen.dart';
 import '../../features/cook/presentation/cook_dashboard_screen.dart';
 import '../../features/cook/presentation/cook_meals_screen.dart';
 import '../../features/cook/presentation/cook_create_meal_screen.dart';
@@ -50,8 +51,9 @@ CustomTransitionPage<T> _fadeSlidePage<T>({
 
 final appRouterProvider = Provider<GoRouter>((ref) {
   final authState = ref.watch(authControllerProvider);
-  if (AppEnv.startupDebug)
+  if (AppEnv.startupDebug) {
     debugPrint('[router] build with authState=${authState.runtimeType}');
+  }
 
   return GoRouter(
     initialLocation: const SplashRoute().location,
@@ -169,6 +171,29 @@ final appRouterProvider = Provider<GoRouter>((ref) {
             ],
           ),
         ],
+      ),
+      // Public cook profile (customer-facing). Keep it as a top-level route so it can
+      // be opened from any tab without cross-branch push issues.
+      GoRoute(
+        path: PublicCookProfileRoute.pattern,
+        name: PublicCookProfileRoute.name,
+        pageBuilder: (context, state) {
+          final id = state.pathParameters['id'];
+          if (id == null || id.trim().isEmpty) {
+            return _fadeSlidePage<void>(
+              state: state,
+              child: const Scaffold(
+                body: Center(child: Text('Perfil de cook inválido')),
+              ),
+              begin: const Offset(0.02, 0.0),
+            );
+          }
+          return _fadeSlidePage<void>(
+            state: state,
+            child: PublicCookProfileScreen(cookProfileId: id),
+            begin: const Offset(0.02, 0.0),
+          );
+        },
       ),
       StatefulShellRoute.indexedStack(
         builder: (context, state, navigationShell) =>
@@ -297,8 +322,9 @@ final appRouterProvider = Provider<GoRouter>((ref) {
 
       if (!isLoggedIn && !isAuthRoute) {
         const dest = '/login';
-        if (AppEnv.startupDebug)
+        if (AppEnv.startupDebug) {
           debugPrint('[router] redirect (need login) loc="$loc" -> "$dest"');
+        }
         return dest;
       }
       if (isLoggedIn) {
@@ -310,8 +336,9 @@ final appRouterProvider = Provider<GoRouter>((ref) {
           if (isCookArea) return const CustomerHomeRoute().location;
         }
       }
-      if (AppEnv.startupDebug)
+      if (AppEnv.startupDebug) {
         debugPrint('[router] redirect (no-op) loc="$loc" -> null');
+      }
       return null;
     },
     errorBuilder: (context, state) =>
@@ -358,6 +385,14 @@ class HomeRoute {
 class MealDetailRoute {
   const MealDetailRoute();
   static const name = 'meal_detail';
+}
+
+class PublicCookProfileRoute {
+  const PublicCookProfileRoute(this.cookProfileId);
+  final String cookProfileId;
+  static const name = 'public_cook_profile';
+  static const pattern = '/c/cooks/:id';
+  String get location => '/c/cooks/$cookProfileId';
 }
 
 class OrderSuccessRoute {

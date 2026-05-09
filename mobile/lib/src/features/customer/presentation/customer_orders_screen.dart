@@ -297,6 +297,7 @@ class _ActiveOrderHero extends StatelessWidget {
   Widget build(BuildContext context) {
     final s = order.status.toUpperCase();
     final t = _trackingTone(s);
+    final cookProfileId = _cookProfileIdFor(order, feed);
     final (title, subtitle) = _humanTrackingCopy(
       status: s,
       cookName: _cookNameFor(order, feed),
@@ -411,6 +412,15 @@ class _ActiveOrderHero extends StatelessWidget {
                         border: t.withValues(alpha: 0.22),
                       ),
                       const Spacer(),
+                      if (cookProfileId != null) ...[
+                        _PillButton(
+                          label: 'Ver cook',
+                          onTap: () => context.go(
+                            PublicCookProfileRoute(cookProfileId).location,
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                      ],
                       _PillButton(
                         label: 'Ver detalles',
                         onTap: () => context.push(
@@ -873,6 +883,22 @@ String _cookNameFor(OrderSummary order, List<dynamic> feed) {
     // best-effort enrichment
   }
   return 'Tu cook del barrio';
+}
+
+String? _cookProfileIdFor(OrderSummary order, List<dynamic> feed) {
+  try {
+    final id = order.mealPublicationId;
+    for (final x in feed) {
+      if (x.id == id) {
+        final v = (x.cookProfileId as String?)?.trim() ?? '';
+        if (v.isNotEmpty) return v;
+        break;
+      }
+    }
+  } catch (_) {
+    // best-effort enrichment
+  }
+  return null;
 }
 
 String _shortOrderCode(String id) =>

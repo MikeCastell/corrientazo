@@ -1,0 +1,277 @@
+<!DOCTYPE html>
+
+<html lang="es"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            "colors": {
+                    "on-tertiary-fixed-variant": "#004b70",
+                    "surface-container-highest": "#f4ded3",
+                    "surface-tint": "#994700",
+                    "on-surface-variant": "#574236",
+                    "on-error-container": "#93000a",
+                    "primary": "#994700",
+                    "surface-bright": "#fff8f5",
+                    "outline": "#8b7264",
+                    "surface": "#fff8f5",
+                    "tertiary-fixed-dim": "#8dcdff",
+                    "secondary": "#b22c11",
+                    "surface-container-lowest": "#ffffff",
+                    "error": "#ba1a1a",
+                    "inverse-primary": "#ffb68b",
+                    "secondary-fixed-dim": "#ffb4a4",
+                    "on-secondary-fixed": "#3e0500",
+                    "inverse-surface": "#3a2e27",
+                    "on-primary-container": "#592600",
+                    "on-primary-fixed-variant": "#743400",
+                    "tertiary-container": "#00a7f2",
+                    "on-secondary": "#ffffff",
+                    "on-secondary-container": "#5c0b00",
+                    "on-secondary-fixed-variant": "#8d1600",
+                    "surface-dim": "#ebd6cb",
+                    "surface-container-low": "#fff1ea",
+                    "secondary-container": "#fb6041",
+                    "on-tertiary": "#ffffff",
+                    "on-surface": "#241913",
+                    "tertiary": "#006493",
+                    "on-tertiary-container": "#003956",
+                    "surface-variant": "#f4ded3",
+                    "on-primary-fixed": "#321300",
+                    "on-background": "#241913",
+                    "on-error": "#ffffff",
+                    "on-tertiary-fixed": "#001e30",
+                    "background": "#fff8f5",
+                    "surface-container": "#ffeadf",
+                    "secondary-fixed": "#ffdad3",
+                    "outline-variant": "#dec1b1",
+                    "on-primary": "#ffffff",
+                    "error-container": "#ffdad6",
+                    "primary-fixed-dim": "#ffb68b",
+                    "primary-container": "#f57c1f",
+                    "inverse-on-surface": "#ffede5",
+                    "primary-fixed": "#ffdbc8",
+                    "surface-container-high": "#fae4d9",
+                    "tertiary-fixed": "#cae6ff"
+            },
+            "borderRadius": {
+                    "DEFAULT": "0.25rem",
+                    "lg": "0.5rem",
+                    "xl": "0.75rem",
+                    "full": "9999px"
+            },
+            "spacing": {
+                    "xl": "32px",
+                    "xs": "4px",
+                    "margin-desktop": "64px",
+                    "sm": "8px",
+                    "unit": "8px",
+                    "lg": "24px",
+                    "gutter": "16px",
+                    "margin-mobile": "20px",
+                    "md": "16px"
+            },
+            "fontFamily": {
+                    "headline-lg": ["Plus Jakarta Sans"],
+                    "label-md": ["Plus Jakarta Sans"],
+                    "headline-lg-mobile": ["Plus Jakarta Sans"],
+                    "body-md": ["Plus Jakarta Sans"],
+                    "headline-md": ["Plus Jakarta Sans"],
+                    "label-lg": ["Plus Jakarta Sans"],
+                    "body-lg": ["Plus Jakarta Sans"],
+                    "display-lg": ["Plus Jakarta Sans"]
+            },
+            "fontSize": {
+                    "headline-lg": ["32px", {"lineHeight": "40px", "letterSpacing": "-0.01em", "fontWeight": "700"}],
+                    "label-md": ["12px", {"lineHeight": "16px", "fontWeight": "600"}],
+                    "headline-lg-mobile": ["28px", {"lineHeight": "36px", "fontWeight": "700"}],
+                    "body-md": ["16px", {"lineHeight": "24px", "fontWeight": "400"}],
+                    "headline-md": ["24px", {"lineHeight": "32px", "fontWeight": "700"}],
+                    "label-lg": ["14px", {"lineHeight": "20px", "letterSpacing": "0.05em", "fontWeight": "600"}],
+                    "body-lg": ["18px", {"lineHeight": "28px", "fontWeight": "400"}],
+                    "display-lg": ["48px", {"lineHeight": "56px", "letterSpacing": "-0.02em", "fontWeight": "800"}]
+            }
+          },
+        },
+      }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        body {
+            background-color: #fff8f5;
+            color: #241913;
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="font-body-md text-body-md overflow-x-hidden">
+<!-- TopAppBar -->
+<header class="bg-background dark:bg-on-background docked full-width top-0 z-50 sticky">
+<div class="flex justify-between items-center w-full px-margin-mobile md:px-margin-desktop py-sm">
+<div class="flex items-center gap-md">
+<div class="w-10 h-10 rounded-full overflow-hidden border-2 border-primary-container">
+<img class="w-full h-full object-cover" data-alt="A professional headshot of a smiling user in a bright, modern setting. The person has a friendly expression, illuminated by warm, soft lighting that reflects a clean, tech-enabled lifestyle. The background is a minimalist, out-of-focus cafe interior with cream and mango orange accents, maintaining the Sazón de Antaño brand identity." src="https://lh3.googleusercontent.com/aida-public/AB6AXuDnexceeJowcF6-lApEetkLJBspExBo0_VjkdqLxkI113fw_yG4-t_9I9lo7FSKw_0Jd2HLujm-tgNTjVEMV8oam5uqEU_grwH3ql0OkSQ1ALC_XXzgzHJYzOclSgpaYz0BP8Iohmf02mKb3kRtqxtE4pClUDZ40rSbxUV4sEUr3F7XDEoAK6LO2tVoaGnylFZnlqfTMXH1feQSF32sO7smVpWZxkoN286QwZo_41LGS2X-XP-iSHcQDtkpOLOnHAf8vWrPc8P6cxo"/>
+</div>
+</div>
+<h1 class="font-headline-md text-headline-md font-bold text-primary-container dark:text-primary-fixed uppercase tracking-tight">CORRIENTAZO</h1>
+<div class="text-primary dark:text-primary-fixed-dim hover:opacity-80 transition-opacity cursor-pointer">
+<span class="material-symbols-outlined">notifications</span>
+</div>
+</div>
+</header>
+<main class="max-w-[1280px] mx-auto pb-32">
+<!-- Hero Section -->
+<section class="relative px-margin-mobile md:px-margin-desktop py-xl flex flex-col md:flex-row gap-lg items-center">
+<div class="relative group">
+<div class="w-48 h-48 md:w-64 md:h-64 rounded-full overflow-hidden border-4 border-white shadow-xl">
+<img class="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110" data-alt="A warm, cinematic portrait of Chef Maria, an experienced Colombian cook with a kind and welcoming expression. She wears a clean white apron in a bright, rustic kitchen filled with fresh ingredients like corn and tomatoes. The lighting is golden and natural, creating a comforting 'mi casa es su casa' atmosphere consistent with the warm cream and mango orange palette." src="https://lh3.googleusercontent.com/aida-public/AB6AXuD6S6n8WGjir4BZugNIJLlDUR-bNyOkBdW9ybNtEV5jaBjI9yNDH43T_N3sTdGcGjI8HY3FKCFv_YTLsjqvh9Q7hRDf9QmXWVBK9qVXAvaIn3u0Hik3zvhZFWakYDQAojLlWdpoMF-4gS6vA1z1CKNt6eWctGe0u90_o_BnwItPMSgxyCW9P9gneD1K1HuyhKXKWqzAj8JJxE3UMDWyYI9u6smHrB4KbPpGBzVcT5QwTnmd43N-UDCYNs1VCxZ1_sGSi8EhI2NG5UE"/>
+</div>
+<div class="absolute bottom-4 right-4 bg-tertiary-container text-on-tertiary px-3 py-1 rounded-full flex items-center gap-1 shadow-md">
+<span class="material-symbols-outlined text-[18px]" style="font-variation-settings: 'FILL' 1;">verified</span>
+<span class="font-label-lg text-label-lg whitespace-nowrap uppercase">Cocinera Verificada</span>
+</div>
+</div>
+<div class="flex-1 text-center md:text-left">
+<h2 class="font-display-lg text-display-lg text-on-surface mb-xs">Sazón de Antaño</h2>
+<p class="font-headline-md text-headline-md text-primary mb-md">Chef Maria</p>
+<div class="flex flex-wrap justify-center md:justify-start gap-lg mb-xl">
+<div class="flex flex-col items-center md:items-start">
+<div class="flex items-center gap-xs text-secondary">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">star</span>
+<span class="font-headline-md text-headline-md">4.9</span>
+</div>
+<span class="font-label-md text-label-md text-on-surface-variant uppercase">Rating</span>
+</div>
+<div class="flex flex-col items-center md:items-start">
+<div class="flex items-center gap-xs text-on-surface">
+<span class="material-symbols-outlined">restaurant</span>
+<span class="font-headline-md text-headline-md">500+</span>
+</div>
+<span class="font-label-md text-label-md text-on-surface-variant uppercase">Platos Servidos</span>
+</div>
+</div>
+<button class="bg-primary-container text-white px-xl py-md rounded-lg font-label-lg text-label-lg uppercase tracking-widest flex items-center gap-md mx-auto md:mx-0 shadow-md hover:opacity-90 active:scale-95 transition-all">
+<span class="material-symbols-outlined">favorite</span>
+                    Guardar Favorito
+                </button>
+</div>
+</section>
+<!-- Bento Content Grid -->
+<div class="px-margin-mobile md:px-margin-desktop grid grid-cols-1 md:grid-cols-12 gap-lg">
+<!-- Mi Historia (Asymmetric Large Card) -->
+<section class="md:col-span-7 bg-white p-lg rounded-xl shadow-sm border border-surface-variant relative overflow-hidden">
+<div class="absolute top-0 right-0 p-lg opacity-10">
+<span class="material-symbols-outlined text-[120px]">skillet</span>
+</div>
+<h3 class="font-headline-md text-headline-md text-on-surface mb-lg flex items-center gap-sm">
+<span class="w-2 h-8 bg-secondary-container rounded-full"></span>
+                    Mi Historia
+                </h3>
+<p class="font-body-lg text-body-lg text-on-surface-variant leading-relaxed">
+                    "Crecí entre el aroma del café recién molido y el fogón de leña de mi abuela en las montañas de Antioquia. Mi cocina es un tributo a esas raíces, donde cada plato se prepara con paciencia y los ingredientes más frescos de nuestra tierra. Para mí, el Corrientazo no es solo un almuerzo, es el momento donde nos volvemos familia a través del sabor."
+                </p>
+<div class="mt-lg flex gap-md">
+<span class="bg-surface-container-low px-md py-xs rounded-full font-label-md text-label-md text-primary">Recetas Tradicionales</span>
+<span class="bg-surface-container-low px-md py-xs rounded-full font-label-md text-label-md text-primary">Ingredientes Locales</span>
+</div>
+</section>
+<!-- Quick Info/Stats (Small Column) -->
+<div class="md:col-span-5 flex flex-col gap-lg">
+<div class="bg-secondary-container text-on-secondary-container p-lg rounded-xl flex items-center justify-between">
+<div>
+<p class="font-label-lg text-label-lg uppercase opacity-80">Especialidad</p>
+<p class="font-headline-md text-headline-md">Cocina Paisa</p>
+</div>
+<span class="material-symbols-outlined text-[48px]">eco</span>
+</div>
+<div class="bg-tertiary-fixed text-on-tertiary-fixed p-lg rounded-xl border border-tertiary-fixed-dim">
+<p class="font-label-lg text-label-lg uppercase opacity-80">Tiempo Promedio</p>
+<p class="font-headline-md text-headline-md">25-40 min</p>
+</div>
+</div>
+<!-- Mis Especialidades (Horizontal Scroll/Grid) -->
+<section class="md:col-span-12 mt-xl">
+<h3 class="font-headline-md text-headline-md text-on-surface mb-lg flex items-center gap-sm">
+<span class="w-2 h-8 bg-primary-container rounded-full"></span>
+                    Mis Especialidades
+                </h3>
+<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-lg">
+<!-- Speciality 1 -->
+<div class="group bg-white rounded-xl overflow-hidden shadow-sm border border-surface-variant hover:shadow-md transition-shadow">
+<div class="h-48 overflow-hidden">
+<img class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" data-alt="A vibrant, close-up shot of a traditional Colombian Bandeja Paisa. The plate features a colorful arrangement of beans, rice, ground meat, crispy chicharrón, a fried egg, avocado, and an arepa. The lighting is bright and appetizing, highlighting the rich textures and warm Mango Orange tones of the food in a high-end food-tech style." src="https://lh3.googleusercontent.com/aida-public/AB6AXuBbH1Icr1IZGLUkkVYKpSx7hwsD4g6scjcC2S_Q4GDAX6k3hHdF-O9QMald-6XL8FivWNcHZdyONBW-VrRP5cAbqPE6BRvlwWvteLc2KN0omyWv5AI1pZ2woQT1WLim98l1SVdNr5G1HlDwAehs2dGezKcO0J2UR4BxtbHEkZ0ioq15xOvXPc8ks2AZX9FFUHQ5h-X5_bPKGJtSMViwTamsbRApqknCQnwmks0qLXuw69YtQyyEgB1qsEYWHVFVg_UHDBsHJ1qUkds"/>
+</div>
+<div class="p-md">
+<div class="flex justify-between items-start mb-xs">
+<h4 class="font-headline-md text-headline-md text-on-surface">Bandeja Paisa</h4>
+<span class="bg-primary-container text-white px-2 py-1 rounded font-label-md text-label-md">$28.500</span>
+</div>
+<p class="font-body-md text-body-md text-on-surface-variant mb-md">La reina de la casa con chicharrón carnudo y frijoles de la abuela.</p>
+<button class="w-full border-2 border-secondary text-secondary font-label-lg text-label-lg py-sm rounded-lg hover:bg-secondary hover:text-white transition-colors uppercase">Añadir al Pedido</button>
+</div>
+</div>
+<!-- Speciality 2 -->
+<div class="group bg-white rounded-xl overflow-hidden shadow-sm border border-surface-variant hover:shadow-md transition-shadow">
+<div class="h-48 overflow-hidden">
+<img class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" data-alt="A steaming bowl of traditional Colombian Ajiaco soup served in a black clay pot. The creamy potato soup is topped with shredded chicken, capers, and a side of corn and avocado. The setting is a warm, rustic wooden table with soft ambient lighting, emphasizing the comforting and communal essence of 'corrientazo'." src="https://lh3.googleusercontent.com/aida-public/AB6AXuAo1M537rlhrY5uV-Hvy3JDN0kVF-l0mUq3CUJQCQMTN3ffNLDRfd3KziRS50BCGXatyu7Zb8pcfNiDz2Jwy7kqzOZDqPB9i8ibQt7I_jdjMVVZJ9x5E22XM3vuvavHlAg66qPHZM7cHh4LOZ9CRWWHXDHGIJQWGg5N12tIsuJSM9HMoEXM1srqzG3LESUzYL1AcdWPxjeH7h94CxTRm-lbUNAay6OgPS9ZfVYL4ppECtA7WeshsvbpIwSUB-_1_VTq07FtzfNg-jI"/>
+</div>
+<div class="p-md">
+<div class="flex justify-between items-start mb-xs">
+<h4 class="font-headline-md text-headline-md text-on-surface">Ajiaco</h4>
+<span class="bg-primary-container text-white px-2 py-1 rounded font-label-md text-label-md">$24.000</span>
+</div>
+<p class="font-body-md text-body-md text-on-surface-variant mb-md">Sopa cremosa con tres tipos de papa, guascas y pollo desmechado.</p>
+<button class="w-full border-2 border-secondary text-secondary font-label-lg text-label-lg py-sm rounded-lg hover:bg-secondary hover:text-white transition-colors uppercase">Añadir al Pedido</button>
+</div>
+</div>
+<!-- Speciality 3 -->
+<div class="group bg-white rounded-xl overflow-hidden shadow-sm border border-surface-variant hover:shadow-md transition-shadow">
+<div class="h-48 overflow-hidden">
+<img class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" data-alt="A hearty bowl of Colombian Sancocho, a thick stew with large pieces of plantain, yuca, potato, and corn on the cob. The steam rises softly from the bowl, set against a warm cream background that highlights the fresh, homemade quality of Chef Maria's cooking. The visual style is appetising, tactile, and professional." src="https://lh3.googleusercontent.com/aida-public/AB6AXuBwni4K65-rTeDm4dK6dg346qodYy5Xty2IPKFNnzs3KcQPsNoTrj08tuEXrqTzRH7AsB8aRMRc6aNsYXEnnN46kdyspqg_f-VX4W5AUBmZbREyxqD_ZpaRcHyB3LMuuzm6oy73rBCQKTORakOToABq8_G6eHz4wvU5KquK_12-PALMlHdeibPXikB0wgl1lgRz2TDfSlNm5RpdHhAKOdTy5vpKcp2bYSuiLnIGEb3Th2kKomm3a9lrxPX1yV6vj28fYkrpf6q6AiU"/>
+</div>
+<div class="p-md">
+<div class="flex justify-between items-start mb-xs">
+<h4 class="font-headline-md text-headline-md text-on-surface">Sancocho</h4>
+<span class="bg-primary-container text-white px-2 py-1 rounded font-label-md text-label-md">$26.000</span>
+</div>
+<p class="font-body-md text-body-md text-on-surface-variant mb-md">Trifásico con carne, pollo y cerdo, servido con arroz y aguacate.</p>
+<button class="w-full border-2 border-secondary text-secondary font-label-lg text-label-lg py-sm rounded-lg hover:bg-secondary hover:text-white transition-colors uppercase">Añadir al Pedido</button>
+</div>
+</div>
+</div>
+</section>
+</div>
+</main>
+<!-- BottomNavBar -->
+<nav class="fixed bottom-0 left-0 w-full z-50 flex justify-around items-center px-lg py-md pb-safe bg-surface dark:bg-inverse-surface shadow-md rounded-t-xl">
+<a class="flex flex-col items-center justify-center text-on-surface-variant dark:text-outline-variant px-4 py-1 hover:bg-surface-container-low transition-colors" href="#">
+<span class="material-symbols-outlined">home</span>
+<span class="font-label-md text-label-md">Inicio</span>
+</a>
+<a class="flex flex-col items-center justify-center text-on-surface-variant dark:text-outline-variant px-4 py-1 hover:bg-surface-container-low transition-colors" href="#">
+<span class="material-symbols-outlined">search</span>
+<span class="font-label-md text-label-md">Explorar</span>
+</a>
+<a class="flex flex-col items-center justify-center text-on-surface-variant dark:text-outline-variant px-4 py-1 hover:bg-surface-container-low transition-colors" href="#">
+<span class="material-symbols-outlined">shopping_bag</span>
+<span class="font-label-md text-label-md">Pedidos</span>
+</a>
+<a class="flex flex-col items-center justify-center bg-primary-container text-on-primary rounded-full px-4 py-1 scale-90 duration-200" href="#">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">person</span>
+<span class="font-label-md text-label-md">Perfil</span>
+</a>
+</nav>
+</body></html>
