@@ -1,0 +1,258 @@
+<!DOCTYPE html>
+
+<html class="light" lang="es"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            "colors": {
+                    "on-tertiary-fixed-variant": "#004b70",
+                    "surface-container-highest": "#f4ded3",
+                    "surface-tint": "#994700",
+                    "on-surface-variant": "#574236",
+                    "on-error-container": "#93000a",
+                    "primary": "#994700",
+                    "surface-bright": "#fff8f5",
+                    "outline": "#8b7264",
+                    "surface": "#fff8f5",
+                    "tertiary-fixed-dim": "#8dcdff",
+                    "secondary": "#b22c11",
+                    "surface-container-lowest": "#ffffff",
+                    "error": "#ba1a1a",
+                    "inverse-primary": "#ffb68b",
+                    "secondary-fixed-dim": "#ffb4a4",
+                    "on-secondary-fixed": "#3e0500",
+                    "inverse-surface": "#3a2e27",
+                    "on-primary-container": "#592600",
+                    "on-primary-fixed-variant": "#743400",
+                    "tertiary-container": "#00a7f2",
+                    "on-secondary": "#ffffff",
+                    "on-secondary-container": "#5c0b00",
+                    "on-secondary-fixed-variant": "#8d1600",
+                    "surface-dim": "#ebd6cb",
+                    "surface-container-low": "#fff1ea",
+                    "secondary-container": "#fb6041",
+                    "on-tertiary": "#ffffff",
+                    "on-surface": "#241913",
+                    "tertiary": "#006493",
+                    "on-tertiary-container": "#003956",
+                    "surface-variant": "#f4ded3",
+                    "on-primary-fixed": "#321300",
+                    "on-background": "#241913",
+                    "on-error": "#ffffff",
+                    "on-tertiary-fixed": "#001e30",
+                    "background": "#fff8f5",
+                    "surface-container": "#ffeadf",
+                    "secondary-fixed": "#ffdad3",
+                    "outline-variant": "#dec1b1",
+                    "on-primary": "#ffffff",
+                    "error-container": "#ffdad6",
+                    "primary-fixed-dim": "#ffb68b",
+                    "primary-container": "#f57c1f",
+                    "inverse-on-surface": "#ffede5",
+                    "primary-fixed": "#ffdbc8",
+                    "surface-container-high": "#fae4d9",
+                    "tertiary-fixed": "#cae6ff"
+            },
+            "borderRadius": {
+                    "DEFAULT": "0.25rem",
+                    "lg": "0.5rem",
+                    "xl": "0.75rem",
+                    "full": "9999px"
+            },
+            "spacing": {
+                    "xl": "32px",
+                    "xs": "4px",
+                    "margin-desktop": "64px",
+                    "sm": "8px",
+                    "unit": "8px",
+                    "lg": "24px",
+                    "gutter": "16px",
+                    "margin-mobile": "20px",
+                    "md": "16px"
+            },
+            "fontFamily": {
+                    "headline-lg": ["Plus Jakarta Sans"],
+                    "label-md": ["Plus Jakarta Sans"],
+                    "headline-lg-mobile": ["Plus Jakarta Sans"],
+                    "body-md": ["Plus Jakarta Sans"],
+                    "headline-md": ["Plus Jakarta Sans"],
+                    "label-lg": ["Plus Jakarta Sans"],
+                    "body-lg": ["Plus Jakarta Sans"],
+                    "display-lg": ["Plus Jakarta Sans"]
+            },
+            "fontSize": {
+                    "headline-lg": ["32px", {"lineHeight": "40px", "letterSpacing": "-0.01em", "fontWeight": "700"}],
+                    "label-md": ["12px", {"lineHeight": "16px", "fontWeight": "600"}],
+                    "headline-lg-mobile": ["28px", {"lineHeight": "36px", "fontWeight": "700"}],
+                    "body-md": ["16px", {"lineHeight": "24px", "fontWeight": "400"}],
+                    "headline-md": ["24px", {"lineHeight": "32px", "fontWeight": "700"}],
+                    "label-lg": ["14px", {"lineHeight": "20px", "letterSpacing": "0.05em", "fontWeight": "600"}],
+                    "body-lg": ["18px", {"lineHeight": "28px", "fontWeight": "400"}],
+                    "display-lg": ["48px", {"lineHeight": "56px", "letterSpacing": "-0.02em", "fontWeight": "800"}]
+            }
+          },
+        },
+      }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .map-overlay {
+            background: linear-gradient(180deg, rgba(245, 124, 31, 0.15) 0%, rgba(255, 248, 245, 1) 90%);
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-background text-on-background font-body-md selection:bg-primary-container">
+<!-- TopAppBar -->
+<header class="fixed top-0 z-50 w-full bg-background flex justify-between items-center px-margin-mobile md:px-margin-desktop py-sm">
+<div class="flex items-center gap-md">
+<button class="w-10 h-10 flex items-center justify-center rounded-full hover:bg-surface-container transition-colors">
+<span class="material-symbols-outlined text-primary">arrow_back</span>
+</button>
+<h1 class="font-headline-md text-headline-md font-bold text-primary-container">CORRIENTAZO</h1>
+</div>
+<div class="flex items-center gap-md">
+<span class="material-symbols-outlined text-on-surface-variant hover:opacity-80 transition-opacity cursor-pointer">notifications</span>
+<div class="w-10 h-10 rounded-full overflow-hidden border-2 border-primary-fixed">
+<img alt="User Profile" data-alt="A professional and friendly headshot of a person with warm lighting against a neutral, soft background. The image has a modern, clean tech-startup aesthetic with natural skin tones and a high-key lighting style that fits a premium mobile application profile section." src="https://lh3.googleusercontent.com/aida-public/AB6AXuBnM2VkzWzNcvNb8kXac-BVRTJQPc8-Nq2P9QMZvBxj3bctz6SJp8pk5OQE5MLaMNT_cmoa0MAY_SZOZ7yQ1uVMEO9ZyuhvhH3Z8splWhKXKKL2o2Fxi2Dh4-z7YFUmea68wnmQZ3aB6KWJaHwCkoSuDRGbuL-qDS5t07mtAiO_i86ef9jt00FUI1KNz7sO1wPBVLR9m15oKaRo_BqLnTEkO4kCHf6sgSPZT2Q7YrhOBxJMNdA6hxCQ9VczgrmJRLGhQBMo4NNeQW0"/>
+</div>
+</div>
+</header>
+<main class="relative min-h-screen pt-16 pb-32">
+<!-- Map View Background -->
+<div class="fixed inset-0 z-0">
+<div class="absolute inset-0 bg-cover bg-center" data-alt="A high-angle, stylized map-like view of a dense urban neighborhood with organized street grids and lush green parks. The image is softened with a warm, golden-hour orange overlay that creates a welcoming, appetizing glow consistent with a food delivery service's visual identity. The lighting is diffused and professional." data-location="Bogotá" style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuAxQvpm89oB7GVfOezxU-sCRhnylmpKodtT71sE5sE5vNF4wwJlQH5Jor9ljOCucV2yotAewCoiWf_kFYBrAqEkEsjv_clLfViJimduv4ln2h2VyT3W4O9n5gxZ5yynWoqh1y6qBPfaIJ15bVOQzFyhM9TT7FSfKiGVS6lvAVO8m5Ape5VwyMBICoQ0ZSmMSlhgo87ElDUJZM4VkwViWgFQNkXO53lLdQxp9OBaoR1Zy_g9P8n9_IMjwvbyqyGBqRbmHH1bnxQiGWk')">
+</div>
+<div class="absolute inset-0 map-overlay"></div>
+</div>
+<div class="relative z-10 max-w-[1280px] mx-auto px-margin-mobile md:px-margin-desktop pt-lg">
+<!-- Arrival Time Floating Card -->
+<div class="flex justify-center mb-xl">
+<div class="bg-surface-container-lowest shadow-md rounded-xl p-lg text-center border border-surface-container-high">
+<p class="font-label-lg text-label-lg text-on-surface-variant uppercase tracking-wider mb-xs">Llegada estimada</p>
+<h2 class="font-display-lg text-display-lg text-primary">1:15 PM</h2>
+</div>
+</div>
+<!-- Bento Layout for Tracking Info -->
+<div class="grid grid-cols-1 md:grid-cols-12 gap-lg">
+<!-- Status Card (Bento Large) -->
+<div class="md:col-span-8 bg-surface-container-lowest rounded-xl p-xl shadow-md border border-surface-container-high">
+<div class="flex items-start gap-md mb-lg">
+<div class="bg-primary-container p-md rounded-xl">
+<span class="material-symbols-outlined text-white" style="font-variation-settings: 'FILL' 1;">inventory_2</span>
+</div>
+<div>
+<h3 class="font-headline-md text-headline-md text-on-surface mb-xs">Preparando tu sabor</h3>
+<p class="font-body-lg text-body-lg text-on-surface-variant">El Chef está empacando tu pedido con amor</p>
+</div>
+</div>
+<!-- Visual Timeline/Stepper -->
+<div class="relative mt-xl">
+<div class="absolute top-5 left-0 w-full h-[2px] bg-surface-container-highest"></div>
+<div class="absolute top-5 left-0 w-[66%] h-[2px] bg-primary"></div>
+<div class="relative flex justify-between">
+<!-- Recibido -->
+<div class="flex flex-col items-center gap-sm">
+<div class="w-10 h-10 rounded-full bg-primary flex items-center justify-center text-white z-10">
+<span class="material-symbols-outlined text-[20px]">check</span>
+</div>
+<span class="font-label-md text-label-md text-on-surface">Recibido</span>
+</div>
+<!-- Preparando -->
+<div class="flex flex-col items-center gap-sm">
+<div class="w-10 h-10 rounded-full bg-primary flex items-center justify-center text-white z-10 border-4 border-surface-container-lowest">
+<span class="material-symbols-outlined text-[20px]">restaurant</span>
+</div>
+<span class="font-label-md text-label-md text-primary font-bold">Preparando</span>
+</div>
+<!-- En Camino -->
+<div class="flex flex-col items-center gap-sm">
+<div class="w-10 h-10 rounded-full bg-surface-container-highest flex items-center justify-center text-on-surface-variant z-10">
+<span class="material-symbols-outlined text-[20px]">delivery_dining</span>
+</div>
+<span class="font-label-md text-label-md text-on-surface-variant">En Camino</span>
+</div>
+<!-- Entregado -->
+<div class="flex flex-col items-center gap-sm">
+<div class="w-10 h-10 rounded-full bg-surface-container-highest flex items-center justify-center text-on-surface-variant z-10">
+<span class="material-symbols-outlined text-[20px]">door_front</span>
+</div>
+<span class="font-label-md text-label-md text-on-surface-variant">Entregado</span>
+</div>
+</div>
+</div>
+</div>
+<!-- Chef Info Card (Bento Small) -->
+<div class="md:col-span-4 bg-surface-container-lowest rounded-xl p-xl shadow-md border border-surface-container-high flex flex-col items-center text-center">
+<div class="relative mb-md">
+<div class="w-24 h-24 rounded-full overflow-hidden border-4 border-secondary-fixed">
+<img alt="Chef Doña Rosa" data-alt="A warm and welcoming portrait of an experienced Colombian female chef wearing a clean white apron. She is in a rustic, well-lit traditional kitchen filled with ceramic pots and fresh vegetables. The photography style is warm and appetizing, emphasizing the artisanal, home-cooked feel of the brand with a soft-focus background." src="https://lh3.googleusercontent.com/aida-public/AB6AXuBpp1usTRiJ0h6kOx7O2E5G36lTPDqrTpfWwia9QVoAsgfWHtlsFiuuoIbj_GdhotuUJNuiJjfJTVeVzL9T2m3Mgef5XLjM0bEHwq4QzKnBFLE7llODgZ2gcQsIa9gxKaIHKQNtNKVGLrFpzWK8zNGsqvRmKdgl6ukyw_hCGyH0yrfG-IULY8TNMbtYg3D_InjFQ3rSzsN4nQPjObRAr4EjnLZxuqnTV-V9ToamSQNlyJLQYfHXGq21_geZApePV8i_RlS-l-4dMw0"/>
+</div>
+<div class="absolute bottom-0 right-0 bg-secondary text-white rounded-full p-xs px-sm text-label-md flex items-center gap-xs">
+<span class="material-symbols-outlined text-[14px]" style="font-variation-settings: 'FILL' 1;">star</span> 4.9
+                        </div>
+</div>
+<h4 class="font-headline-sm text-headline-md text-on-surface">Chef Doña Rosa</h4>
+<p class="font-body-md text-body-md text-on-surface-variant mb-lg">Especialista en sazón casera</p>
+<div class="flex gap-md w-full">
+<button class="flex-1 py-sm bg-primary-container text-white rounded-lg font-label-lg hover:opacity-90 transition-opacity flex items-center justify-center gap-sm">
+<span class="material-symbols-outlined text-[18px]">chat</span> Chat
+                        </button>
+<button class="flex-1 py-sm border-2 border-secondary text-secondary rounded-lg font-label-lg hover:bg-secondary-fixed transition-colors flex items-center justify-center gap-sm">
+<span class="material-symbols-outlined text-[18px]">call</span> Llamar
+                        </button>
+</div>
+</div>
+</div>
+<!-- Order Summary Preview -->
+<div class="mt-lg bg-surface-container-lowest rounded-xl p-lg shadow-md border border-surface-container-high">
+<div class="flex justify-between items-center">
+<div class="flex items-center gap-md">
+<div class="w-12 h-12 bg-surface-container-high rounded-lg flex items-center justify-center">
+<span class="material-symbols-outlined text-primary">shopping_basket</span>
+</div>
+<div>
+<p class="font-label-lg text-label-lg text-on-surface">Bandeja Paisa Tradicional + Jugo</p>
+<p class="font-label-md text-label-md text-on-surface-variant">Orden #44829</p>
+</div>
+</div>
+<button class="text-primary font-label-lg hover:underline">Ver detalles</button>
+</div>
+</div>
+</div>
+</main>
+<!-- BottomNavBar -->
+<nav class="fixed bottom-0 left-0 w-full z-50 flex justify-around items-center px-lg py-md pb-safe bg-surface dark:bg-inverse-surface shadow-md rounded-t-xl">
+<a class="flex flex-col items-center justify-center text-on-surface-variant dark:text-outline-variant px-4 py-1 hover:bg-surface-container-low transition-colors" href="#">
+<span class="material-symbols-outlined">home</span>
+<span class="font-label-md text-label-md">Inicio</span>
+</a>
+<a class="flex flex-col items-center justify-center text-on-surface-variant dark:text-outline-variant px-4 py-1 hover:bg-surface-container-low transition-colors" href="#">
+<span class="material-symbols-outlined">search</span>
+<span class="font-label-md text-label-md">Explorar</span>
+</a>
+<!-- ACTIVE TAB: Pedidos -->
+<a class="flex flex-col items-center justify-center bg-primary-container text-on-primary rounded-full px-4 py-1 transition-all active:scale-90 duration-200" href="#">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">shopping_bag</span>
+<span class="font-label-md text-label-md">Pedidos</span>
+</a>
+<a class="flex flex-col items-center justify-center text-on-surface-variant dark:text-outline-variant px-4 py-1 hover:bg-surface-container-low transition-colors" href="#">
+<span class="material-symbols-outlined">person</span>
+<span class="font-label-md text-label-md">Perfil</span>
+</a>
+</nav>
+</body></html>
