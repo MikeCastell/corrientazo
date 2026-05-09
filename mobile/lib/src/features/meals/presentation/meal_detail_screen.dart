@@ -55,6 +55,12 @@ class MealDetailScreen extends ConsumerWidget {
           cookName: item.cookName,
           cookAvatarUrl: item.cookAvatarUrl,
         );
+        final description = (item.description ?? '').trim().isEmpty
+            ? food.description
+            : (item.description ?? '').trim();
+        final ingredients = (item.tags == null || item.tags!.isEmpty)
+            ? food.ingredients
+            : item.tags!;
 
         return Scaffold(
           backgroundColor: Theme.of(context).colorScheme.surface,
@@ -202,7 +208,7 @@ class MealDetailScreen extends ConsumerWidget {
                       _SectionCard(
                         title: 'Qué incluye',
                         child: Text(
-                          food.description,
+                          description,
                           style: Theme.of(
                             context,
                           ).textTheme.bodyLarge?.copyWith(height: 1.35),
@@ -214,7 +220,7 @@ class MealDetailScreen extends ConsumerWidget {
                         child: Wrap(
                           spacing: 8,
                           runSpacing: 8,
-                          children: food.ingredients
+                          children: ingredients
                               .map(_IngredientChip.new)
                               .toList(growable: false),
                         ),

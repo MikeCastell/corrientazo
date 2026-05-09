@@ -15,6 +15,8 @@ class MealPublication {
     required this.pickupFrom,
     required this.pickupTo,
     required this.title,
+    required this.description,
+    required this.tags,
     required this.photoUrl,
     required this.cookName,
     required this.cookAvatarUrl,
@@ -33,6 +35,8 @@ class MealPublication {
 
   // Enriched feed fields (may be null depending on backend version)
   final String? title;
+  final String? description;
+  final List<String>? tags;
   final String? photoUrl;
   final String? cookName;
   final String? cookAvatarUrl;

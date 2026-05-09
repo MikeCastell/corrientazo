@@ -38,10 +38,13 @@ export class MealsService {
         pickup_to: true,
         photo_url: true,
         title_override: true,
+        description_override: true,
         meal: {
           select: {
             title: true,
+            description: true,
             photo_url: true,
+            tags: true,
           },
         },
         cook_profile: {
@@ -65,6 +68,8 @@ export class MealsService {
       pickup_from: r.pickup_from,
       pickup_to: r.pickup_to,
       title: r.title_override ?? r.meal?.title ?? null,
+      description: r.description_override ?? r.meal?.description ?? null,
+      tags: r.meal?.tags ?? null,
       photo_url: r.photo_url ?? r.meal?.photo_url ?? null,
       cook_name: r.cook_profile?.user?.name ?? null,
       cook_avatar_url: r.cook_profile?.user?.avatar_url ?? null,

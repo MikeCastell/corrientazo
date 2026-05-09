@@ -21,7 +21,7 @@ class CookMealsScreen extends ConsumerWidget {
     final meals = ref.watch(cookMealsControllerProvider);
 
     return AppScaffold(
-      title: 'Mis comidas',
+      title: 'Platos',
       trailing: IconButton(
         tooltip: 'Crear',
         onPressed: () => context.go(const CookCreateMealRoute().location),

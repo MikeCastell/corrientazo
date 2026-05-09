@@ -66,7 +66,7 @@ class CookShell extends StatelessWidget {
           NavigationDestination(
             icon: Icon(Icons.restaurant_menu_outlined),
             selectedIcon: Icon(Icons.restaurant_menu, color: AppColors.primary),
-            label: 'Mis comidas',
+            label: 'Platos',
           ),
           NavigationDestination(
             icon: Icon(Icons.add_circle_outline),
