@@ -7,8 +7,6 @@ import '../../../core/design/tokens/app_colors.dart';
 import '../../../core/design/tokens/app_radius.dart';
 import '../../../core/design/tokens/app_spacing.dart';
 import '../../../core/ui/app_scaffold.dart';
-import '../../../core/ui/states/app_loading_center.dart';
-import '../../../core/ui/marketplace/cook_trust_chip.dart';
 import '../../../core/ui/marketplace/food_image.dart';
 import '../../../core/ui/marketplace/marketplace_utils.dart';
 import '../../../core/food/colombian_food_mock.dart';
@@ -29,10 +27,7 @@ class MealDetailScreen extends ConsumerWidget {
     final feed = ref.watch(mealsFeedProvider);
 
     return feed.when(
-      loading: () => const AppScaffold(
-        title: '',
-        body: AppLoadingCenter(message: 'Cargando este plato…'),
-      ),
+      loading: () => const AppScaffold(title: '', body: _MealDetailLoading()),
       error: (e, _) => AppScaffold(
         title: '',
         body: Center(child: Text(e.toString())),
@@ -61,138 +56,31 @@ class MealDetailScreen extends ConsumerWidget {
         final ingredients = (item.tags == null || item.tags!.isEmpty)
             ? food.ingredients
             : item.tags!;
+        final tagList = (item.tags ?? const <String>[])
+            .map((e) => e.trim())
+            .where((e) => e.isNotEmpty)
+            .take(3)
+            .toList(growable: false);
+        final isSoldOut = item.stockAvailable <= 0;
 
         return Scaffold(
-          backgroundColor: Theme.of(context).colorScheme.surface,
+          backgroundColor: AppColors.bg,
           body: CustomScrollView(
             slivers: [
-              SliverAppBar(
-                pinned: true,
-                stretch: true,
-                expandedHeight: 460,
-                backgroundColor: Colors.black,
-                leading: IconButton(
-                  onPressed: () => Navigator.of(context).maybePop(),
-                  icon: const Icon(Icons.arrow_back_ios_new_rounded),
-                ),
-                actions: [
-                  IconButton(
-                    onPressed: () {},
-                    icon: const Icon(Icons.more_horiz_rounded),
-                  ),
-                ],
-                flexibleSpace: FlexibleSpaceBar(
-                  stretchModes: const [
-                    StretchMode.zoomBackground,
-                    StretchMode.fadeTitle,
-                  ],
-                  background: Stack(
-                    fit: StackFit.expand,
-                    children: [
-                      Hero(
-                        tag: 'mealHero-${item.id}',
-                        child: FoodImage(
-                          asset: food.imageAsset,
-                          fallbackGradient: food.heroGradient,
-                          fallbackIcon: food.heroIcon,
-                        ),
-                      ),
-                      DecoratedBox(
-                        decoration: BoxDecoration(
-                          gradient: LinearGradient(
-                            begin: Alignment.topCenter,
-                            end: Alignment.bottomCenter,
-                            colors: [
-                              Colors.black.withValues(alpha: 0.20),
-                              Colors.black.withValues(alpha: 0.22),
-                              const Color(0xFF1A0B06).withValues(alpha: 0.62),
-                              Colors.black.withValues(alpha: 0.92),
-                            ],
-                            stops: const [0.0, 0.35, 0.75, 1.0],
-                          ),
-                        ),
-                      ),
-                      DecoratedBox(
-                        decoration: BoxDecoration(
-                          gradient: RadialGradient(
-                            center: const Alignment(-0.35, -0.55),
-                            radius: 1.05,
-                            colors: [
-                              Colors.white.withValues(alpha: 0.18),
-                              Colors.transparent,
-                            ],
-                          ),
-                        ),
-                      ),
-                      Positioned(
-                        left: AppSpacing.md,
-                        right: AppSpacing.md,
-                        bottom: AppSpacing.md,
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              food.category.toUpperCase(),
-                              style: Theme.of(context).textTheme.labelLarge
-                                  ?.copyWith(
-                                    color: Colors.white.withValues(alpha: 0.78),
-                                    fontWeight: FontWeight.w900,
-                                    letterSpacing: 1.0,
-                                  ),
-                            ),
-                            const SizedBox(height: 8),
-                            Text(
-                              food.title,
-                              maxLines: 3,
-                              overflow: TextOverflow.ellipsis,
-                              style: Theme.of(context).textTheme.displaySmall
-                                  ?.copyWith(
-                                    color: Colors.white,
-                                    fontWeight: FontWeight.w900,
-                                    letterSpacing: -0.9,
-                                    height: 1.03,
-                                  ),
-                            ),
-                            const SizedBox(height: AppSpacing.sm),
-                            Row(
-                              children: [
-                                _MetaPill(
-                                  icon: Icons.timer_outlined,
-                                  label: '$eta min',
-                                ),
-                                const SizedBox(width: AppSpacing.sm),
-                                _MetaPill(
-                                  icon: Icons.place_outlined,
-                                  label: '${km.toStringAsFixed(1)} km',
-                                ),
-                                const SizedBox(width: AppSpacing.sm),
-                                _MetaPill(
-                                  icon: item.stockAvailable <= 3
-                                      ? Icons.bolt
-                                      : Icons.check_circle_outline,
-                                  label: item.stockAvailable <= 0
-                                      ? 'Agotado'
-                                      : item.stockAvailable <= 3
-                                      ? 'Últimos ${item.stockAvailable}'
-                                      : 'Disponible',
-                                  tone: item.stockAvailable <= 3
-                                      ? AppColors.warning
-                                      : AppColors.success,
-                                ),
-                              ],
-                            ),
-                            const SizedBox(height: AppSpacing.sm),
-                            CookTrustChip(
-                              cookName: food.cookName,
-                              cookAvatarUrl: item.cookAvatarUrl,
-                              isVerified: true,
-                              sanitaryLevelLabel: 'Sanitario (próx)',
-                            ),
-                          ],
-                        ),
-                      ),
-                    ],
-                  ),
+              SliverToBoxAdapter(
+                child: _HeroCinematic(
+                  id: item.id,
+                  imageAsset: food.imageAsset,
+                  icon: food.heroIcon,
+                  gradient: food.heroGradient,
+                  title: food.title,
+                  categoryUpper: food.category.toUpperCase(),
+                  etaLabel: '$eta - ${eta + 10} min',
+                  kmLabel: '${km.toStringAsFixed(1)} km',
+                  stockAvailable: item.stockAvailable,
+                  onBack: () => Navigator.of(context).maybePop(),
+                  onFavorite: () {},
+                  onShare: () {},
                 ),
               ),
               SliverToBoxAdapter(
@@ -204,7 +92,107 @@ class MealDetailScreen extends ConsumerWidget {
                     140,
                   ),
                   child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
+                      Wrap(
+                        spacing: 8,
+                        runSpacing: 8,
+                        children: [
+                          if (!isSoldOut && item.stockAvailable <= 3)
+                            _EditorialTagPill(
+                              label: '🔥 Últimas ${item.stockAvailable}',
+                              tone: AppColors.warning,
+                            ),
+                          if (tagList.isNotEmpty)
+                            for (final t in tagList)
+                              _EditorialTagPill(label: t),
+                          if (tagList.isEmpty)
+                            const _EditorialTagPill(label: 'Casero'),
+                          const _EditorialTagPill(label: 'Recién hecho'),
+                        ],
+                      ),
+                      const SizedBox(height: AppSpacing.md),
+                      Text(
+                        food.title,
+                        style: Theme.of(context).textTheme.headlineMedium
+                            ?.copyWith(
+                              fontWeight: FontWeight.w900,
+                              letterSpacing: -0.8,
+                              height: 1.05,
+                              color: const Color(
+                                0xFF241913,
+                              ).withValues(alpha: 0.95),
+                            ),
+                      ),
+                      const SizedBox(height: 10),
+                      Text(
+                        description,
+                        maxLines: 4,
+                        overflow: TextOverflow.ellipsis,
+                        style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                          height: 1.35,
+                          fontWeight: FontWeight.w700,
+                          color: const Color(
+                            0xFF6B4A3A,
+                          ).withValues(alpha: 0.82),
+                        ),
+                      ),
+                      const SizedBox(height: AppSpacing.lg),
+                      _CookIdentityCard(
+                        cookName: food.cookName,
+                        cookAvatarUrl: item.cookAvatarUrl,
+                        cookBio: (item.cookBio ?? '').trim().isEmpty
+                            ? 'Sazón casera, como en casa.'
+                            : (item.cookBio ?? '').trim(),
+                        onTap: () {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(
+                              content: Text('Perfil del cook (próximamente).'),
+                              behavior: SnackBarBehavior.floating,
+                            ),
+                          );
+                        },
+                      ),
+                      const SizedBox(height: AppSpacing.md),
+                      _AlmaDelPlato(
+                        cookName: food.cookName,
+                        story: _almaStory(
+                          cookName: food.cookName,
+                          description: description,
+                        ),
+                      ),
+                      const SizedBox(height: AppSpacing.lg),
+                      Row(
+                        children: [
+                          _InfoPill(
+                            icon: Icons.schedule,
+                            label: '$eta - ${eta + 10} min',
+                          ),
+                          const SizedBox(width: AppSpacing.sm),
+                          _InfoPill(
+                            icon: Icons.place_outlined,
+                            label: '${km.toStringAsFixed(1)} km',
+                          ),
+                          const SizedBox(width: AppSpacing.sm),
+                          _InfoPill(
+                            icon: isSoldOut
+                                ? Icons.block
+                                : item.stockAvailable <= 3
+                                ? Icons.bolt
+                                : Icons.verified_outlined,
+                            label: isSoldOut
+                                ? 'Agotado'
+                                : item.stockAvailable <= 3
+                                ? 'Últimos'
+                                : 'Disponible',
+                            tone: isSoldOut
+                                ? AppColors.danger
+                                : item.stockAvailable <= 3
+                                ? AppColors.warning
+                                : AppColors.success,
+                          ),
+                        ],
+                      ),
                       _SectionCard(
                         title: 'Qué incluye',
                         child: Text(
@@ -256,38 +244,723 @@ class MealDetailScreen extends ConsumerWidget {
           ),
           bottomNavigationBar: SafeArea(
             top: false,
-            child: Padding(
-              padding: const EdgeInsets.fromLTRB(
-                AppSpacing.md,
-                0,
-                AppSpacing.md,
-                AppSpacing.md,
-              ),
-              child: SizedBox(
-                width: double.infinity,
-                height: 56,
-                child: FilledButton(
-                  onPressed: item.stockAvailable <= 0
-                      ? null
-                      : () {
-                          HapticFeedback.selectionClick();
-                          _openOrderSheet(
-                            context,
-                            ref,
-                            mealPublicationId: item.id,
-                          );
-                        },
-                  child: Text(
-                    item.stockAvailable <= 0 ? 'Agotado' : 'Pedir ahora',
-                  ),
-                ),
-              ),
+            child: _OrderFooterBar(
+              priceCop: item.priceCop,
+              enabled: item.stockAvailable > 0,
+              onTap: () {
+                HapticFeedback.selectionClick();
+                _openOrderSheet(context, ref, mealPublicationId: item.id);
+              },
             ),
           ),
         );
       },
     );
   }
+}
+
+String _almaStory({required String cookName, required String description}) {
+  final desc = description.trim();
+  if (desc.isEmpty) {
+    return 'Hoy cociné como en casa: con calma, con cariño, y pensando en que '
+        'tu almuerzo llegue caliente y sabroso.';
+  }
+  if (desc.length <= 120) {
+    return 'Este plato lo hice pensando en ese primer bocado que abraza: '
+        '$desc';
+  }
+  return desc;
+}
+
+class _AlmaDelPlato extends StatelessWidget {
+  const _AlmaDelPlato({required this.cookName, required this.story});
+
+  final String cookName;
+  final String story;
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final surface = isDark ? AppColors.surfaceDark : AppColors.surface;
+    final border = isDark ? AppColors.borderDark : AppColors.border;
+    final ink = const Color(0xFF241913).withValues(alpha: 0.92);
+
+    return Container(
+      padding: const EdgeInsets.all(AppSpacing.md),
+      decoration: BoxDecoration(
+        color: surface.withValues(alpha: 0.92),
+        borderRadius: BorderRadius.circular(AppRadius.xl),
+        border: Border.all(color: border.withValues(alpha: 0.80)),
+      ),
+      child: Stack(
+        children: [
+          Positioned(
+            right: -6,
+            top: -10,
+            child: Icon(
+              Icons.format_quote_rounded,
+              size: 72,
+              color: ink.withValues(alpha: 0.06),
+            ),
+          ),
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'El Alma del Plato',
+                style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                  fontWeight: FontWeight.w900,
+                  letterSpacing: -0.2,
+                  color: ink.withValues(alpha: 0.90),
+                ),
+              ),
+              const SizedBox(height: 10),
+              Text(
+                '“$story”',
+                style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                  height: 1.45,
+                  fontStyle: FontStyle.italic,
+                  fontWeight: FontWeight.w700,
+                  color: ink.withValues(alpha: 0.82),
+                ),
+              ),
+              const SizedBox(height: 10),
+              Text(
+                '— $cookName',
+                style: Theme.of(context).textTheme.labelLarge?.copyWith(
+                  fontWeight: FontWeight.w900,
+                  letterSpacing: 0.2,
+                  color: const Color(0xFF6B4A3A).withValues(alpha: 0.72),
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _MealDetailLoading extends StatelessWidget {
+  const _MealDetailLoading();
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final base = (isDark ? AppColors.surfaceDark : AppColors.surface)
+        .withValues(alpha: isDark ? 0.35 : 0.55);
+
+    return Scaffold(
+      backgroundColor: AppColors.bg,
+      body: CustomScrollView(
+        physics: const AlwaysScrollableScrollPhysics(),
+        slivers: [
+          SliverToBoxAdapter(
+            child: Container(
+              height: 420,
+              decoration: BoxDecoration(
+                color: base,
+                borderRadius: const BorderRadius.only(
+                  bottomLeft: Radius.circular(AppRadius.xl),
+                  bottomRight: Radius.circular(AppRadius.xl),
+                ),
+              ),
+            ),
+          ),
+          SliverToBoxAdapter(
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(
+                AppSpacing.md,
+                AppSpacing.lg,
+                AppSpacing.md,
+                140,
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: List.generate(
+                      3,
+                      (i) => Padding(
+                        padding: EdgeInsets.only(right: i == 2 ? 0 : 8),
+                        child: Container(
+                          height: 28,
+                          width: 88,
+                          decoration: BoxDecoration(
+                            color: base,
+                            borderRadius: BorderRadius.circular(999),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: AppSpacing.md),
+                  Container(
+                    height: 30,
+                    width: 260,
+                    decoration: BoxDecoration(
+                      color: base,
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                  ),
+                  const SizedBox(height: 10),
+                  Container(
+                    height: 18,
+                    width: double.infinity,
+                    decoration: BoxDecoration(
+                      color: base,
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Container(
+                    height: 18,
+                    width: 320,
+                    decoration: BoxDecoration(
+                      color: base,
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                  ),
+                  const SizedBox(height: AppSpacing.lg),
+                  Container(
+                    height: 92,
+                    width: double.infinity,
+                    decoration: BoxDecoration(
+                      color: base,
+                      borderRadius: BorderRadius.circular(AppRadius.xl),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ],
+      ),
+      bottomNavigationBar: SafeArea(
+        top: false,
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(
+            AppSpacing.md,
+            0,
+            AppSpacing.md,
+            AppSpacing.md,
+          ),
+          child: Container(
+            height: 72,
+            decoration: BoxDecoration(
+              color: (isDark ? AppColors.surfaceDark : AppColors.surface)
+                  .withValues(alpha: 0.92),
+              borderRadius: BorderRadius.circular(AppRadius.xl),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _HeroCinematic extends StatelessWidget {
+  const _HeroCinematic({
+    required this.id,
+    required this.imageAsset,
+    required this.icon,
+    required this.gradient,
+    required this.title,
+    required this.categoryUpper,
+    required this.etaLabel,
+    required this.kmLabel,
+    required this.stockAvailable,
+    required this.onBack,
+    required this.onFavorite,
+    required this.onShare,
+  });
+
+  final String id;
+  final String imageAsset;
+  final IconData icon;
+  final LinearGradient gradient;
+  final String title;
+  final String categoryUpper;
+  final String etaLabel;
+  final String kmLabel;
+  final int stockAvailable;
+  final VoidCallback onBack;
+  final VoidCallback onFavorite;
+  final VoidCallback onShare;
+
+  @override
+  Widget build(BuildContext context) {
+    final topPad = MediaQuery.paddingOf(context).top;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final buttonBg = (isDark ? Colors.black : Colors.white).withValues(
+      alpha: isDark ? 0.18 : 0.20,
+    );
+    final buttonFg = (isDark ? Colors.white : Colors.black).withValues(
+      alpha: isDark ? 0.92 : 0.86,
+    );
+
+    return SizedBox(
+      height: 460,
+      child: Stack(
+        fit: StackFit.expand,
+        children: [
+          ClipRRect(
+            borderRadius: const BorderRadius.only(
+              bottomLeft: Radius.circular(AppRadius.xl),
+              bottomRight: Radius.circular(AppRadius.xl),
+            ),
+            child: Stack(
+              fit: StackFit.expand,
+              children: [
+                Hero(
+                  tag: 'mealHero-$id',
+                  child: FoodImage(
+                    asset: imageAsset,
+                    fallbackGradient: gradient,
+                    fallbackIcon: icon,
+                  ),
+                ),
+                DecoratedBox(
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      begin: Alignment.topCenter,
+                      end: Alignment.bottomCenter,
+                      colors: [
+                        Colors.black.withValues(alpha: 0.10),
+                        Colors.black.withValues(alpha: 0.18),
+                        const Color(0xFF1A0B06).withValues(alpha: 0.58),
+                        Colors.black.withValues(alpha: 0.86),
+                      ],
+                      stops: const [0.0, 0.35, 0.74, 1.0],
+                    ),
+                  ),
+                ),
+                DecoratedBox(
+                  decoration: BoxDecoration(
+                    gradient: RadialGradient(
+                      center: const Alignment(-0.35, -0.55),
+                      radius: 1.05,
+                      colors: [
+                        Colors.white.withValues(alpha: 0.18),
+                        Colors.transparent,
+                      ],
+                    ),
+                  ),
+                ),
+                Positioned(
+                  left: AppSpacing.md,
+                  right: AppSpacing.md,
+                  bottom: AppSpacing.md,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        categoryUpper,
+                        style: Theme.of(context).textTheme.labelLarge?.copyWith(
+                          color: Colors.white.withValues(alpha: 0.78),
+                          fontWeight: FontWeight.w900,
+                          letterSpacing: 1.0,
+                        ),
+                      ),
+                      const SizedBox(height: 10),
+                      Text(
+                        title,
+                        maxLines: 3,
+                        overflow: TextOverflow.ellipsis,
+                        style: Theme.of(context).textTheme.displaySmall
+                            ?.copyWith(
+                              color: Colors.white,
+                              fontWeight: FontWeight.w900,
+                              letterSpacing: -0.9,
+                              height: 1.03,
+                            ),
+                      ),
+                      const SizedBox(height: 12),
+                      Wrap(
+                        spacing: 8,
+                        runSpacing: 8,
+                        children: [
+                          _MetaPill(icon: Icons.schedule, label: etaLabel),
+                          _MetaPill(icon: Icons.place_outlined, label: kmLabel),
+                          _MetaPill(
+                            icon: stockAvailable <= 0
+                                ? Icons.block
+                                : stockAvailable <= 3
+                                ? Icons.bolt
+                                : Icons.check_circle_outline,
+                            label: stockAvailable <= 0
+                                ? 'Agotado'
+                                : stockAvailable <= 3
+                                ? 'Últimos $stockAvailable'
+                                : 'Disponible',
+                            tone: stockAvailable <= 0
+                                ? AppColors.danger
+                                : stockAvailable <= 3
+                                ? AppColors.warning
+                                : AppColors.success,
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+          Positioned(
+            left: AppSpacing.md,
+            right: AppSpacing.md,
+            top: topPad + 10,
+            child: Row(
+              children: [
+                _OverlayIconButton(
+                  icon: Icons.arrow_back_ios_new_rounded,
+                  background: buttonBg,
+                  foreground: buttonFg,
+                  onTap: onBack,
+                ),
+                const Spacer(),
+                _OverlayIconButton(
+                  icon: Icons.favorite_border_rounded,
+                  background: buttonBg,
+                  foreground: buttonFg,
+                  onTap: onFavorite,
+                ),
+                const SizedBox(width: 10),
+                _OverlayIconButton(
+                  icon: Icons.ios_share_rounded,
+                  background: buttonBg,
+                  foreground: buttonFg,
+                  onTap: onShare,
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _OverlayIconButton extends StatelessWidget {
+  const _OverlayIconButton({
+    required this.icon,
+    required this.background,
+    required this.foreground,
+    required this.onTap,
+  });
+
+  final IconData icon;
+  final Color background;
+  final Color foreground;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(999),
+      child: Material(
+        color: background,
+        child: InkWell(
+          onTap: () {
+            HapticFeedback.selectionClick();
+            onTap();
+          },
+          child: SizedBox(
+            width: 44,
+            height: 44,
+            child: Icon(icon, color: foreground, size: 18),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _EditorialTagPill extends StatelessWidget {
+  const _EditorialTagPill({required this.label, this.tone});
+
+  final String label;
+  final Color? tone;
+
+  @override
+  Widget build(BuildContext context) {
+    final t = tone ?? AppColors.brand;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final bg = t.withValues(alpha: isDark ? 0.16 : 0.10);
+    final border = t.withValues(alpha: isDark ? 0.26 : 0.16);
+    final fg = t.withValues(alpha: 0.92);
+
+    return Container(
+      padding: const EdgeInsets.symmetric(
+        horizontal: AppSpacing.sm,
+        vertical: AppSpacing.xs,
+      ),
+      decoration: BoxDecoration(
+        color: bg,
+        borderRadius: BorderRadius.circular(999),
+        border: Border.all(color: border),
+      ),
+      child: Text(
+        label,
+        style: Theme.of(context).textTheme.labelLarge?.copyWith(
+          fontWeight: FontWeight.w900,
+          letterSpacing: -0.1,
+          color: fg,
+        ),
+      ),
+    );
+  }
+}
+
+class _CookIdentityCard extends StatelessWidget {
+  const _CookIdentityCard({
+    required this.cookName,
+    required this.cookAvatarUrl,
+    required this.cookBio,
+    required this.onTap,
+  });
+
+  final String cookName;
+  final String? cookAvatarUrl;
+  final String cookBio;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final surface = isDark ? AppColors.surfaceDark : AppColors.surface;
+    final border = isDark ? AppColors.borderDark : AppColors.border;
+
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(AppRadius.xl),
+      child: Container(
+        padding: const EdgeInsets.all(AppSpacing.md),
+        decoration: BoxDecoration(
+          color: surface.withValues(alpha: 0.96),
+          borderRadius: BorderRadius.circular(AppRadius.xl),
+          border: Border.all(color: border.withValues(alpha: 0.85)),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: isDark ? 0.0 : 0.035),
+              blurRadius: 22,
+              offset: const Offset(0, 14),
+            ),
+          ],
+        ),
+        child: Row(
+          children: [
+            Stack(
+              clipBehavior: Clip.none,
+              children: [
+                CircleAvatar(
+                  radius: 28,
+                  backgroundColor: AppColors.primary.withValues(alpha: 0.14),
+                  foregroundImage: (cookAvatarUrl ?? '').trim().isEmpty
+                      ? null
+                      : NetworkImage(cookAvatarUrl!),
+                  child: const Icon(Icons.person, color: AppColors.brand),
+                ),
+                Positioned(
+                  right: -2,
+                  bottom: -2,
+                  child: Container(
+                    width: 18,
+                    height: 18,
+                    decoration: BoxDecoration(
+                      color: AppColors.success.withValues(alpha: 0.92),
+                      shape: BoxShape.circle,
+                      border: Border.all(
+                        color: Colors.white.withValues(alpha: 0.90),
+                        width: 2,
+                      ),
+                    ),
+                    child: const Icon(
+                      Icons.check,
+                      size: 12,
+                      color: Colors.white,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(width: AppSpacing.md),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Hecho hoy por $cookName',
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                      fontWeight: FontWeight.w900,
+                      letterSpacing: -0.2,
+                    ),
+                  ),
+                  const SizedBox(height: 6),
+                  Text(
+                    cookBio,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                      height: 1.25,
+                      color: const Color(0xFF6B4A3A).withValues(alpha: 0.74),
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(width: AppSpacing.sm),
+            Icon(
+              Icons.arrow_forward_ios_rounded,
+              size: 16,
+              color: Theme.of(
+                context,
+              ).colorScheme.onSurface.withValues(alpha: 0.35),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _InfoPill extends StatelessWidget {
+  const _InfoPill({required this.icon, required this.label, this.tone});
+
+  final IconData icon;
+  final String label;
+  final Color? tone;
+
+  @override
+  Widget build(BuildContext context) {
+    final c = tone ?? AppColors.brand;
+    return Container(
+      padding: const EdgeInsets.symmetric(
+        horizontal: AppSpacing.sm,
+        vertical: AppSpacing.xs,
+      ),
+      decoration: BoxDecoration(
+        color: c.withValues(alpha: 0.10),
+        borderRadius: BorderRadius.circular(999),
+        border: Border.all(color: c.withValues(alpha: 0.16)),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 16, color: c),
+          const SizedBox(width: 6),
+          Text(
+            label,
+            style: Theme.of(context).textTheme.labelLarge?.copyWith(
+              fontWeight: FontWeight.w900,
+              color: c,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _OrderFooterBar extends StatelessWidget {
+  const _OrderFooterBar({
+    required this.priceCop,
+    required this.enabled,
+    required this.onTap,
+  });
+
+  final int priceCop;
+  final bool enabled;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final surface = isDark ? AppColors.surfaceDark : AppColors.surface;
+    final border = isDark ? AppColors.borderDark : AppColors.border;
+
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(
+        AppSpacing.md,
+        0,
+        AppSpacing.md,
+        AppSpacing.md,
+      ),
+      child: Container(
+        padding: const EdgeInsets.all(10),
+        decoration: BoxDecoration(
+          color: surface.withValues(alpha: 0.92),
+          borderRadius: BorderRadius.circular(AppRadius.xl),
+          border: Border.all(color: border.withValues(alpha: 0.85)),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: isDark ? 0.0 : 0.06),
+              blurRadius: 26,
+              offset: const Offset(0, 18),
+            ),
+          ],
+        ),
+        child: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.symmetric(
+                horizontal: AppSpacing.md,
+                vertical: 12,
+              ),
+              decoration: BoxDecoration(
+                color: AppColors.brand.withValues(alpha: 0.08),
+                borderRadius: BorderRadius.circular(999),
+                border: Border.all(
+                  color: AppColors.brand.withValues(alpha: 0.14),
+                ),
+              ),
+              child: Text(
+                _formatCop(priceCop),
+                style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                  fontWeight: FontWeight.w900,
+                  letterSpacing: -0.2,
+                  color: const Color(0xFF241913).withValues(alpha: 0.92),
+                ),
+              ),
+            ),
+            const SizedBox(width: AppSpacing.sm),
+            Expanded(
+              child: SizedBox(
+                height: 52,
+                child: FilledButton(
+                  style: FilledButton.styleFrom(
+                    backgroundColor: AppColors.primary.withValues(alpha: 0.92),
+                    foregroundColor: Colors.white,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(AppRadius.xl),
+                    ),
+                    elevation: 0,
+                  ),
+                  onPressed: enabled ? onTap : null,
+                  child: Text(enabled ? 'Pedir ahora' : 'Agotado'),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+String _formatCop(int value) {
+  final raw = value.toString();
+  final b = StringBuffer();
+  for (var i = 0; i < raw.length; i++) {
+    final idxFromEnd = raw.length - i;
+    b.write(raw[i]);
+    if (idxFromEnd > 1 && idxFromEnd % 3 == 1) b.write('.');
+  }
+  return 'COP \$${b.toString()}';
 }
 
 class _IngredientChip extends StatelessWidget {
