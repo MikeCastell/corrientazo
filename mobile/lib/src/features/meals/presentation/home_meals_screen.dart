@@ -232,9 +232,13 @@ class _ActiveOrderBanner extends ConsumerWidget {
                   leading(context),
                   const SizedBox(width: AppSpacing.sm),
                   Expanded(child: textBlock(context, status, eta)),
-                  FilledButton.tonal(
-                    onPressed: onOpen,
-                    child: const Text('Ver pedido'),
+                  const SizedBox(width: AppSpacing.sm),
+                  ConstrainedBox(
+                    constraints: const BoxConstraints(minWidth: 120),
+                    child: FilledButton.tonal(
+                      onPressed: onOpen,
+                      child: const Text('Ver pedido'),
+                    ),
                   ),
                 ],
               ),

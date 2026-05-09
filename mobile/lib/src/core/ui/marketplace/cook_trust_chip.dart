@@ -26,79 +26,77 @@ class CookTrustChip extends StatelessWidget {
       alpha: 0.70,
     );
 
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        final compact = constraints.maxWidth < 260;
+    // Avoid LayoutBuilder here: this chip appears inside scrolling slivers, and
+    // LayoutBuilder-based "compact" toggles can trigger re-entrant layout asserts
+    // in debug when the tree is rebuilding quickly.
+    final compact = MediaQuery.sizeOf(context).width < 380;
 
-        return Container(
-          padding: const EdgeInsets.symmetric(
-            horizontal: AppSpacing.sm,
-            vertical: AppSpacing.xs,
-          ),
-          decoration: BoxDecoration(
-            color: bg,
-            borderRadius: BorderRadius.circular(AppRadius.xl),
-            border: Border.all(color: border.withValues(alpha: 0.75)),
-          ),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Container(
-                width: 22,
-                height: 22,
-                decoration: BoxDecoration(
-                  color: AppColors.brand.withValues(alpha: 0.12),
-                  borderRadius: BorderRadius.circular(8),
-                  border: Border.all(
-                    color: AppColors.brand.withValues(alpha: 0.22),
-                  ),
-                ),
-                child: cookAvatarUrl == null
-                    ? const Icon(Icons.person, size: 14, color: AppColors.brand)
-                    : ClipRRect(
-                        borderRadius: BorderRadius.circular(8),
-                        child: Image.network(
-                          cookAvatarUrl!,
-                          fit: BoxFit.cover,
-                          errorBuilder: (context, error, stackTrace) =>
-                              const Icon(
-                                Icons.person,
-                                size: 14,
-                                color: AppColors.brand,
-                              ),
-                        ),
+    return Container(
+      padding: const EdgeInsets.symmetric(
+        horizontal: AppSpacing.sm,
+        vertical: AppSpacing.xs,
+      ),
+      decoration: BoxDecoration(
+        color: bg,
+        borderRadius: BorderRadius.circular(AppRadius.xl),
+        border: Border.all(color: border.withValues(alpha: 0.75)),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Container(
+            width: 22,
+            height: 22,
+            decoration: BoxDecoration(
+              color: AppColors.brand.withValues(alpha: 0.12),
+              borderRadius: BorderRadius.circular(8),
+              border: Border.all(
+                color: AppColors.brand.withValues(alpha: 0.22),
+              ),
+            ),
+            child: cookAvatarUrl == null
+                ? const Icon(Icons.person, size: 14, color: AppColors.brand)
+                : ClipRRect(
+                    borderRadius: BorderRadius.circular(8),
+                    child: Image.network(
+                      cookAvatarUrl!,
+                      fit: BoxFit.cover,
+                      errorBuilder: (context, error, stackTrace) => const Icon(
+                        Icons.person,
+                        size: 14,
+                        color: AppColors.brand,
                       ),
-              ),
-              const SizedBox(width: AppSpacing.xs),
-              Flexible(
-                child: Text(
-                  cookName,
-                  overflow: TextOverflow.ellipsis,
-                  style: Theme.of(
-                    context,
-                  ).textTheme.labelLarge?.copyWith(fontWeight: FontWeight.w700),
-                ),
-              ),
-              const SizedBox(width: AppSpacing.xs),
-              _Pill(
-                icon: isVerified ? Icons.verified : Icons.verified_outlined,
-                label: isVerified ? 'Verificado' : 'Verificación',
-                color: isVerified ? AppColors.info : AppColors.text2,
-                compact: compact,
-              ),
-              if (!compact) ...[
-                const SizedBox(width: AppSpacing.xs),
-                _Pill(
-                  icon: Icons.shield_outlined,
-                  label: sanitaryLevelLabel,
-                  color: AppColors.brand,
-                  compact: false,
-                ),
-              ],
-            ],
+                    ),
+                  ),
           ),
-        );
-      },
+          const SizedBox(width: AppSpacing.xs),
+          Flexible(
+            child: Text(
+              cookName,
+              overflow: TextOverflow.ellipsis,
+              style: Theme.of(
+                context,
+              ).textTheme.labelLarge?.copyWith(fontWeight: FontWeight.w700),
+            ),
+          ),
+          const SizedBox(width: AppSpacing.xs),
+          _Pill(
+            icon: isVerified ? Icons.verified : Icons.verified_outlined,
+            label: isVerified ? 'Verificado' : 'Verificación',
+            color: isVerified ? AppColors.info : AppColors.text2,
+            compact: compact,
+          ),
+          if (!compact) ...[
+            const SizedBox(width: AppSpacing.xs),
+            _Pill(
+              icon: Icons.shield_outlined,
+              label: sanitaryLevelLabel,
+              color: AppColors.brand,
+              compact: false,
+            ),
+          ],
+        ],
+      ),
     );
   }
 }

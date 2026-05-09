@@ -35,10 +35,11 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
   ).chain(CurveTween(curve: Curves.easeInOutCubic)).animate(_breath);
 
   static const _messages = <String>[
-    'Cargando sabor de hogar…',
-    'Buscando corrientazos cerca de ti…',
-    'Preparando algo delicioso…',
-    'Hoy se come bueno.',
+    'Preparando algo delicioso 🍲',
+    'Buscando corrientazos cerca de ti',
+    'Cargando sabor de hogar',
+    'Hoy se come bueno 👌',
+    'Tu almuerzo casi está listo',
   ];
 
   int _msgIndex = 0;
@@ -111,7 +112,7 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
             child: IgnorePointer(
               child: CustomPaint(
                 painter: _BogotaSilhouettePainter(
-                  color: const Color(0xFF6B4A3A).withValues(alpha: 0.08),
+                  color: const Color(0xFF6B4A3A).withValues(alpha: 0.055),
                 ),
               ),
             ),
@@ -120,30 +121,30 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
           SafeArea(
             child: Center(
               child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: AppSpacing.xl),
+                padding: const EdgeInsets.symmetric(horizontal: AppSpacing.xxl),
                 child: ConstrainedBox(
                   constraints: const BoxConstraints(maxWidth: 520),
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      const SizedBox(height: 10),
+                      const SizedBox(height: 18),
                       AnimatedBuilder(
                         animation: _breath,
                         builder: (context, _) {
                           return Transform.scale(
                             scale: _logoScale.value,
                             child: Container(
-                              padding: const EdgeInsets.all(AppSpacing.lg),
+                              padding: const EdgeInsets.all(AppSpacing.xl),
                               decoration: BoxDecoration(
                                 color: AppColors.surface.withValues(
-                                  alpha: 0.92,
+                                  alpha: 0.90,
                                 ),
                                 borderRadius: BorderRadius.circular(
                                   AppRadius.xl + 6,
                                 ),
                                 border: Border.all(
                                   color: AppColors.border.withValues(
-                                    alpha: 0.85,
+                                    alpha: 0.78,
                                   ),
                                 ),
                                 boxShadow: [
@@ -151,19 +152,21 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
                                     color: AppColors.primary.withValues(
                                       alpha: _logoGlow.value,
                                     ),
-                                    blurRadius: 34,
-                                    offset: const Offset(0, 18),
+                                    blurRadius: 40,
+                                    offset: const Offset(0, 20),
                                   ),
                                   BoxShadow(
-                                    color: Colors.black.withValues(alpha: 0.06),
-                                    blurRadius: 26,
-                                    offset: const Offset(0, 14),
+                                    color: Colors.black.withValues(
+                                      alpha: 0.045,
+                                    ),
+                                    blurRadius: 30,
+                                    offset: const Offset(0, 16),
                                   ),
                                 ],
                               ),
                               child: Image.asset(
                                 'assets/branding/LogoOFICIAL.png',
-                                height: 140,
+                                height: 152,
                                 fit: BoxFit.contain,
                                 filterQuality: FilterQuality.high,
                               ),
@@ -232,7 +235,7 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
                           ),
                           const SizedBox(width: 10),
                           AnimatedSwitcher(
-                            duration: const Duration(milliseconds: 260),
+                            duration: const Duration(milliseconds: 220),
                             switchInCurve: Curves.easeOutCubic,
                             switchOutCurve: Curves.easeInCubic,
                             child: Text(
@@ -408,7 +411,7 @@ class _BogotaSilhouettePainter extends CustomPainter {
 
     // Light fog layer
     final fog = Paint()
-      ..color = AppColors.bg.withValues(alpha: 0.22)
+      ..color = AppColors.bg.withValues(alpha: 0.16)
       ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 18);
     canvas.drawRect(Rect.fromLTWH(0, baseY - 26, size.width, size.height), fog);
   }
