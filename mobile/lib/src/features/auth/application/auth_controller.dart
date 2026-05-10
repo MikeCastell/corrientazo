@@ -36,8 +36,9 @@ class AuthController extends Notifier<AuthState> {
     final sw = Stopwatch()..start();
     Timer? warn;
     warn = Timer(const Duration(seconds: 3), () {
-      if (AppEnv.startupDebug)
+      if (AppEnv.startupDebug) {
         debugPrint('[auth] WARN _init() >3s (still pending)');
+      }
       _ref
           .read(authDebugStatusProvider.notifier)
           .set('WARN: init auth >3s (still pending)');
@@ -146,8 +147,9 @@ class AuthController extends Notifier<AuthState> {
         .register(phone: phone, password: password, name: name, role: role);
     await _ref.read(authTokenStoreProvider).write(pair);
     final me = await _ref.read(usersRepositoryProvider).getMe();
-    if (AppEnv.startupDebug)
+    if (AppEnv.startupDebug) {
       debugPrint('[auth] register() -> Authenticated(role=${me.role})');
+    }
     state = Authenticated(me);
   }
 
@@ -157,8 +159,9 @@ class AuthController extends Notifier<AuthState> {
         .login(phone: phone, password: password);
     await _ref.read(authTokenStoreProvider).write(pair);
     final me = await _ref.read(usersRepositoryProvider).getMe();
-    if (AppEnv.startupDebug)
+    if (AppEnv.startupDebug) {
       debugPrint('[auth] login() -> Authenticated(role=${me.role})');
+    }
     state = Authenticated(me);
   }
 

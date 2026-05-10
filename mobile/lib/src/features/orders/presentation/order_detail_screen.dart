@@ -151,7 +151,7 @@ class _Hero extends StatelessWidget {
             width: double.infinity,
             child: FoodImage(
               asset: (mealPhotoUrl == null || mealPhotoUrl!.isEmpty)
-                  ? 'assets/food/corrientazo.png'
+                  ? 'assets/food/corrientazo.jpg'
                   : mealPhotoUrl!,
               fit: BoxFit.cover,
               fallbackGradient: fallbackGradient,
@@ -445,7 +445,7 @@ class _CustomerCard extends StatelessWidget {
               height: 44,
               child: FoodImage(
                 asset: (avatarUrl == null || avatarUrl!.isEmpty)
-                    ? 'assets/food/arepas.png'
+                    ? 'assets/food/arepas.jpg'
                     : avatarUrl!,
                 fit: BoxFit.cover,
                 fallbackGradient: fallbackGradient,

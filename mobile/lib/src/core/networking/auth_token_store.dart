@@ -26,8 +26,9 @@ class AuthTokenStore {
       }
       return null;
     }
-    if (AppEnv.startupDebug)
+    if (AppEnv.startupDebug) {
       debugPrint('[auth_token_store] read() -> non-null tokens');
+    }
     return TokenPair(accessToken: access, refreshToken: refresh);
   }
 

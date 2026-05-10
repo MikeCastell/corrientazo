@@ -21,6 +21,7 @@ class CustomerShell extends StatelessWidget {
       bottomNavigationBar: _AppBottomNav(
         currentIndex: navigationShell.currentIndex,
         onSelect: _goBranch,
+        compact: false,
         items: const [
           _NavItem(
             label: 'Hoy',
@@ -59,6 +60,7 @@ class CookShell extends StatelessWidget {
       bottomNavigationBar: _AppBottomNav(
         currentIndex: navigationShell.currentIndex,
         onSelect: _goBranch,
+        compact: true,
         items: const [
           _NavItem(
             label: 'Dashboard',
@@ -108,11 +110,16 @@ class _AppBottomNav extends StatelessWidget {
     required this.currentIndex,
     required this.onSelect,
     required this.items,
+    this.compact = false,
   });
 
   final int currentIndex;
   final ValueChanged<int> onSelect;
   final List<_NavItem> items;
+
+  /// Cook shell has 5 tabs: use icon-only inactive items to avoid horizontal overflow.
+  /// Customer shell keeps icon + label on every tab.
+  final bool compact;
 
   @override
   Widget build(BuildContext context) {
@@ -148,21 +155,29 @@ class _AppBottomNav extends StatelessWidget {
               ),
             ],
           ),
-          child: Row(
-            children: [
-              for (var i = 0; i < items.length; i++) ...[
-                Expanded(
-                  child: _BottomNavItem(
-                    label: items[i].label,
-                    icon: items[i].icon,
-                    activeIcon: items[i].activeIcon,
-                    active: i == currentIndex,
-                    onTap: () => onSelect(i),
+          child: SizedBox(
+            height: 52,
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
+                for (var i = 0; i < items.length; i++) ...[
+                  Expanded(
+                    child: Align(
+                      alignment: Alignment.center,
+                      child: _BottomNavItem(
+                        label: items[i].label,
+                        icon: items[i].icon,
+                        activeIcon: items[i].activeIcon,
+                        active: i == currentIndex,
+                        compact: compact,
+                        onTap: () => onSelect(i),
+                      ),
+                    ),
                   ),
-                ),
-                if (i != items.length - 1) const SizedBox(width: 6),
+                  if (i != items.length - 1) const SizedBox(width: 6),
+                ],
               ],
-            ],
+            ),
           ),
         ),
       ),
@@ -176,6 +191,7 @@ class _BottomNavItem extends StatefulWidget {
     required this.icon,
     required this.activeIcon,
     required this.active,
+    required this.compact,
     required this.onTap,
   });
 
@@ -183,6 +199,7 @@ class _BottomNavItem extends StatefulWidget {
   final IconData icon;
   final IconData activeIcon;
   final bool active;
+  final bool compact;
   final VoidCallback onTap;
 
   @override
@@ -241,31 +258,62 @@ class _BottomNavItemState extends State<_BottomNavItem> {
             duration: const Duration(milliseconds: 180),
             curve: Curves.easeOutCubic,
             opacity: contentOpacity,
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Icon(
-                  widget.active ? widget.activeIcon : widget.icon,
-                  size: 22,
-                  color: fg,
-                ),
-                const SizedBox(width: 8),
-                Flexible(
-                  child: Text(
-                    widget.label,
-                    overflow: TextOverflow.ellipsis,
-                    style: Theme.of(context).textTheme.labelLarge?.copyWith(
-                      fontWeight: FontWeight.w900,
-                      letterSpacing: -0.1,
-                      color: fg,
-                    ),
-                  ),
-                ),
-              ],
-            ),
+            child: _navContent(context, fg),
           ),
         ),
       ),
+    );
+  }
+
+  Widget _navContent(BuildContext context, Color fg) {
+    final labelStyle = Theme.of(context).textTheme.labelLarge?.copyWith(
+          fontWeight: FontWeight.w900,
+          letterSpacing: -0.1,
+          color: fg,
+        );
+
+    if (!widget.compact) {
+      return Row(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(
+            widget.active ? widget.activeIcon : widget.icon,
+            size: 22,
+            color: fg,
+          ),
+          const SizedBox(width: 8),
+          Flexible(
+            child: Text(
+              widget.label,
+              overflow: TextOverflow.ellipsis,
+              style: labelStyle,
+            ),
+          ),
+        ],
+      );
+    }
+
+    if (widget.active) {
+      return Center(
+        child: FittedBox(
+          fit: BoxFit.scaleDown,
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(widget.activeIcon, size: 22, color: fg),
+              const SizedBox(width: 8),
+              Text(widget.label, style: labelStyle),
+            ],
+          ),
+        ),
+      );
+    }
+
+    return Semantics(
+      label: widget.label,
+      button: true,
+      child: Center(child: Icon(widget.icon, size: 22, color: fg)),
     );
   }
 }
