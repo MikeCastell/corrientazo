@@ -56,6 +56,7 @@ export class OrderStateMachine {
       OrderStatus.CONFIRMED,
       new Map<OrderAction, OrderStatus>([
         ["START_PREPARING", OrderStatus.PREPARING],
+        ["CANCEL_BY_CLIENT", OrderStatus.CANCELLED_BY_CLIENT],
         ["CANCEL_BY_ADMIN", OrderStatus.CANCELLED_BY_ADMIN],
         ["CANCEL_BY_COOK", OrderStatus.CANCELLED_BY_COOK],
       ]),

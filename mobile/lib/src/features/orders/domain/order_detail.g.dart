@@ -29,6 +29,7 @@ OrderDetail _$OrderDetailFromJson(Map<String, dynamic> json) => OrderDetail(
   customerName: json['customer_name'] as String?,
   customerPhone: json['customer_phone'] as String?,
   customerAvatarUrl: json['customer_avatar_url'] as String?,
+  cancelReason: json['cancel_reason'] as String?,
 );
 
 Map<String, dynamic> _$OrderDetailToJson(OrderDetail instance) =>
@@ -53,6 +54,7 @@ Map<String, dynamic> _$OrderDetailToJson(OrderDetail instance) =>
       'customer_name': instance.customerName,
       'customer_phone': instance.customerPhone,
       'customer_avatar_url': instance.customerAvatarUrl,
+      'cancel_reason': instance.cancelReason,
     };
 
 OrderStatusEvent _$OrderStatusEventFromJson(Map<String, dynamic> json) =>

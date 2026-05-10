@@ -52,6 +52,22 @@ class OrdersRepository {
         .read(apiClientProvider)
         .postJson<void>('/orders/$orderId/status', body: {'action': action});
   }
+
+  /// Cancelación unificada (backend valida rol y estado). Cook puede enviar motivo.
+  Future<void> cancelOrder({
+    required String orderId,
+    String? reasonCode,
+    String? note,
+  }) async {
+    final body = <String, dynamic>{};
+    if (reasonCode != null) body['reasonCode'] = reasonCode;
+    if (note != null && note.trim().isNotEmpty) body['note'] = note.trim();
+    // Misma idea que `POST /orders/:id/status`: muchos proxies enrutan mejor que `POST /orders/cancel`.
+    await _ref.read(apiClientProvider).postJson<dynamic>(
+          '/orders/$orderId/cancel',
+          body: body,
+        );
+  }
 }
 
 final ordersRepositoryProvider = Provider<OrdersRepository>(

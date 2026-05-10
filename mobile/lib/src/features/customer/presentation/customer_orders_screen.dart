@@ -396,7 +396,9 @@ class _ActiveOrderHero extends StatelessWidget {
                   const SizedBox(height: 12),
                   _SoftProgress(current: _trackingStepIndex(s), tone: t),
                   const SizedBox(height: 12),
-                  Row(
+                  Wrap(
+                    spacing: 8,
+                    runSpacing: 8,
                     children: [
                       _Chip(
                         label: _friendlyTime(order.createdAt),
@@ -404,30 +406,37 @@ class _ActiveOrderHero extends StatelessWidget {
                         foreground: Colors.white,
                         border: Colors.white.withValues(alpha: 0.22),
                       ),
-                      const SizedBox(width: 8),
                       _Chip(
                         label: _formatCop(order.totalCop),
                         background: t.withValues(alpha: 0.18),
                         foreground: Colors.white,
                         border: t.withValues(alpha: 0.22),
                       ),
-                      const Spacer(),
-                      if (cookProfileId != null) ...[
+                    ],
+                  ),
+                  const SizedBox(height: 10),
+                  Align(
+                    alignment: Alignment.centerRight,
+                    child: Wrap(
+                      spacing: 8,
+                      runSpacing: 8,
+                      alignment: WrapAlignment.end,
+                      children: [
+                        if (cookProfileId != null)
+                          _PillButton(
+                            label: 'Ver cocinero',
+                            onTap: () => context.go(
+                              PublicCookProfileRoute(cookProfileId).location,
+                            ),
+                          ),
                         _PillButton(
-                          label: 'Ver cook',
-                          onTap: () => context.go(
-                            PublicCookProfileRoute(cookProfileId).location,
+                          label: 'Ver detalles',
+                          onTap: () => context.push(
+                            CustomerOrderDetailRoute(order.id).location,
                           ),
                         ),
-                        const SizedBox(width: 8),
                       ],
-                      _PillButton(
-                        label: 'Ver detalles',
-                        onTap: () => context.push(
-                          CustomerOrderDetailRoute(order.id).location,
-                        ),
-                      ),
-                    ],
+                    ),
                   ),
                 ],
               ),
@@ -510,10 +519,11 @@ class _OrderCardEditorial extends StatelessWidget {
                       letterSpacing: -0.3,
                     ),
                   ),
+                  _CancelStatusPill(statusUpper: s),
                   const SizedBox(height: 6),
                   Text(
                     human,
-                    maxLines: 1,
+                    maxLines: s.startsWith('CANCELLED') ? 2 : 1,
                     overflow: TextOverflow.ellipsis,
                     style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                       color: const Color(0xFF6B4A3A).withValues(alpha: 0.74),
@@ -543,6 +553,53 @@ class _OrderCardEditorial extends StatelessWidget {
               ).colorScheme.onSurface.withValues(alpha: 0.35),
             ),
           ],
+        ),
+      ),
+    );
+  }
+}
+
+/// Chip explícito para historial: que el cancelado se vea claro.
+class _CancelStatusPill extends StatelessWidget {
+  const _CancelStatusPill({required this.statusUpper});
+
+  final String statusUpper;
+
+  @override
+  Widget build(BuildContext context) {
+    final u = statusUpper.toUpperCase();
+    if (!u.startsWith('CANCELLED')) return const SizedBox.shrink();
+
+    final label = u.contains('COOK')
+        ? 'Cancelado por el cocinero'
+        : u.contains('CLIENT')
+            ? 'Cancelado por ti'
+            : 'Pedido cancelado';
+
+    return Padding(
+      padding: const EdgeInsets.only(top: 8),
+      child: Align(
+        alignment: Alignment.centerLeft,
+        child: Container(
+          padding: const EdgeInsets.symmetric(
+            horizontal: AppSpacing.sm,
+            vertical: 6,
+          ),
+          decoration: BoxDecoration(
+            color: AppColors.warning.withValues(alpha: 0.14),
+            borderRadius: BorderRadius.circular(999),
+            border: Border.all(
+              color: AppColors.warning.withValues(alpha: 0.32),
+            ),
+          ),
+          child: Text(
+            label,
+            style: Theme.of(context).textTheme.labelLarge?.copyWith(
+                  fontWeight: FontWeight.w900,
+                  color: const Color(0xFF5C3D2E),
+                  letterSpacing: -0.1,
+                ),
+          ),
         ),
       ),
     );
@@ -778,7 +835,7 @@ class _SoftProgress extends StatelessWidget {
 
 Color _trackingTone(String statusUpper) {
   final s = statusUpper;
-  if (s == 'CANCELLED' || s == 'REFUNDED') return AppColors.danger;
+  if (s.startsWith('CANCELLED') || s == 'REFUNDED') return AppColors.danger;
   if (s == 'DELIVERED' || s == 'READY_FOR_PICKUP' || s == 'PICKED_UP') {
     return AppColors.success;
   }
@@ -840,8 +897,19 @@ int _trackingStepIndex(String statusUpper) {
         'Listo para disfrutar 👌',
         'Gracias por apoyar cocina de barrio.',
       );
+    case 'CANCELLED_BY_CLIENT':
+      return (
+        'Pedido cancelado',
+        'Lo cancelaste a tiempo — el menú sigue abierto por si quieres otro.',
+      );
+    case 'CANCELLED_BY_COOK':
+      return (
+        'Tu cook no pudo completar este pedido hoy',
+        'Te dejamos el motivo en el detalle — lo resolvemos con calma.',
+      );
     case 'CANCELLED':
-      return ('Pedido cancelado', 'Si quieres, te ayudo a pedir otro.');
+    case 'CANCELLED_BY_ADMIN':
+      return ('Pedido cancelado', 'Si quieres, podemos buscar otra opción.');
     default:
       return ('Preparando tu sabor', '$cookName lo está dejando perfecto.');
   }
@@ -862,7 +930,12 @@ String _humanStatusLine(String statusUpper) {
     case 'CONFIRMED':
     case 'ACCEPTED':
       return 'Confirmado';
+    case 'CANCELLED_BY_CLIENT':
+      return 'Cancelado por ti';
+    case 'CANCELLED_BY_COOK':
+      return 'Cancelado por el cook';
     case 'CANCELLED':
+    case 'CANCELLED_BY_ADMIN':
       return 'Cancelado';
     default:
       return 'En progreso';

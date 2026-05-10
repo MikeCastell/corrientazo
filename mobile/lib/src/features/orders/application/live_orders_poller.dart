@@ -17,10 +17,16 @@ import '../../cook/application/cook_orders_controller.dart';
 /// Polling "light realtime" without sockets.
 /// - Customer: status changes -> local notification + refresh.
 /// - Cook: new order -> haptic + local notification + refresh.
+///
+/// Las notificaciones solo se envían **después** de la primera respuesta exitosa
+/// del listado (baseline). Si no, al abrir la app todos los pedidos viejos parecen
+/// “nuevos” y el cocinero recibe spam sin sentido.
 class LiveOrdersPoller extends Notifier<void> {
   Timer? _timer;
   List<OrderSummary> _last = const [];
   final Map<String, _PublicationSnapshot> _lastPublicationByOrderId = {};
+  /// `true` tras el primer `_tick` exitoso en esta sesión (lista ya hidratada).
+  bool _sessionOrdersHydrated = false;
 
   @override
   void build() {
@@ -32,6 +38,7 @@ class LiveOrdersPoller extends Notifier<void> {
       _timer = null;
       _last = const [];
       _lastPublicationByOrderId.clear();
+      _sessionOrdersHydrated = false;
       return;
     }
 
@@ -54,10 +61,9 @@ class LiveOrdersPoller extends Notifier<void> {
       final nextById = {for (final o in next) o.id: o};
 
       if (auth.user.isCook) {
-        // New orders for cook
         final prevIds = prevById.keys.toSet();
         final newOnes = next.where((o) => !prevIds.contains(o.id)).toList();
-        if (newOnes.isNotEmpty) {
+        if (_sessionOrdersHydrated && newOnes.isNotEmpty) {
           HapticFeedback.heavyImpact();
           await ref
               .read(localNotificationsProvider)
@@ -66,9 +72,39 @@ class LiveOrdersPoller extends Notifier<void> {
                 title: 'Nuevo pedido',
                 body: '${newOnes.length} pedido(s) entraron. Abre “Pedidos”.',
               );
-          // Only refresh UI when something changed.
-          ref.invalidate(cookOrdersControllerProvider);
         }
+
+        if (_sessionOrdersHydrated) {
+          for (final entry in nextById.entries) {
+            final prev = prevById[entry.key];
+            if (prev == null) continue;
+            final prevS = prev.status.toUpperCase();
+            final nextS = entry.value.status.toUpperCase();
+            if (prevS == nextS) continue;
+            if (nextS.startsWith('CANCELLED')) {
+              await ref
+                  .read(localNotificationsProvider)
+                  .show(
+                    id: DateTime.now().millisecondsSinceEpoch.remainder(
+                      1 << 30,
+                    ),
+                    title: 'Pedido cancelado',
+                    body: nextS.contains('CLIENT')
+                        ? 'El cliente canceló antes de cocinar.'
+                        : 'Un pedido quedó cancelado — revisa el detalle.',
+                  );
+              break;
+            }
+          }
+        }
+
+        final ordersUpdated = newOnes.isNotEmpty ||
+            nextById.entries.any((e) {
+              final p = prevById[e.key];
+              return p != null &&
+                  p.status.toUpperCase() != e.value.status.toUpperCase();
+            });
+        if (ordersUpdated) ref.invalidate(cookOrdersControllerProvider);
       } else {
         // Status changes for customer
         final changed = <OrderSummary>[];
@@ -80,7 +116,7 @@ class LiveOrdersPoller extends Notifier<void> {
           }
         }
         final hadStatusChange = changed.isNotEmpty;
-        if (hadStatusChange) {
+        if (hadStatusChange && _sessionOrdersHydrated) {
           final o = changed.first;
           final prev = prevById[o.id];
           final nextS = o.status.toUpperCase();
@@ -97,6 +133,8 @@ class LiveOrdersPoller extends Notifier<void> {
 
           // Refresh UI only when something changed.
           ref.invalidate(customerOrdersControllerProvider);
+        } else if (hadStatusChange) {
+          ref.invalidate(customerOrdersControllerProvider);
         }
 
         // Cook updated the meal/publication: detect on ACTIVE orders via order detail.
@@ -111,6 +149,7 @@ class LiveOrdersPoller extends Notifier<void> {
       }
 
       _last = next;
+      _sessionOrdersHydrated = true;
     } catch (e) {
       if (AppEnv.startupDebug) {
         debugPrint('[live_orders_poller] tick failed: $e');
@@ -181,6 +220,15 @@ class LiveOrdersPoller extends Notifier<void> {
       body: 'El cocinero ya aceptó tu pedido. Empezamos.',
     );
   }
+  if (nextS.startsWith('CANCELLED')) {
+    final byCook = nextS.contains('COOK');
+    return (
+      title: byCook ? 'Tu cook canceló el pedido' : 'Tu pedido fue cancelado',
+      body: byCook
+          ? 'Te dejamos el motivo en el detalle del pedido.'
+          : 'Liberamos el cupo en el menú por ti.',
+    );
+  }
   if (nextS == 'PREPARING') {
     return (
       title: 'En preparación',
@@ -215,6 +263,10 @@ String _labelForStatus(String s) {
     case 'DELIVERED':
     case 'PICKED_UP':
       return 'Entregado';
+    case 'CANCELLED_BY_CLIENT':
+    case 'CANCELLED_BY_COOK':
+    case 'CANCELLED_BY_ADMIN':
+      return 'Cancelado';
     default:
       return s;
   }

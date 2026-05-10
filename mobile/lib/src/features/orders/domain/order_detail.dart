@@ -25,6 +25,7 @@ class OrderDetail {
     this.customerName,
     this.customerPhone,
     this.customerAvatarUrl,
+    this.cancelReason,
   });
 
   final String id;
@@ -53,6 +54,9 @@ class OrderDetail {
   final String? customerName;
   final String? customerPhone;
   final String? customerAvatarUrl;
+
+  /// Motivo legible guardado al cancelar (cliente o cook).
+  final String? cancelReason;
 
   factory OrderDetail.fromJson(Map<String, dynamic> json) =>
       _$OrderDetailFromJson(json);

@@ -1,10 +1,10 @@
 import { Injectable } from "@nestjs/common";
-import { PrismaClient, Prisma } from "@prisma/client";
+import { Prisma } from "@prisma/client";
 
 import { PrismaService } from "../../database/prisma/prisma.service";
 import { SoldOutError, DomainError } from "../../common/errors/domain-errors";
 import { ErrorCodes } from "../../common/errors/error-codes";
-import { CreateOrderDto } from "./orders.dto";
+import { CancelOrderDto, CookCancelReasonCode, CreateOrderDto } from "./orders.dto";
 import { OrderStateMachine } from "../../orders/domain/order-state-machine";
 import { OrderAction } from "../../orders/domain/order-state-machine";
 import { OrderStatus } from "../../orders/domain/order-status";
@@ -172,6 +172,7 @@ export class OrdersService {
         created_at: true,
         total_cop: true,
         notes: true,
+        cancel_reason: true,
         order_status_events: {
           orderBy: { occurred_at: "asc" },
           select: { from_status: true, to_status: true, occurred_at: true, actor_user_id: true },
@@ -227,6 +228,7 @@ export class OrdersService {
       fulfillment_type: order.fulfillment_type,
       meal_publication_id: order.meal_publication_id,
       notes: order.notes,
+      cancel_reason: order.cancel_reason,
       timeline: order.order_status_events.map((e) => ({
         from_status: e.from_status,
         to_status: e.to_status,
@@ -334,10 +336,24 @@ export class OrdersService {
   async updateStatusAsCook(cookUserId: string, orderId: string, action: OrderAction) {
     const cookProfileId = await this.ensureCookProfile(cookUserId);
 
+    if (action === "CANCEL_BY_CLIENT" || action === "CANCEL_BY_ADMIN") {
+      throw new DomainError({
+        code: ErrorCodes.ORDER_ACCESS_DENIED,
+        message: "Usa el endpoint de cancelación para anular pedidos.",
+        statusCode: 403,
+      });
+    }
+
     return this.prisma.$transaction(async (tx) => {
       const order = await tx.orders.findUnique({
         where: { id: orderId },
-        select: { id: true, status: true, cook_profile_id: true },
+        select: {
+          id: true,
+          status: true,
+          cook_profile_id: true,
+          meal_publication_id: true,
+          quantity: true,
+        },
       });
       if (!order) {
         throw new DomainError({
@@ -364,10 +380,20 @@ export class OrdersService {
       }
       const to = OrderStateMachine.getTransition(from, action);
 
+      if (this.isCancelledTerminalStatus(to)) {
+        await this.releaseReservedStock(tx, order.meal_publication_id, order.quantity);
+      }
+
       const updated = await tx.orders.update({
         where: { id: orderId },
         data: {
           status: to,
+          ...(action === "CANCEL_BY_COOK"
+            ? {
+                cancel_reason:
+                  "Cancelado por el cocinero (usa cancelar con motivo para más detalle).",
+              }
+            : {}),
           order_status_events: {
             create: {
               from_status: from,
@@ -391,6 +417,210 @@ export class OrdersService {
 
       return updated;
     });
+  }
+
+  /**
+   * Cancelación unificada: valida rol, transición, restaura stock en la misma transacción.
+   */
+  async cancelOrder(requesterUserId: string, orderId: string, dto: CancelOrderDto) {
+    const order = await this.prisma.orders.findUnique({
+      where: { id: orderId },
+      select: {
+        id: true,
+        status: true,
+        customer_id: true,
+        cook_profile_id: true,
+        meal_publication_id: true,
+        quantity: true,
+      },
+    });
+    if (!order) {
+      throw new DomainError({
+        code: ErrorCodes.ORDER_NOT_FOUND,
+        message: "Order not found",
+        statusCode: 404,
+      });
+    }
+
+    const isCustomer = order.customer_id === requesterUserId;
+    const cookProfileId = await this.getCookProfileIdIfCook(requesterUserId);
+    const isCookOwner = !!cookProfileId && order.cook_profile_id === cookProfileId;
+
+    if (!isCustomer && !isCookOwner) {
+      throw new DomainError({
+        code: ErrorCodes.ORDER_ACCESS_DENIED,
+        message: "Access denied",
+        statusCode: 403,
+      });
+    }
+
+    if (isCustomer) {
+      const from = order.status as OrderStatus;
+      if (from !== OrderStatus.INIT && from !== OrderStatus.CONFIRMED) {
+        throw new DomainError({
+          code: ErrorCodes.ORDER_CANCEL_NOT_ALLOWED,
+          message: "Tu corrientazo ya comenzó a prepararse.",
+          statusCode: 409,
+        });
+      }
+      if (!OrderStateMachine.canTransition(from, "CANCEL_BY_CLIENT")) {
+        throw new DomainError({
+          code: ErrorCodes.ORDER_CANCEL_NOT_ALLOWED,
+          message: "No se puede cancelar este pedido ahora.",
+          statusCode: 409,
+        });
+      }
+      const to = OrderStateMachine.getTransition(from, "CANCEL_BY_CLIENT");
+      const reason = "Lo cancelaste antes de que empezara la preparación en cocina.";
+      return this.applyCancellation({
+        actorUserId: requesterUserId,
+        order,
+        from,
+        to,
+        action: "CANCEL_BY_CLIENT",
+        cancelReason: reason,
+        meta: { cancelledBy: "CLIENT" },
+      });
+    }
+
+    await this.ensureCookProfile(requesterUserId);
+    const from = order.status as OrderStatus;
+    if (!OrderStateMachine.canTransition(from, "CANCEL_BY_COOK")) {
+      throw new DomainError({
+        code: ErrorCodes.ORDER_CANCEL_NOT_ALLOWED,
+        message: "Este pedido ya no se puede cancelar desde cocina.",
+        statusCode: 409,
+      });
+    }
+    const to = OrderStateMachine.getTransition(from, "CANCEL_BY_COOK");
+    const reason = this.formatCookCancelReason(dto);
+    return this.applyCancellation({
+      actorUserId: requesterUserId,
+      order,
+      from,
+      to,
+      action: "CANCEL_BY_COOK",
+      cancelReason: reason,
+      meta: {
+        cancelledBy: "COOK",
+        reasonCode: dto.reasonCode ?? "OTHER",
+        note: dto.note?.trim() || undefined,
+      },
+    });
+  }
+
+  private formatCookCancelReason(dto: CancelOrderDto): string {
+    const labels: Record<CookCancelReasonCode, string> = {
+      NO_INGREDIENTS: "Sin ingredientes disponibles",
+      KITCHEN_ISSUE: "Problema en cocina",
+      CANNOT_PREPARE: "Ya no puedo preparar este plato",
+      UNEXPECTED_CLOSE: "Cierre inesperado",
+      OTHER: "Motivo operativo",
+    };
+    const code = dto.reasonCode ?? "OTHER";
+    const base = labels[code] ?? labels.OTHER;
+    const note = dto.note?.trim();
+    if (note) {
+      return `${base}: ${note}`;
+    }
+    return base;
+  }
+
+  private isCancelledTerminalStatus(status: OrderStatus): boolean {
+    return (
+      status === OrderStatus.CANCELLED_BY_CLIENT ||
+      status === OrderStatus.CANCELLED_BY_COOK ||
+      status === OrderStatus.CANCELLED_BY_ADMIN
+    );
+  }
+
+  /**
+   * Devuelve al inventario la cantidad reservada al crear el pedido.
+   */
+  private async releaseReservedStock(tx: Prisma.TransactionClient, publicationId: string, qty: number) {
+    await tx.$executeRaw(Prisma.sql`
+      UPDATE meal_publications
+      SET stock_available = stock_available + ${qty},
+          updated_at = NOW()
+      WHERE id = ${publicationId}
+    `);
+
+    const row = await tx.meal_publications.findUnique({
+      where: { id: publicationId },
+      select: { stock_available: true, status: true },
+    });
+    if (row && row.stock_available > 0 && row.status === "SOLD_OUT") {
+      await tx.meal_publications.update({
+        where: { id: publicationId },
+        data: { status: "PUBLISHED" },
+      });
+    }
+  }
+
+  private applyCancellation(params: {
+    actorUserId: string;
+    order: {
+      id: string;
+      meal_publication_id: string;
+      quantity: number;
+      status: string;
+    };
+    from: OrderStatus;
+    to: OrderStatus;
+    action: OrderAction;
+    cancelReason: string | null;
+    meta: Record<string, unknown>;
+  }) {
+    const run = async (tx: Prisma.TransactionClient) => {
+      const current = await tx.orders.findUnique({
+        where: { id: params.order.id },
+        select: { status: true },
+      });
+      if (!current || current.status !== params.from) {
+        throw new DomainError({
+          code: ErrorCodes.ORDER_CANCEL_NOT_ALLOWED,
+          message: "El pedido cambió. Actualiza e intenta de nuevo.",
+          statusCode: 409,
+        });
+      }
+
+      await this.releaseReservedStock(tx, params.order.meal_publication_id, params.order.quantity);
+
+      const updated = await tx.orders.update({
+        where: { id: params.order.id },
+        data: {
+          status: params.to,
+          cancel_reason: params.cancelReason,
+          order_status_events: {
+            create: {
+              from_status: params.from,
+              to_status: params.to,
+              actor_user_id: params.actorUserId,
+              meta_json: { source: "api", action: params.action, ...params.meta },
+            },
+          },
+        },
+        select: { id: true, status: true, updated_at: true },
+      });
+
+      await tx.domain_event_outbox.create({
+        data: {
+          event_type: "order.cancelled",
+          aggregate_type: "order",
+          aggregate_id: updated.id,
+          payload_json: {
+            orderId: updated.id,
+            from: params.from,
+            to: params.to,
+            action: params.action,
+          },
+        },
+      });
+
+      return updated;
+    };
+
+    return this.prisma.$transaction(run);
   }
 
   private async getUserRole(userId: string) {

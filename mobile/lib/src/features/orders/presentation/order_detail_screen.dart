@@ -7,10 +7,15 @@ import '../../../core/design/tokens/app_radius.dart';
 import '../../../core/design/tokens/app_spacing.dart';
 import '../../../core/ui/app_scaffold.dart';
 import '../../../core/ui/marketplace/food_image.dart';
+import '../../../core/networking/api_exception.dart';
 import '../../../core/ui/marketplace/cook_trust_chip.dart';
 import '../../../core/ui/states/app_empty_state.dart';
 import '../data/orders_repository.dart';
+import '../../customer/application/customer_orders_controller.dart';
+import '../../cook/application/cook_orders_controller.dart';
 import '../domain/order_detail.dart';
+import '../domain/order_status_terminal.dart';
+import 'widgets/order_cancel_flow.dart';
 
 enum OrderDetailMode { customer, cook }
 
@@ -49,6 +54,7 @@ class OrderDetailScreen extends ConsumerWidget {
           final tone = _toneForStatus(s);
           final statusLabel = _labelForStatus(s);
           final etaLabel = _pseudoEtaLabel(o.createdAt, s);
+          final cancelled = _orderIsCancelled(s);
 
           return RefreshIndicator(
             onRefresh: () async => ref.invalidate(orderDetailProvider(orderId)),
@@ -63,6 +69,14 @@ class OrderDetailScreen extends ConsumerWidget {
                   mealPhotoUrl: o.mealPhotoUrl,
                 ),
                 const SizedBox(height: AppSpacing.md),
+                if (cancelled)
+                  Padding(
+                    padding: const EdgeInsets.only(bottom: AppSpacing.md),
+                    child: _CancelledInsightCard(
+                      status: s,
+                      cancelReason: o.cancelReason,
+                    ),
+                  ),
                 _InfoGrid(
                   fulfillmentType: o.fulfillmentType,
                   quantity: o.quantity,
@@ -73,6 +87,48 @@ class OrderDetailScreen extends ConsumerWidget {
                 const SizedBox(height: AppSpacing.md),
                 _TimelineCard(status: s, timeline: o.timeline),
                 const SizedBox(height: AppSpacing.md),
+                if (mode == OrderDetailMode.customer && !cancelled)
+                  _CustomerCancelPanel(
+                    status: s,
+                    onCancelTap: () async {
+                      final ok = await showCustomerCancelConfirmSheet(context);
+                      if (!context.mounted || !ok) return;
+                      try {
+                        await ref
+                            .read(ordersRepositoryProvider)
+                            .cancelOrder(orderId: o.id);
+                        if (!context.mounted) return;
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content: Text(
+                              'Pedido cancelado',
+                              style: Theme.of(context)
+                                  .textTheme
+                                  .bodyMedium
+                                  ?.copyWith(fontWeight: FontWeight.w700),
+                            ),
+                            behavior: SnackBarBehavior.floating,
+                          ),
+                        );
+                        ref.invalidate(orderDetailProvider(orderId));
+                        ref.invalidate(customerOrdersControllerProvider);
+                      } on ApiErrorResponseException catch (e) {
+                        if (!context.mounted) return;
+                        if (e.code == 'ORDER_CANCEL_NOT_ALLOWED') {
+                          await showCustomerCannotCancelSheet(context);
+                        } else {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              content: Text(e.message),
+                              behavior: SnackBarBehavior.floating,
+                            ),
+                          );
+                        }
+                      }
+                    },
+                    onExplainNoCancelTap: () =>
+                        showCustomerCannotCancelSheet(context),
+                  ),
                 if (mode == OrderDetailMode.customer)
                   _CookCard(
                     cookName: o.cookName,
@@ -87,7 +143,7 @@ class OrderDetailScreen extends ConsumerWidget {
                     phone: o.customerPhone,
                   ),
                 const SizedBox(height: AppSpacing.md),
-                if (mode == OrderDetailMode.cook)
+                if (mode == OrderDetailMode.cook && !cancelled)
                   _CookActions(
                     status: s,
                     onAction: (action) async {
@@ -96,9 +152,60 @@ class OrderDetailScreen extends ConsumerWidget {
                           .read(ordersRepositoryProvider)
                           .updateStatus(orderId: o.id, action: action);
                       ref.invalidate(orderDetailProvider(orderId));
+                      ref.invalidate(cookOrdersControllerProvider);
                     },
+                    onCancelFlowTap: _cookMayCancelFromKitchen(s)
+                        ? () async {
+                            final sel =
+                                await showCookCancelSheet(context);
+                            if (!context.mounted || sel == null) return;
+                            try {
+                              await ref
+                                  .read(ordersRepositoryProvider)
+                                  .cancelOrder(
+                                    orderId: o.id,
+                                    reasonCode: sel.reasonCode,
+                                    note: sel.note,
+                                  );
+                              if (!context.mounted) return;
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(
+                                  content: Text(
+                                    'Pedido cancelado',
+                                    style: Theme.of(context)
+                                        .textTheme
+                                        .bodyMedium
+                                        ?.copyWith(
+                                          fontWeight: FontWeight.w700,
+                                        ),
+                                  ),
+                                  behavior: SnackBarBehavior.floating,
+                                ),
+                              );
+                              ref.invalidate(orderDetailProvider(orderId));
+                              ref.invalidate(cookOrdersControllerProvider);
+                            } on ApiErrorResponseException catch (_) {
+                              if (!context.mounted) return;
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(
+                                  content: Text(
+                                    'No pudimos cancelar: revisa el estado del pedido.',
+                                    style: Theme.of(context)
+                                        .textTheme
+                                        .bodyMedium
+                                        ?.copyWith(
+                                          fontWeight: FontWeight.w700,
+                                        ),
+                                  ),
+                                  behavior: SnackBarBehavior.floating,
+                                ),
+                              );
+                            }
+                          }
+                        : null,
                   ),
                 if (mode == OrderDetailMode.cook &&
+                    !cancelled &&
                     (o.stockAvailable != null || o.publicationStatus != null))
                   Padding(
                     padding: const EdgeInsets.only(top: AppSpacing.md),
@@ -112,6 +219,139 @@ class OrderDetailScreen extends ConsumerWidget {
             ),
           );
         },
+      ),
+    );
+  }
+}
+
+bool _orderIsCancelled(String statusUpper) =>
+    statusUpper.startsWith('CANCELLED');
+
+bool _customerMayCancel(String statusUpper) {
+  final u = statusUpper.toUpperCase();
+  return u == 'INIT' || u == 'CONFIRMED';
+}
+
+bool _cookMayCancelFromKitchen(String statusUpper) {
+  final u = statusUpper.toUpperCase();
+  return u == 'INIT' || u == 'CONFIRMED' || u == 'PREPARING';
+}
+
+class _CancelledInsightCard extends StatelessWidget {
+  const _CancelledInsightCard({
+    required this.status,
+    required this.cancelReason,
+  });
+
+  final String status;
+  final String? cancelReason;
+
+  @override
+  Widget build(BuildContext context) {
+    final clientInitiated = status.contains('CLIENT');
+    final title = clientInitiated
+        ? 'Pedido cancelado'
+        : 'Tu cook no pudo completar este pedido hoy';
+    final fallback = clientInitiated
+        ? 'Lo cancelaste antes de que empezara la preparación.'
+        : 'Te contamos qué pasó abajo — seguimos cuidando tu experiencia.';
+    final body = (cancelReason != null && cancelReason!.trim().isNotEmpty)
+        ? cancelReason!.trim()
+        : fallback;
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(AppSpacing.md),
+      decoration: BoxDecoration(
+        color: AppColors.warning.withValues(alpha: 0.09),
+        borderRadius: BorderRadius.circular(AppRadius.lg),
+        border: Border.all(color: AppColors.warning.withValues(alpha: 0.22)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            title,
+            style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                  fontWeight: FontWeight.w900,
+                  color: const Color(0xFF3D2A1F),
+                ),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            body,
+            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                  height: 1.35,
+                  fontWeight: FontWeight.w700,
+                  color: Theme.of(context)
+                      .colorScheme
+                      .onSurface
+                      .withValues(alpha: 0.78),
+                ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _CustomerCancelPanel extends StatelessWidget {
+  const _CustomerCancelPanel({
+    required this.status,
+    required this.onCancelTap,
+    required this.onExplainNoCancelTap,
+  });
+
+  final String status;
+  final VoidCallback onCancelTap;
+  final VoidCallback onExplainNoCancelTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final s = status.toUpperCase();
+    final mayCancel = _customerMayCancel(s);
+
+    return Padding(
+      padding: const EdgeInsets.only(bottom: AppSpacing.md),
+      child: _Card(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              '¿Necesitas cambiar algo?',
+              style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                    fontWeight: FontWeight.w900,
+                  ),
+            ),
+            const SizedBox(height: AppSpacing.sm),
+            if (mayCancel)
+              SizedBox(
+                width: double.infinity,
+                child: OutlinedButton.icon(
+                  onPressed: onCancelTap,
+                  icon: const Icon(Icons.cancel_outlined),
+                  label: const Text('Cancelar pedido'),
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: AppColors.danger,
+                    side: BorderSide(
+                      color: AppColors.danger.withValues(alpha: 0.35),
+                    ),
+                  ),
+                ),
+              )
+            else if (!orderStatusIsTerminal(s))
+              TextButton(
+                onPressed: onExplainNoCancelTap,
+                child: Text(
+                  '¿Por qué no puedo cancelar desde la app?',
+                  style: Theme.of(context).textTheme.labelLarge?.copyWith(
+                        fontWeight: FontWeight.w900,
+                        color: AppColors.primary.withValues(alpha: 0.92),
+                      ),
+                ),
+              ),
+          ],
+        ),
       ),
     );
   }
@@ -483,14 +723,22 @@ class _CustomerCard extends StatelessWidget {
 }
 
 class _CookActions extends StatelessWidget {
-  const _CookActions({required this.status, required this.onAction});
+  const _CookActions({
+    required this.status,
+    required this.onAction,
+    this.onCancelFlowTap,
+  });
+
   final String status;
   final ValueChanged<String> onAction;
+  final VoidCallback? onCancelFlowTap;
 
   @override
   Widget build(BuildContext context) {
     final actions = _actionsForStatus(status);
-    if (actions.isEmpty) return const SizedBox.shrink();
+    final showCancel = onCancelFlowTap != null;
+
+    if (actions.isEmpty && !showCancel) return const SizedBox.shrink();
 
     return _Card(
       child: Column(
@@ -503,17 +751,34 @@ class _CookActions extends StatelessWidget {
             ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w900),
           ),
           const SizedBox(height: AppSpacing.sm),
-          Wrap(
-            spacing: 10,
-            runSpacing: 10,
-            children: [
-              for (final a in actions)
-                FilledButton(
-                  onPressed: () => onAction(a.action),
-                  child: Text(a.label),
+          if (actions.isNotEmpty)
+            Wrap(
+              spacing: 10,
+              runSpacing: 10,
+              children: [
+                for (final a in actions)
+                  FilledButton(
+                    onPressed: () => onAction(a.action),
+                    child: Text(a.label),
+                  ),
+              ],
+            ),
+          if (showCancel) ...[
+            if (actions.isNotEmpty) const SizedBox(height: AppSpacing.sm),
+            SizedBox(
+              width: double.infinity,
+              child: OutlinedButton(
+                onPressed: onCancelFlowTap,
+                style: OutlinedButton.styleFrom(
+                  foregroundColor: AppColors.danger,
+                  side: BorderSide(
+                    color: AppColors.danger.withValues(alpha: 0.40),
+                  ),
                 ),
-            ],
-          ),
+                child: const Text('Cancelar pedido…'),
+              ),
+            ),
+          ],
         ],
       ),
     );
@@ -621,6 +886,21 @@ class _DotsTimeline extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    if (status.startsWith('CANCELLED')) {
+      return Text(
+        'Este pedido quedó cancelado; aquí guardamos el historial para que '
+        'siempre puedas revisar qué pasó.',
+        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+              height: 1.35,
+              fontWeight: FontWeight.w700,
+              color: Theme.of(context)
+                  .colorScheme
+                  .onSurface
+                  .withValues(alpha: 0.76),
+            ),
+      );
+    }
+
     final steps = const [
       ('INIT', 'Nuevo'),
       ('CONFIRMED', 'Confirmado'),
@@ -712,6 +992,10 @@ Color _toneForStatus(String s) {
     case 'PICKED_UP':
     case 'DELIVERED':
       return AppColors.success;
+    case 'CANCELLED_BY_CLIENT':
+    case 'CANCELLED_BY_COOK':
+    case 'CANCELLED_BY_ADMIN':
+      return AppColors.warning;
     default:
       return AppColors.brand;
   }
@@ -730,12 +1014,19 @@ String _labelForStatus(String s) {
     case 'PICKED_UP':
     case 'DELIVERED':
       return 'Entregado';
+    case 'CANCELLED_BY_CLIENT':
+      return 'Cancelado por ti';
+    case 'CANCELLED_BY_COOK':
+      return 'Cancelado por el cook';
+    case 'CANCELLED_BY_ADMIN':
+      return 'Pedido cancelado';
     default:
       return s;
   }
 }
 
 String _pseudoEtaLabel(DateTime createdAt, String status) {
+  if (status.startsWith('CANCELLED')) return 'Pedido cerrado';
   final mins = DateTime.now().difference(createdAt).inMinutes.abs();
   if (status == 'READY_FOR_PICKUP' ||
       status == 'PICKED_UP' ||

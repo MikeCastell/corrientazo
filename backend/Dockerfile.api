@@ -1,11 +1,12 @@
 #
-# Dockerfile API (NestJS)
-# Blueprint para producción.
+# Dockerfile API (NestJS) — CORRIENTAZO MVP
+#
+# El dist SIEMPRE sale de `npm run build` en la stage builder (no copies dist desde el host).
+# Para saber qué código lleva la imagen: pasá GIT_COMMIT / BUILD_TIME al build (ver docker-compose).
 #
 FROM node:20-alpine AS deps
 WORKDIR /app
 
-# Instala dependencias
 COPY package*.json ./
 RUN npm ci
 
@@ -15,14 +16,22 @@ WORKDIR /app
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 
-# Genera Prisma Client (siempre)
+# Cache busting: cualquier cambio en el repo invalida esta capa → rebuild real del dist.
 RUN npx prisma generate
 RUN npm run build
 
 FROM node:20-alpine AS runner
 WORKDIR /app
 
-ENV NODE_ENV=production
+ARG GIT_COMMIT=unknown
+ARG BUILD_TIME=unknown
+
+ENV NODE_ENV=production \
+    APP_GIT_COMMIT=${GIT_COMMIT} \
+    APP_BUILD_TIME=${BUILD_TIME}
+
+# Healthcheck confiable (wget busybox a veces falla por IPv6/localhost; curl es explícito).
+RUN apk add --no-cache curl
 
 COPY --from=builder /app/dist ./dist
 COPY --from=builder /app/node_modules ./node_modules
@@ -30,7 +39,6 @@ COPY --from=builder /app/package*.json ./
 COPY --from=builder /app/prisma ./prisma
 COPY --from=builder /app/prisma.config.mjs ./prisma.config.mjs
 
-# Prisma migrations no se ejecutan automáticamente aquí; ejecutar en pipeline/entrypoint según estrategia.
-# CMD puede variar según el script real:
-CMD ["npm", "run", "start:api"]
+LABEL org.opencontainers.image.revision="${GIT_COMMIT}"
 
+CMD ["npm", "run", "start:api"]

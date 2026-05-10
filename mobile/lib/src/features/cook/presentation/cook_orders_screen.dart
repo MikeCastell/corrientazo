@@ -251,6 +251,9 @@ class _CookOrderCard extends StatelessWidget {
     final tone = _toneForStatus(s);
     final statusLabel = _labelForStatus(s);
     final eta = _pseudoEtaLabel(createdAt, s);
+    final headlineSubtitle = s.startsWith('CANCELLED')
+        ? statusLabel
+        : '$statusLabel · ${_fulfillmentLabel(fulfillmentType)} · $eta';
 
     final actions = _actionsForStatus(s);
 
@@ -292,7 +295,7 @@ class _CookOrderCard extends StatelessWidget {
                       ),
                       const SizedBox(height: 2),
                       Text(
-                        '$statusLabel · ${_fulfillmentLabel(fulfillmentType)} · $eta',
+                        headlineSubtitle,
                         style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                           color: Theme.of(
                             context,
@@ -402,7 +405,12 @@ class _CookOrderCard extends StatelessWidget {
       case 'PICKED_UP':
       case 'DELIVERED':
         return AppColors.success;
+      case 'CANCELLED_BY_CLIENT':
+      case 'CANCELLED_BY_COOK':
+      case 'CANCELLED_BY_ADMIN':
+        return AppColors.warning;
       default:
+        if (s.startsWith('CANCELLED')) return AppColors.warning;
         return AppColors.brand;
     }
   }
@@ -421,7 +429,14 @@ class _CookOrderCard extends StatelessWidget {
         return 'Entregado';
       case 'DELIVERED':
         return 'Entregado';
+      case 'CANCELLED_BY_CLIENT':
+        return 'Cancelado · cliente';
+      case 'CANCELLED_BY_COOK':
+        return 'Cancelado · cocina';
+      case 'CANCELLED_BY_ADMIN':
+        return 'Cancelado';
       default:
+        if (s.startsWith('CANCELLED')) return 'Cancelado';
         return s;
     }
   }
@@ -430,6 +445,7 @@ class _CookOrderCard extends StatelessWidget {
       s.toUpperCase() == 'DELIVERY' ? 'Domicilio' : 'Recoger';
 
   static String _pseudoEtaLabel(DateTime createdAt, String status) {
+    if (status.startsWith('CANCELLED')) return 'Pedido cerrado';
     final mins = DateTime.now().difference(createdAt).inMinutes.abs();
     if (status == 'READY_FOR_PICKUP' ||
         status == 'PICKED_UP' ||
@@ -469,6 +485,24 @@ class _Timeline extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final u = status.toUpperCase();
+    if (u.startsWith('CANCELLED')) {
+      return Align(
+        alignment: Alignment.centerLeft,
+        child: Text(
+          'Este pedido quedó cancelado — aparece aquí en tu historial.',
+          style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                height: 1.35,
+                fontWeight: FontWeight.w800,
+                color: Theme.of(context)
+                    .colorScheme
+                    .onSurface
+                    .withValues(alpha: 0.62),
+              ),
+        ),
+      );
+    }
+
     final steps = const [
       ('INIT', 'Nuevo'),
       ('CONFIRMED', 'Confirmado'),
@@ -477,7 +511,7 @@ class _Timeline extends StatelessWidget {
       ('PICKED_UP', 'Entregado'),
     ];
 
-    final idx = steps.indexWhere((s) => s.$1 == status);
+    final idx = steps.indexWhere((s) => s.$1 == u);
     final activeIndex = idx < 0 ? 0 : idx;
 
     return Row(

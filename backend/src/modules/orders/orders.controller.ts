@@ -6,7 +6,12 @@ import { Roles } from "../../common/decorators/roles.decorator";
 import { RolesGuard } from "../../common/guards/roles.guard";
 import { CurrentUserDecorator } from "../../common/decorators/current-user.decorator";
 import { OrdersService } from "./orders.service";
-import { CreateOrderDto, UpdateOrderStatusDto } from "./orders.dto";
+import {
+  CancelOrderBodyDto,
+  CancelOrderDto,
+  CreateOrderDto,
+  UpdateOrderStatusDto,
+} from "./orders.dto";
 
 @ApiTags("orders")
 @Controller("orders")
@@ -35,13 +40,40 @@ export class OrdersController {
     return this.orders.listOrders(user.userId);
   }
 
+  /// Cancelación vía **POST /orders/cancel** + JSON `{ orderId, … }`.
+  /// Misma idea que `POST /orders` para crear: una sola ruta estable sin UUID en el path.
+
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth("bearer")
-  @ApiOperation({ summary: "Get order by id (customer access, foundation)" })
+  @ApiOperation({
+    summary: "Cancelar pedido (cliente o cook; reglas y stock en servidor)",
+  })
+  @ApiBody({ type: CancelOrderBodyDto })
   @ApiResponse({ status: 200 })
-  @Get(":orderId")
-  get(@CurrentUserDecorator() user: { userId: string }, @Param("orderId") orderId: string) {
-    return this.orders.getOrder(user.userId, orderId);
+  @Post("cancel")
+  cancel(
+    @CurrentUserDecorator() user: { userId: string },
+    @Body() dto: CancelOrderBodyDto
+  ) {
+    const { orderId, ...meta } = dto;
+    return this.orders.cancelOrder(user.userId, orderId, meta);
+  }
+
+  /** Misma lógica que `POST …/cancel`, pero `orderId` va en la URL (como `…/status`). Útil si el proxy/CDN no enruta bien `POST …/orders/cancel`. */
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth("bearer")
+  @ApiOperation({
+    summary: "Cancelar pedido (variante con id en la URL)",
+  })
+  @ApiBody({ type: CancelOrderDto })
+  @ApiResponse({ status: 200 })
+  @Post(":orderId/cancel")
+  cancelByOrderId(
+    @CurrentUserDecorator() user: { userId: string },
+    @Param("orderId") orderId: string,
+    @Body() dto: CancelOrderDto
+  ) {
+    return this.orders.cancelOrder(user.userId, orderId, dto);
   }
 
   @UseGuards(JwtAuthGuard, RolesGuard)
@@ -57,6 +89,15 @@ export class OrdersController {
     @Body() dto: UpdateOrderStatusDto
   ) {
     return this.orders.updateStatusAsCook(user.userId, orderId, dto.action);
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth("bearer")
+  @ApiOperation({ summary: "Get order by id (customer access, foundation)" })
+  @ApiResponse({ status: 200 })
+  @Get(":orderId")
+  get(@CurrentUserDecorator() user: { userId: string }, @Param("orderId") orderId: string) {
+    return this.orders.getOrder(user.userId, orderId);
   }
 }
 
