@@ -23,6 +23,7 @@ class MealCardPremium extends StatefulWidget {
     this.cookName,
     this.cookAvatarUrl,
     this.cookBio,
+    this.fulfillmentLabel,
     required this.onTap,
   });
 
@@ -30,6 +31,8 @@ class MealCardPremium extends StatefulWidget {
   final String mealId;
   final int priceCop;
   final int stockAvailable;
+  /// e.g. "Solo recogida" — from cook publication flags.
+  final String? fulfillmentLabel;
   final String? title;
   final String? description;
   final List<String>? tags;
@@ -229,6 +232,12 @@ class _MealCardPremiumState extends State<MealCardPremium> {
                                 for (final t in tagList) _TagPill(label: t),
                                 if (tagList.isEmpty)
                                   const _TagPill(label: 'Casero'),
+                                if ((widget.fulfillmentLabel ?? '')
+                                    .trim()
+                                    .isNotEmpty)
+                                  _TagPill(
+                                    label: widget.fulfillmentLabel!.trim(),
+                                  ),
                               ],
                             ),
                           ),

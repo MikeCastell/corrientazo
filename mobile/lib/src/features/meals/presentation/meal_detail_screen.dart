@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter/services.dart';
 
 import '../application/meals_controller.dart';
+import '../domain/meal_publication.dart';
 import '../../../core/design/tokens/app_colors.dart';
 import '../../../core/design/tokens/app_radius.dart';
 import '../../../core/design/tokens/app_spacing.dart';
@@ -190,6 +191,8 @@ class MealDetailScreen extends ConsumerWidget {
                           ),
                         ],
                       ),
+                      const SizedBox(height: AppSpacing.sm),
+                      _FulfillmentNoticeCard(publication: item),
                       _SectionCard(
                         title: 'Qué incluye',
                         child: Text(
@@ -246,7 +249,7 @@ class MealDetailScreen extends ConsumerWidget {
               enabled: item.stockAvailable > 0,
               onTap: () {
                 HapticFeedback.selectionClick();
-                _openOrderSheet(context, ref, mealPublicationId: item.id);
+                _openOrderSheet(context, ref, publication: item);
               },
             ),
           ),
@@ -267,6 +270,134 @@ String _almaStory({required String cookName, required String description}) {
         '$desc';
   }
   return desc;
+}
+
+class _FulfillmentNoticeCard extends StatelessWidget {
+  const _FulfillmentNoticeCard({required this.publication});
+  final MealPublication publication;
+
+  @override
+  Widget build(BuildContext context) {
+    final p = publication;
+    if (p.allowsBothFulfillmentModes) {
+      return Container(
+        padding: const EdgeInsets.all(AppSpacing.md),
+        decoration: BoxDecoration(
+          color: AppColors.bg,
+          borderRadius: BorderRadius.circular(AppRadius.lg),
+          border: Border.all(
+            color: AppColors.brand.withValues(alpha: 0.14),
+          ),
+        ),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Icon(Icons.takeout_dining, color: AppColors.brand, size: 22),
+            const SizedBox(width: AppSpacing.sm),
+            Expanded(
+              child: Text(
+                'Puedes elegir recoger o domicilio al confirmar el pedido.',
+                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                  fontWeight: FontWeight.w800,
+                  height: 1.35,
+                ),
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+    if (p.deliveryEnabled && !p.pickupEnabled) {
+      return _fulfillmentEmphasis(
+        context,
+        icon: Icons.delivery_dining,
+        text:
+            'Solo a domicilio: este plato no se recoge en el punto. No incluye recogida en el local.',
+      );
+    }
+    return _fulfillmentEmphasis(
+      context,
+      icon: Icons.store_mall_directory_outlined,
+      text:
+          'Solo recogida: debes recoger el plato con el cocinero. No está disponible domicilio para este plato.',
+    );
+  }
+
+  Widget _fulfillmentEmphasis(
+    BuildContext context, {
+    required IconData icon,
+    required String text,
+  }) {
+    return Container(
+      padding: const EdgeInsets.all(AppSpacing.md),
+      decoration: BoxDecoration(
+        color: AppColors.warning.withValues(alpha: 0.08),
+        borderRadius: BorderRadius.circular(AppRadius.lg),
+        border: Border.all(color: AppColors.warning.withValues(alpha: 0.22)),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(icon, color: AppColors.accentDeep, size: 24),
+          const SizedBox(width: AppSpacing.sm),
+          Expanded(
+            child: Text(
+              text,
+              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                fontWeight: FontWeight.w900,
+                height: 1.4,
+                color: const Color(0xFF3D2A1F),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _OrderFulfillmentHint extends StatelessWidget {
+  const _OrderFulfillmentHint({required this.publication});
+  final MealPublication publication;
+
+  @override
+  Widget build(BuildContext context) {
+    final p = publication;
+    final text = p.deliveryEnabled && !p.pickupEnabled
+        ? 'Solo domicilio: tu pedido irá con reparto; no es para recoger en el local.'
+        : 'Solo recogida: no hay envío a domicilio para este plato.';
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(AppSpacing.md),
+      decoration: BoxDecoration(
+        color: AppColors.warning.withValues(alpha: 0.08),
+        borderRadius: BorderRadius.circular(AppRadius.lg),
+        border: Border.all(color: Theme.of(context).dividerColor),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(
+            p.deliveryEnabled && !p.pickupEnabled
+                ? Icons.delivery_dining
+                : Icons.store_mall_directory_outlined,
+            color: AppColors.accentDeep,
+            size: 22,
+          ),
+          const SizedBox(width: AppSpacing.sm),
+          Expanded(
+            child: Text(
+              text,
+              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                fontWeight: FontWeight.w800,
+                height: 1.35,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
 }
 
 class _AlmaDelPlato extends StatelessWidget {
@@ -990,7 +1121,7 @@ class _IngredientChip extends StatelessWidget {
 Future<void> _openOrderSheet(
   BuildContext context,
   WidgetRef ref, {
-  required String mealPublicationId,
+  required MealPublication publication,
 }) async {
   ref.read(orderFlowControllerProvider.notifier).reset();
 
@@ -998,22 +1129,29 @@ Future<void> _openOrderSheet(
     context: context,
     isScrollControlled: true,
     backgroundColor: Colors.transparent,
-    builder: (context) => _OrderSheet(mealPublicationId: mealPublicationId),
+    builder: (context) => _OrderSheet(publication: publication),
   );
 }
 
 class _OrderSheet extends ConsumerStatefulWidget {
-  const _OrderSheet({required this.mealPublicationId});
-  final String mealPublicationId;
+  const _OrderSheet({required this.publication});
+  final MealPublication publication;
 
   @override
   ConsumerState<_OrderSheet> createState() => _OrderSheetState();
 }
 
 class _OrderSheetState extends ConsumerState<_OrderSheet> {
-  String _fulfillment = 'PICKUP';
+  late String _fulfillment;
   bool _loading = false;
   ApiException? _error;
+
+  @override
+  void initState() {
+    super.initState();
+    final p = widget.publication;
+    _fulfillment = p.defaultFulfillmentForOrder;
+  }
 
   Future<void> _submit() async {
     setState(() {
@@ -1022,7 +1160,7 @@ class _OrderSheetState extends ConsumerState<_OrderSheet> {
     });
     try {
       final req = OrderCreateRequest(
-        mealPublicationId: widget.mealPublicationId,
+        mealPublicationId: widget.publication.id,
         quantity: 1,
         fulfillmentType: _fulfillment,
         deliveryAddressId: null,
@@ -1089,12 +1227,15 @@ class _OrderSheetState extends ConsumerState<_OrderSheet> {
                   ],
                 ),
                 const SizedBox(height: AppSpacing.sm),
-                _Segmented(
-                  value: _fulfillment,
-                  onChanged: _loading
-                      ? null
-                      : (v) => setState(() => _fulfillment = v),
-                ),
+                if (widget.publication.allowsBothFulfillmentModes)
+                  _Segmented(
+                    value: _fulfillment,
+                    onChanged: _loading
+                        ? null
+                        : (v) => setState(() => _fulfillment = v),
+                  )
+                else
+                  _OrderFulfillmentHint(publication: widget.publication),
                 const SizedBox(height: AppSpacing.md),
                 Container(
                   padding: const EdgeInsets.all(AppSpacing.md),

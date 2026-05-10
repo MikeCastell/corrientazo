@@ -180,6 +180,7 @@ class HomeMealsScreen extends ConsumerWidget {
                         cookName: items[i].cookName,
                         cookAvatarUrl: items[i].cookAvatarUrl,
                         cookBio: items[i].cookBio,
+                        fulfillmentLabel: items[i].fulfillmentCustomerLabel,
                         onTap: () => context.go(
                           '${const HomeRoute().location}/meals/${items[i].id}',
                         ),

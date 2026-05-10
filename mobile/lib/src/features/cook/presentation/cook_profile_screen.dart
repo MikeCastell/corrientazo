@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
 
 import '../../../core/design/tokens/app_colors.dart';
@@ -16,6 +17,7 @@ import '../data/cook_profile_repository.dart';
 import '../application/cook_meals_controller.dart';
 import '../domain/cook_meal.dart';
 import '../../../core/food/colombian_food_mock.dart';
+import '../../../core/routing/app_router.dart';
 import '../../../core/ui/marketplace/food_image.dart';
 
 class CookProfileScreen extends ConsumerStatefulWidget {
@@ -1159,12 +1161,9 @@ class _MealPreviewCard extends StatelessWidget {
         ? 'Receta casera, servida con cariño.'
         : meal.description.trim();
 
-    return Container(
-      padding: const EdgeInsets.all(AppSpacing.md),
+    return DecoratedBox(
       decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.92),
         borderRadius: BorderRadius.circular(AppRadius.xl),
-        border: Border.all(color: AppColors.border.withValues(alpha: 0.80)),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withValues(alpha: 0.035),
@@ -1173,70 +1172,99 @@ class _MealPreviewCard extends StatelessWidget {
           ),
         ],
       ),
-      child: Row(
-        children: [
-          ClipRRect(
-            borderRadius: BorderRadius.circular(AppRadius.lg),
-            child: SizedBox(
-              width: 88,
-              height: 88,
-              child: FoodImage(
-                asset: food.imageAsset,
-                fallbackGradient: food.heroGradient,
-                fallbackIcon: food.heroIcon,
+      child: Material(
+        color: Colors.white.withValues(alpha: 0.92),
+        borderRadius: BorderRadius.circular(AppRadius.xl),
+        clipBehavior: Clip.antiAlias,
+        child: InkWell(
+          onTap: () {
+            HapticFeedback.selectionClick();
+            context.go(
+              '${const CookCreateMealRoute().location}?edit=${meal.id}',
+            );
+          },
+          borderRadius: BorderRadius.circular(AppRadius.xl),
+          child: DecoratedBox(
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(AppRadius.xl),
+              border: Border.all(
+                color: AppColors.border.withValues(alpha: 0.80),
+              ),
+            ),
+            child: Padding(
+              padding: const EdgeInsets.all(AppSpacing.md),
+              child: Row(
+                children: [
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(AppRadius.lg),
+                    child: SizedBox(
+                      width: 88,
+                      height: 88,
+                      child: FoodImage(
+                        asset: food.imageAsset,
+                        fallbackGradient: food.heroGradient,
+                        fallbackIcon: food.heroIcon,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: AppSpacing.md),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          title,
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                          style: Theme.of(context).textTheme.titleMedium
+                              ?.copyWith(
+                                fontWeight: FontWeight.w900,
+                                letterSpacing: -0.3,
+                              ),
+                        ),
+                        const SizedBox(height: 6),
+                        Text(
+                          desc,
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                          style: Theme.of(context).textTheme.bodyMedium
+                              ?.copyWith(
+                                color: const Color(
+                                  0xFF6B4A3A,
+                                ).withValues(alpha: 0.74),
+                                fontWeight: FontWeight.w700,
+                              ),
+                        ),
+                        const SizedBox(height: 10),
+                        Row(
+                          children: [
+                            _MiniPill(
+                              label: 'COP ${meal.priceCop}',
+                              tone: AppColors.primary,
+                            ),
+                            const SizedBox(width: 8),
+                            _MiniPill(
+                              label: meal.status == CookMealStatus.available
+                                  ? 'Disponible'
+                                  : meal.status == CookMealStatus.soldOut
+                                  ? 'Agotado'
+                                  : 'Pausado',
+                              tone: meal.status == CookMealStatus.available
+                                  ? AppColors.success
+                                  : meal.status == CookMealStatus.soldOut
+                                  ? AppColors.danger
+                                  : AppColors.warning,
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
               ),
             ),
           ),
-          const SizedBox(width: AppSpacing.md),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  title,
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                    fontWeight: FontWeight.w900,
-                    letterSpacing: -0.3,
-                  ),
-                ),
-                const SizedBox(height: 6),
-                Text(
-                  desc,
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                    color: const Color(0xFF6B4A3A).withValues(alpha: 0.74),
-                    fontWeight: FontWeight.w700,
-                  ),
-                ),
-                const SizedBox(height: 10),
-                Row(
-                  children: [
-                    _MiniPill(
-                      label: 'COP ${meal.priceCop}',
-                      tone: AppColors.primary,
-                    ),
-                    const SizedBox(width: 8),
-                    _MiniPill(
-                      label: meal.status == CookMealStatus.available
-                          ? 'Disponible'
-                          : meal.status == CookMealStatus.soldOut
-                          ? 'Agotado'
-                          : 'Pausado',
-                      tone: meal.status == CookMealStatus.available
-                          ? AppColors.success
-                          : meal.status == CookMealStatus.soldOut
-                          ? AppColors.danger
-                          : AppColors.warning,
-                    ),
-                  ],
-                ),
-              ],
-            ),
-          ),
-        ],
+        ),
       ),
     );
   }

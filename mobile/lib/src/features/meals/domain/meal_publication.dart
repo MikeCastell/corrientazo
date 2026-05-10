@@ -14,6 +14,8 @@ class MealPublication {
     required this.availableTo,
     required this.pickupFrom,
     required this.pickupTo,
+    this.deliveryEnabled = false,
+    this.pickupEnabled = true,
     required this.title,
     required this.description,
     required this.tags,
@@ -33,6 +35,14 @@ class MealPublication {
   final DateTime pickupFrom;
   final DateTime pickupTo;
 
+  /// From publication: whether the cook offers delivery for this offer.
+  @JsonKey(defaultValue: false)
+  final bool deliveryEnabled;
+
+  /// From publication: whether the cook allows pickup (false = solo domicilio).
+  @JsonKey(defaultValue: true)
+  final bool pickupEnabled;
+
   // Enriched feed fields (may be null depending on backend version)
   final String? title;
   final String? description;
@@ -46,4 +56,19 @@ class MealPublication {
       _$MealPublicationFromJson(json);
 
   Map<String, dynamic> toJson() => _$MealPublicationToJson(this);
+}
+
+extension MealPublicationFulfillment on MealPublication {
+  /// Short label for cards and detail (customer-facing).
+  String get fulfillmentCustomerLabel {
+    if (deliveryEnabled && pickupEnabled) return 'Recoger o domicilio';
+    if (deliveryEnabled && !pickupEnabled) return 'Solo domicilio';
+    return 'Solo recogida';
+  }
+
+  /// Single mode when the cook allows only one fulfillment type.
+  String get defaultFulfillmentForOrder =>
+      deliveryEnabled && !pickupEnabled ? 'DELIVERY' : 'PICKUP';
+
+  bool get allowsBothFulfillmentModes => deliveryEnabled && pickupEnabled;
 }

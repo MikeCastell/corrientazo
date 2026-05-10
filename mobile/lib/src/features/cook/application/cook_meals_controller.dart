@@ -32,6 +32,7 @@ class CookMealsController extends AsyncNotifier<List<CookMeal>> {
     final pickupFrom = now.add(const Duration(minutes: 20));
     final pickupTo = now.add(const Duration(hours: 12));
     final desiredPubStatus = wantsPublish ? 'PUBLISHED' : 'PAUSED';
+    final ff = _fulfillmentFlags(meal.fulfillmentType);
 
     if (meal.id.startsWith('m_')) {
       final created = await repo.create(
@@ -50,7 +51,8 @@ class CookMealsController extends AsyncNotifier<List<CookMeal>> {
           availableTo: availableTo,
           pickupFrom: pickupFrom,
           pickupTo: pickupTo,
-          deliveryEnabled: false,
+          deliveryEnabled: ff.delivery,
+          pickupEnabled: ff.pickup,
           deliveryZoneId: null,
           status: desiredPubStatus,
         );
@@ -85,7 +87,8 @@ class CookMealsController extends AsyncNotifier<List<CookMeal>> {
           availableTo: availableTo,
           pickupFrom: pickupFrom,
           pickupTo: pickupTo,
-          deliveryEnabled: false,
+          deliveryEnabled: ff.delivery,
+          pickupEnabled: ff.pickup,
           deliveryZoneId: null,
           status: desiredPubStatus,
         );
@@ -150,12 +153,31 @@ class CookMealsController extends AsyncNotifier<List<CookMeal>> {
       description: t.description ?? '',
       priceCop: price,
       stock: stock,
-      fulfillmentType: 'PICKUP',
+      fulfillmentType: _flagsToFulfillment(pub?.deliveryEnabled, pub?.pickupEnabled),
       ingredients: t.tags,
       status: stock <= 0 ? CookMealStatus.soldOut : status,
       createdAt: t.createdAt,
     );
   }
+}
+
+({bool delivery, bool pickup}) _fulfillmentFlags(String type) {
+  switch (type) {
+    case 'DELIVERY':
+      return (delivery: true, pickup: false);
+    case 'BOTH':
+      return (delivery: true, pickup: true);
+    default:
+      return (delivery: false, pickup: true);
+  }
+}
+
+String _flagsToFulfillment(bool? deliveryEnabled, bool? pickupEnabled) {
+  final d = deliveryEnabled ?? false;
+  final p = pickupEnabled ?? true;
+  if (d && p) return 'BOTH';
+  if (d && !p) return 'DELIVERY';
+  return 'PICKUP';
 }
 
 final cookMealsControllerProvider =

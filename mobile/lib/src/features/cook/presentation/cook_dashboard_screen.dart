@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
@@ -14,6 +15,7 @@ import '../application/cook_orders_controller.dart';
 import '../application/cook_profile_controller.dart';
 import '../data/cook_profile_repository.dart';
 import '../domain/cook_meal.dart';
+import '../../orders/domain/order_summary.dart';
 import 'widgets/cook_getting_started_card.dart';
 
 bool _profileFeelsComplete(CookProfileDto p) {
@@ -21,6 +23,16 @@ bool _profileFeelsComplete(CookProfileDto p) {
   final avatarOk = (p.userAvatarUrl ?? '').trim().isNotEmpty;
   return bioOk || avatarOk;
 }
+
+/// Completed / cancelled / refunded — not "por atender" en el dashboard.
+bool _isTerminalOrderStatus(String raw) {
+  final s = raw.toUpperCase();
+  if (s == 'DELIVERED' || s == 'PICKED_UP' || s == 'REFUNDED') return true;
+  if (s.startsWith('CANCELLED')) return true;
+  return false;
+}
+
+bool _isActiveOrder(OrderSummary o) => !_isTerminalOrderStatus(o.status);
 
 class CookDashboardScreen extends ConsumerWidget {
   const CookDashboardScreen({super.key});
@@ -79,7 +91,8 @@ class CookDashboardScreen extends ConsumerWidget {
                   final hasPublished = items.any(
                     (m) => m.publicationId != null,
                   );
-                  final orderCount = orderItems.length;
+                  final activeOrders =
+                      orderItems.where(_isActiveOrder).length;
 
                   return ListView(
                     padding: const EdgeInsets.all(AppSpacing.md),
@@ -105,7 +118,7 @@ class CookDashboardScreen extends ConsumerWidget {
                       CookGettingStartedCard(
                         hasPublishedMeal: hasPublished,
                         profileFeelsComplete: _profileFeelsComplete(prof),
-                        hasOrders: orderCount > 0,
+                        hasOrders: orderItems.isNotEmpty,
                       ),
                       const SizedBox(height: AppSpacing.md),
                       Row(
@@ -117,18 +130,22 @@ class CookDashboardScreen extends ConsumerWidget {
                               subtitle: 'Publicadas y visibles',
                               icon: Icons.restaurant_menu,
                               tone: AppColors.secondary,
+                              onTap: () =>
+                                  context.go(const CookMealsRoute().location),
                             ),
                           ),
                           const SizedBox(width: AppSpacing.sm),
                           Expanded(
                             child: _MetricCard(
-                              title: 'Pedidos',
-                              value: '$orderCount',
-                              subtitle: orderCount == 0
-                                  ? 'Te avisamos cuando llegue uno'
-                                  : 'En tu bandeja de Pedidos',
+                              title: 'Pedidos activos',
+                              value: '$activeOrders',
+                              subtitle: activeOrders == 0
+                                  ? 'Nada pendiente por ahora'
+                                  : 'Por preparar o entregar',
                               icon: Icons.inbox_outlined,
                               tone: AppColors.primary,
+                              onTap: () =>
+                                  context.go(const CookOrdersRoute().location),
                             ),
                           ),
                         ],
@@ -138,11 +155,13 @@ class CookDashboardScreen extends ConsumerWidget {
                         children: [
                           Expanded(
                             child: _MetricCard(
-                              title: 'Pausadas',
+                              title: 'Platos pausados',
                               value: '$paused',
                               subtitle: 'No visibles',
                               icon: Icons.pause_circle_outline,
                               tone: AppColors.accentDeep,
+                              onTap: () =>
+                                  context.go(const CookMealsRoute().location),
                             ),
                           ),
                           const SizedBox(width: AppSpacing.sm),
@@ -153,6 +172,8 @@ class CookDashboardScreen extends ConsumerWidget {
                               subtitle: 'Sin stock',
                               icon: Icons.bolt,
                               tone: AppColors.warning,
+                              onTap: () =>
+                                  context.go(const CookMealsRoute().location),
                             ),
                           ),
                         ],
@@ -190,6 +211,7 @@ class _MetricCard extends StatelessWidget {
     required this.subtitle,
     required this.icon,
     required this.tone,
+    this.onTap,
   });
 
   final String title;
@@ -197,58 +219,71 @@ class _MetricCard extends StatelessWidget {
   final String subtitle;
   final IconData icon;
   final Color tone;
+  final VoidCallback? onTap;
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(AppSpacing.md),
-      decoration: BoxDecoration(
-        color: Theme.of(context).colorScheme.surface,
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap == null
+            ? null
+            : () {
+                HapticFeedback.selectionClick();
+                onTap!();
+              },
         borderRadius: BorderRadius.circular(AppRadius.lg),
-        border: Border.all(color: Theme.of(context).dividerColor),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
+        child: Container(
+          padding: const EdgeInsets.all(AppSpacing.md),
+          decoration: BoxDecoration(
+            color: Theme.of(context).colorScheme.surface,
+            borderRadius: BorderRadius.circular(AppRadius.lg),
+            border: Border.all(color: Theme.of(context).dividerColor),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Container(
-                width: 40,
-                height: 40,
-                decoration: BoxDecoration(
-                  color: tone.withValues(alpha: 0.10),
-                  borderRadius: BorderRadius.circular(AppRadius.md),
-                  border: Border.all(color: tone.withValues(alpha: 0.18)),
-                ),
-                child: Icon(icon, color: tone),
+              Row(
+                children: [
+                  Container(
+                    width: 40,
+                    height: 40,
+                    decoration: BoxDecoration(
+                      color: tone.withValues(alpha: 0.10),
+                      borderRadius: BorderRadius.circular(AppRadius.md),
+                      border: Border.all(color: tone.withValues(alpha: 0.18)),
+                    ),
+                    child: Icon(icon, color: tone),
+                  ),
+                  const Spacer(),
+                  Text(
+                    value,
+                    style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                      fontWeight: FontWeight.w900,
+                      color: tone,
+                    ),
+                  ),
+                ],
               ),
-              const Spacer(),
+              const SizedBox(height: AppSpacing.sm),
               Text(
-                value,
-                style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                  fontWeight: FontWeight.w900,
-                  color: tone,
+                title,
+                style: Theme.of(
+                  context,
+                ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w900),
+              ),
+              const SizedBox(height: 2),
+              Text(
+                subtitle,
+                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                  color: Theme.of(
+                    context,
+                  ).colorScheme.onSurface.withValues(alpha: 0.65),
                 ),
               ),
             ],
           ),
-          const SizedBox(height: AppSpacing.sm),
-          Text(
-            title,
-            style: Theme.of(
-              context,
-            ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w900),
-          ),
-          const SizedBox(height: 2),
-          Text(
-            subtitle,
-            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-              color: Theme.of(
-                context,
-              ).colorScheme.onSurface.withValues(alpha: 0.65),
-            ),
-          ),
-        ],
+        ),
       ),
     );
   }

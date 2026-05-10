@@ -28,6 +28,8 @@ export class OrdersService {
           available_from: true,
           available_to: true,
           status: true,
+          delivery_enabled: true,
+          pickup_enabled: true,
         },
       });
       if (!pub) {
@@ -50,6 +52,22 @@ export class OrdersService {
         throw new DomainError({
           code: ErrorCodes.ORDER_INVALID_STATE_TRANSITION,
           message: "Publication not published",
+          statusCode: 409,
+        });
+      }
+
+      const wantDelivery = dto.fulfillmentType === "DELIVERY";
+      if (wantDelivery && !pub.delivery_enabled) {
+        throw new DomainError({
+          code: ErrorCodes.ORDER_INVALID_STATE_TRANSITION,
+          message: "Este plato no está disponible para domicilio; solo recogida.",
+          statusCode: 409,
+        });
+      }
+      if (!wantDelivery && !pub.pickup_enabled) {
+        throw new DomainError({
+          code: ErrorCodes.ORDER_INVALID_STATE_TRANSITION,
+          message: "Este plato solo está disponible para domicilio.",
           statusCode: 409,
         });
       }

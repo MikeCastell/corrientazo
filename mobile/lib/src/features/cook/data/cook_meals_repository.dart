@@ -76,6 +76,7 @@ class CookMealsRepository {
     required DateTime pickupFrom,
     required DateTime pickupTo,
     bool deliveryEnabled = false,
+    bool pickupEnabled = true,
     String? deliveryZoneId,
     String? status,
   }) {
@@ -89,6 +90,7 @@ class CookMealsRepository {
         'pickupFrom': pickupFrom.toUtc().toIso8601String(),
         'pickupTo': pickupTo.toUtc().toIso8601String(),
         'deliveryEnabled': deliveryEnabled,
+        'pickupEnabled': pickupEnabled,
         'deliveryZoneId': deliveryZoneId,
         'status': status,
       },
@@ -180,6 +182,8 @@ class CookMealPublicationDto {
     required this.stockTotal,
     required this.stockAvailable,
     required this.status,
+    this.deliveryEnabled,
+    this.pickupEnabled,
   });
 
   final String id;
@@ -189,6 +193,8 @@ class CookMealPublicationDto {
   final int? stockTotal;
   final int? stockAvailable;
   final String? status;
+  final bool? deliveryEnabled;
+  final bool? pickupEnabled;
 
   factory CookMealPublicationDto.fromJson(Map<String, dynamic> json) {
     return CookMealPublicationDto(
@@ -199,6 +205,8 @@ class CookMealPublicationDto {
       stockTotal: (json['stock_total'] as num?)?.toInt(),
       stockAvailable: (json['stock_available'] as num?)?.toInt(),
       status: json['status'] as String?,
+      deliveryEnabled: json['delivery_enabled'] as bool?,
+      pickupEnabled: json['pickup_enabled'] as bool?,
     );
   }
 }

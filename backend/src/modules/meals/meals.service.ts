@@ -36,6 +36,8 @@ export class MealsService {
         available_to: true,
         pickup_from: true,
         pickup_to: true,
+        delivery_enabled: true,
+        pickup_enabled: true,
         photo_url: true,
         title_override: true,
         description_override: true,
@@ -67,6 +69,8 @@ export class MealsService {
       available_to: r.available_to,
       pickup_from: r.pickup_from,
       pickup_to: r.pickup_to,
+      delivery_enabled: r.delivery_enabled,
+      pickup_enabled: r.pickup_enabled,
       title: r.title_override ?? r.meal?.title ?? null,
       description: r.description_override ?? r.meal?.description ?? null,
       tags: r.meal?.tags ?? null,
@@ -106,6 +110,8 @@ export class MealsService {
             available_to: true,
             pickup_from: true,
             pickup_to: true,
+            delivery_enabled: true,
+            pickup_enabled: true,
             created_at: true,
             updated_at: true,
           },
@@ -254,6 +260,16 @@ export class MealsService {
       });
     }
 
+    const deliveryEnabled = dto.deliveryEnabled ?? false;
+    const pickupEnabled = dto.pickupEnabled ?? true;
+    if (!deliveryEnabled && !pickupEnabled) {
+      throw new DomainError({
+        code: ErrorCodes.ORDER_INVALID_STATE_TRANSITION,
+        message: "Publication must allow pickup and/or delivery",
+        statusCode: 400,
+      });
+    }
+
     return this.prisma.meal_publications.create({
       data: {
         meal_id: meal.id,
@@ -265,7 +281,8 @@ export class MealsService {
         available_to: new Date(dto.availableTo),
         pickup_from: new Date(dto.pickupFrom),
         pickup_to: new Date(dto.pickupTo),
-        delivery_enabled: dto.deliveryEnabled ?? false,
+        delivery_enabled: deliveryEnabled,
+        pickup_enabled: pickupEnabled,
         delivery_zone_id: dto.deliveryZoneId ?? null,
         status: dto.status ?? "PUBLISHED",
       },

@@ -86,6 +86,11 @@ export class PublishMealDto {
   @IsBoolean()
   deliveryEnabled?: boolean;
 
+  @ApiPropertyOptional({ example: true, description: "If false, pickup orders are not allowed (solo domicilio)." })
+  @IsOptional()
+  @IsBoolean()
+  pickupEnabled?: boolean;
+
   @ApiPropertyOptional({ example: null })
   @IsOptional()
   @IsString()

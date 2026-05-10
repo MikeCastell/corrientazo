@@ -313,6 +313,7 @@ model meal_publications {
   pickup_to   DateTime
 
   delivery_enabled Boolean @default(false)
+  pickup_enabled   Boolean @default(true)
   delivery_zone_id String?
   // Quantity/cupos
   stock_total      Int

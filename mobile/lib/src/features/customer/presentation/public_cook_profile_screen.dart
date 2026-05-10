@@ -9,6 +9,7 @@ import '../../../core/design/tokens/app_spacing.dart';
 import '../../../core/routing/app_router.dart';
 import '../../../core/ui/marketplace/meal_card_premium.dart';
 import '../../meals/application/meals_controller.dart';
+import '../../meals/domain/meal_publication.dart';
 
 class PublicCookProfileScreen extends ConsumerWidget {
   const PublicCookProfileScreen({super.key, required this.cookProfileId});
@@ -154,6 +155,7 @@ class PublicCookProfileScreen extends ConsumerWidget {
                           cookName: m.cookName,
                           cookAvatarUrl: m.cookAvatarUrl,
                           cookBio: m.cookBio,
+                          fulfillmentLabel: m.fulfillmentCustomerLabel,
                           onTap: () => context.push(
                             '${const HomeRoute().location}/meals/${m.id}',
                           ),
