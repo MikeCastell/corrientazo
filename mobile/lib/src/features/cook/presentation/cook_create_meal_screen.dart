@@ -2,23 +2,27 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:image_picker/image_picker.dart';
 
 import '../../../core/design/tokens/app_colors.dart';
 import '../../../core/design/tokens/app_radius.dart';
 import '../../../core/design/tokens/app_spacing.dart';
 import '../../../core/routing/app_router.dart';
 import '../../../core/ui/app_scaffold.dart';
-import '../../../core/food/colombian_food_mock.dart';
 import '../../../core/networking/api_exception.dart';
 import '../../../core/ux/milestone_celebration.dart';
 import '../../../core/ux/ux_milestones_store.dart';
+import '../application/cook_meal_draft_templates_controller.dart';
 import '../application/cook_meals_controller.dart';
+import '../data/cook_meals_repository.dart';
 import '../domain/cook_meal.dart';
+import '../domain/cook_meal_draft_template.dart';
 
 class CookCreateMealScreen extends ConsumerStatefulWidget {
-  const CookCreateMealScreen({super.key, this.editMealId});
+  const CookCreateMealScreen({super.key, this.editMealId, this.templateId});
 
   final String? editMealId;
+  final String? templateId;
 
   @override
   ConsumerState<CookCreateMealScreen> createState() =>
@@ -28,18 +32,39 @@ class CookCreateMealScreen extends ConsumerStatefulWidget {
 class _CookCreateMealScreenState extends ConsumerState<CookCreateMealScreen> {
   final _title = TextEditingController();
   final _description = TextEditingController();
-  final _price = TextEditingController(text: '12000');
-  final _stock = TextEditingController(text: '10');
+  final _price = TextEditingController();
+  final _stock = TextEditingController();
 
   String _fulfillment = 'PICKUP';
-  final List<String> _ingredients = ['Arroz', 'Proteína', 'Ensalada'];
+  final List<String> _ingredients = [];
 
   bool _saving = false;
+  bool _aiBusy = false;
 
   @override
   void initState() {
     super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) => _hydrateIfEditing());
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _hydrateIfEditing();
+      _hydrateFromTemplate();
+    });
+  }
+
+  void _hydrateFromTemplate() {
+    if (widget.editMealId != null) return;
+    final tid = widget.templateId;
+    if (tid == null || tid.isEmpty) return;
+    final templates = ref.read(cookMealDraftTemplatesProvider);
+    CookMealDraftTemplate? found;
+    for (final t in templates) {
+      if (t.id == tid) {
+        found = t;
+        break;
+      }
+    }
+    if (found == null) return;
+    _applyDraftTemplate(found);
+    setState(() {});
   }
 
   void _hydrateIfEditing() {
@@ -78,11 +103,9 @@ class _CookCreateMealScreenState extends ConsumerState<CookCreateMealScreen> {
     return CookMeal(
       id: id,
       publicationId: null,
-      title: _title.text.trim().isEmpty
-          ? 'Nuevo corrientazo'
-          : _title.text.trim(),
+      title: _title.text.trim(),
       description: _description.text.trim(),
-      priceCop: price <= 0 ? 12000 : price,
+      priceCop: price,
       stock: stock < 0 ? 0 : stock,
       fulfillmentType: _fulfillment,
       ingredients: List.of(_ingredients),
@@ -92,6 +115,33 @@ class _CookCreateMealScreenState extends ConsumerState<CookCreateMealScreen> {
   }
 
   Future<void> _save({required bool publish}) async {
+    final title = _title.text.trim();
+    final price = int.tryParse(_price.text.trim());
+    final stock = int.tryParse(_stock.text.trim()) ?? 0;
+
+    if (title.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Escribe el nombre del plato.')),
+      );
+      return;
+    }
+    if (price == null || price <= 0) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Indica un precio válido mayor a cero.')),
+      );
+      return;
+    }
+    if (publish && stock < 1) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text(
+            'Para publicar indica cuántas porciones hay (mínimo 1).',
+          ),
+        ),
+      );
+      return;
+    }
+
     setState(() => _saving = true);
     HapticFeedback.selectionClick();
 
@@ -157,6 +207,78 @@ class _CookCreateMealScreenState extends ConsumerState<CookCreateMealScreen> {
     }
   }
 
+  Future<ImageSource?> _askPhotoSource() {
+    return showModalBottomSheet<ImageSource>(
+      context: context,
+      showDragHandle: true,
+      builder: (ctx) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            ListTile(
+              leading: const Icon(Icons.photo_camera_outlined),
+              title: const Text('Tomar foto'),
+              onTap: () => Navigator.of(ctx).pop(ImageSource.camera),
+            ),
+            ListTile(
+              leading: const Icon(Icons.photo_library_outlined),
+              title: const Text('Elegir de la galería'),
+              onTap: () => Navigator.of(ctx).pop(ImageSource.gallery),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Future<void> _suggestDescriptionFromPhoto() async {
+    if (_saving || _aiBusy) return;
+    final source = await _askPhotoSource();
+    if (!mounted || source == null) return;
+
+    final picker = ImagePicker();
+    final file = await picker.pickImage(
+      source: source,
+      maxWidth: 1600,
+      imageQuality: 85,
+    );
+    if (!mounted || file == null) return;
+
+    setState(() => _aiBusy = true);
+    try {
+      final bytes = await file.readAsBytes();
+      if (bytes.isEmpty) return;
+      final name =
+          file.name.trim().isNotEmpty ? file.name.trim() : 'plato.jpg';
+      final text = await ref
+          .read(cookMealsRepositoryProvider)
+          .describeMealFromPhotoBytes(bytes, filename: name);
+      if (!mounted) return;
+      _description.text = text;
+      setState(() {});
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text(
+            'Descripción sugerida — revísala y ajústala antes de publicar.',
+          ),
+        ),
+      );
+    } catch (e) {
+      if (!mounted) return;
+      final msg = switch (e) {
+        UnauthorizedException() =>
+          'Tu sesión expiró. Vuelve a iniciar sesión e inténtalo de nuevo.',
+        ApiErrorResponseException(:final message) => message,
+        NetworkException(message: final m) =>
+          'No pudimos conectar con el servidor. $m',
+        _ => 'No pudimos generar la descripción. Inténtalo de nuevo.',
+      };
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(msg)));
+    } finally {
+      if (mounted) setState(() => _aiBusy = false);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final preview = _buildDraft(
@@ -169,43 +291,6 @@ class _CookCreateMealScreenState extends ConsumerState<CookCreateMealScreen> {
       body: ListView(
         padding: const EdgeInsets.all(AppSpacing.md),
         children: [
-          if (widget.editMealId == null) ...[
-            Text(
-              'Plantillas rápidas',
-              style: Theme.of(
-                context,
-              ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w900),
-            ),
-            const SizedBox(height: AppSpacing.xs),
-            Text(
-              'Elige una base colombiana real y ajusta en segundos.',
-              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                color: Theme.of(
-                  context,
-                ).colorScheme.onSurface.withValues(alpha: 0.65),
-              ),
-            ),
-            const SizedBox(height: AppSpacing.sm),
-            Wrap(
-              spacing: 8,
-              runSpacing: 8,
-              children: [
-                _TemplateChip(
-                  label: 'Corrientazo res',
-                  onTap: _saving ? null : () => _applyTemplate('tpl-res'),
-                ),
-                _TemplateChip(
-                  label: 'Ajiaco',
-                  onTap: _saving ? null : () => _applyTemplate('tpl-ajiaco'),
-                ),
-                _TemplateChip(
-                  label: 'Lentejas',
-                  onTap: _saving ? null : () => _applyTemplate('tpl-lentejas'),
-                ),
-              ],
-            ),
-            const SizedBox(height: AppSpacing.md),
-          ],
           _PreviewCard(meal: preview),
           const SizedBox(height: AppSpacing.md),
           TextField(
@@ -222,6 +307,34 @@ class _CookCreateMealScreenState extends ConsumerState<CookCreateMealScreen> {
             onChanged: (_) => setState(() {}),
           ),
           const SizedBox(height: AppSpacing.sm),
+          Align(
+            alignment: Alignment.centerLeft,
+            child: TextButton.icon(
+              onPressed: (_saving || _aiBusy) ? null : _suggestDescriptionFromPhoto,
+              icon: _aiBusy
+                  ? const SizedBox(
+                      width: 18,
+                      height: 18,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    )
+                  : const Icon(Icons.auto_awesome_outlined, size: 20),
+              label: Text(_aiBusy ? 'Analizando foto…' : 'Sugerir descripción con foto'),
+            ),
+          ),
+          Padding(
+            padding: const EdgeInsets.only(bottom: AppSpacing.sm),
+            child: Text(
+              'La foto se envía al servidor para generar texto (clave Gemini). '
+              'No sustituye revisar ingredientes y alérgenos.',
+              style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                    color: Theme.of(context)
+                        .colorScheme
+                        .onSurface
+                        .withValues(alpha: 0.55),
+                    height: 1.35,
+                  ),
+            ),
+          ),
           Row(
             children: [
               Expanded(
@@ -286,6 +399,26 @@ class _CookCreateMealScreenState extends ConsumerState<CookCreateMealScreen> {
             ],
           ),
           const SizedBox(height: AppSpacing.lg),
+          Text(
+            'Mis plantillas',
+            style: Theme.of(
+              context,
+            ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w900),
+          ),
+          const SizedBox(height: AppSpacing.xs),
+          Text(
+            'Guarda lo que tienes en el formulario y vuelve a cargarlo cuando quieras. '
+            'Son solo en este dispositivo.',
+            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                  color: Theme.of(
+                    context,
+                  ).colorScheme.onSurface.withValues(alpha: 0.65),
+                  height: 1.35,
+                ),
+          ),
+          const SizedBox(height: AppSpacing.sm),
+          ..._buildTemplateSection(context),
+          const SizedBox(height: AppSpacing.lg),
           Row(
             children: [
               Expanded(
@@ -318,43 +451,157 @@ class _CookCreateMealScreenState extends ConsumerState<CookCreateMealScreen> {
     );
   }
 
-  void _applyTemplate(String seed) {
+  List<Widget> _buildTemplateSection(BuildContext context) {
+    final templates = ref.watch(cookMealDraftTemplatesProvider);
+    final notifier = ref.read(cookMealDraftTemplatesProvider.notifier);
+
+    return [
+      if (templates.isEmpty)
+        Text(
+          'Todavía no tienes plantillas. Completa el formulario y pulsa «Guardar como plantilla».',
+          style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                color: Theme.of(context)
+                    .colorScheme
+                    .onSurface
+                    .withValues(alpha: 0.55),
+              ),
+        )
+      else
+        Wrap(
+          spacing: 8,
+          runSpacing: 8,
+          children: [
+            for (final t in templates)
+              InputChip(
+                label: Text(
+                  t.label.isEmpty ? t.title : t.label,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+                onPressed: _saving ? null : () => _applyDraftTemplate(t),
+                onDeleted: _saving
+                    ? null
+                    : () {
+                        HapticFeedback.selectionClick();
+                        notifier.remove(t.id);
+                      },
+                deleteIconColor:
+                    Theme.of(context).colorScheme.onSurface.withValues(
+                          alpha: 0.45,
+                        ),
+              ),
+          ],
+        ),
+      const SizedBox(height: AppSpacing.sm),
+      SizedBox(
+        width: double.infinity,
+        child: OutlinedButton.icon(
+          onPressed: _saving ? null : () => _promptSaveAsTemplate(),
+          icon: const Icon(Icons.bookmark_add_outlined),
+          label: const Text('Guardar como plantilla'),
+        ),
+      ),
+    ];
+  }
+
+  void _applyDraftTemplate(CookMealDraftTemplate t) {
     HapticFeedback.selectionClick();
-    final f = ColombianFoodMock.forMeal(seed);
-    _title.text = f.title;
-    _description.text = f.description;
+    _title.text = t.title;
+    _description.text = t.description;
+    _price.text = t.priceCop.toString();
+    _stock.text = t.stock.toString();
+    _fulfillment = t.fulfillmentType;
     _ingredients
       ..clear()
-      ..addAll(f.ingredients.take(5));
+      ..addAll(t.ingredients);
     setState(() {});
+  }
+
+  Future<void> _promptSaveAsTemplate() async {
+    final initial = _title.text.trim().isEmpty
+        ? 'Mi plantilla'
+        : _title.text.trim();
+    final name = await showDialog<String>(
+      context: context,
+      builder: (ctx) => _SaveTemplateNameDialog(initialName: initial),
+    );
+    if (!mounted) return;
+    if (name == null) return;
+    final label = name.trim();
+    if (label.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Escribe un nombre para la plantilla')),
+      );
+      return;
+    }
+
+    final price = int.tryParse(_price.text.trim()) ?? 0;
+    final stock = int.tryParse(_stock.text.trim()) ?? 0;
+
+    final template = CookMealDraftTemplate(
+      id: 'tpl_${DateTime.now().millisecondsSinceEpoch}',
+      label: label,
+      title: _title.text.trim(),
+      description: _description.text.trim(),
+      priceCop: price < 0 ? 0 : price,
+      stock: stock < 0 ? 0 : stock,
+      fulfillmentType: _fulfillment,
+      ingredients: List.of(_ingredients),
+      savedAt: DateTime.now(),
+    );
+
+    await ref.read(cookMealDraftTemplatesProvider.notifier).add(template);
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text('Plantilla «$label» guardada')),
+    );
   }
 }
 
-class _TemplateChip extends StatelessWidget {
-  const _TemplateChip({required this.label, required this.onTap});
-  final String label;
-  final VoidCallback? onTap;
+class _SaveTemplateNameDialog extends StatefulWidget {
+  const _SaveTemplateNameDialog({required this.initialName});
+
+  final String initialName;
+
+  @override
+  State<_SaveTemplateNameDialog> createState() =>
+      _SaveTemplateNameDialogState();
+}
+
+class _SaveTemplateNameDialogState extends State<_SaveTemplateNameDialog> {
+  late final TextEditingController _c =
+      TextEditingController(text: widget.initialName);
+
+  @override
+  void dispose() {
+    _c.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
-    return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(99),
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-        decoration: BoxDecoration(
-          color: AppColors.accent.withValues(alpha: 0.10),
-          borderRadius: BorderRadius.circular(99),
-          border: Border.all(color: AppColors.accent.withValues(alpha: 0.18)),
+    return AlertDialog(
+      title: const Text('Guardar plantilla'),
+      content: TextField(
+        controller: _c,
+        autofocus: true,
+        decoration: const InputDecoration(
+          labelText: 'Nombre',
+          hintText: 'Ej: Bandeja del lunes',
         ),
-        child: Text(
-          label,
-          style: Theme.of(context).textTheme.labelLarge?.copyWith(
-            fontWeight: FontWeight.w900,
-            color: AppColors.accentDeep,
-          ),
-        ),
+        textInputAction: TextInputAction.done,
+        onSubmitted: (_) => Navigator.of(context).pop(_c.text),
       ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.of(context).pop(),
+          child: const Text('Cancelar'),
+        ),
+        FilledButton(
+          onPressed: () => Navigator.of(context).pop(_c.text),
+          child: const Text('Guardar'),
+        ),
+      ],
     );
   }
 }

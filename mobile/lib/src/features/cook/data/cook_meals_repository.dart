@@ -1,6 +1,8 @@
+import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/networking/api_client.dart';
+import '../../../core/networking/json_bool.dart';
 
 class CookMealsRepository {
   CookMealsRepository(this._ref);
@@ -67,6 +69,26 @@ class CookMealsRepository {
     await _api.deleteJson('/cook/meals/$mealId');
   }
 
+  /// IA en servidor (Gemini): genera texto a partir de una foto del plato.
+  Future<String> describeMealFromPhotoBytes(
+    List<int> bytes, {
+    required String filename,
+  }) async {
+    final formData = FormData.fromMap({
+      'file': MultipartFile.fromBytes(bytes, filename: filename),
+    });
+    final json = await _api.postMultipart<Map<String, dynamic>>(
+      '/cook/meals/describe-photo',
+      formData,
+      decode: (j) => j as Map<String, dynamic>,
+    );
+    final d = json['description'];
+    if (d is! String || d.trim().isEmpty) {
+      throw const FormatException('Respuesta sin descripción');
+    }
+    return d.trim();
+  }
+
   Future<CookMealPublicationDto> publish(
     String mealId, {
     required int priceCop,
@@ -80,20 +102,25 @@ class CookMealsRepository {
     String? deliveryZoneId,
     String? status,
   }) {
+    // Backend defaults: pickupEnabled ?? true, deliveryEnabled ?? false.
+    // Omit booleans when they match defaults so older ValidationPipe configs
+    // that don't whitelist `pickupEnabled` still accept publication (recogida / ambos).
+    final body = <String, dynamic>{
+      'priceCop': priceCop,
+      'stockTotal': stockTotal,
+      'availableFrom': availableFrom.toUtc().toIso8601String(),
+      'availableTo': availableTo.toUtc().toIso8601String(),
+      'pickupFrom': pickupFrom.toUtc().toIso8601String(),
+      'pickupTo': pickupTo.toUtc().toIso8601String(),
+      if (deliveryEnabled) 'deliveryEnabled': true,
+      if (!pickupEnabled) 'pickupEnabled': false,
+      'deliveryZoneId': ?deliveryZoneId,
+      'status': ?status,
+    };
+
     return _api.postJson<CookMealPublicationDto>(
       '/meals/$mealId/publish',
-      body: {
-        'priceCop': priceCop,
-        'stockTotal': stockTotal,
-        'availableFrom': availableFrom.toUtc().toIso8601String(),
-        'availableTo': availableTo.toUtc().toIso8601String(),
-        'pickupFrom': pickupFrom.toUtc().toIso8601String(),
-        'pickupTo': pickupTo.toUtc().toIso8601String(),
-        'deliveryEnabled': deliveryEnabled,
-        'pickupEnabled': pickupEnabled,
-        'deliveryZoneId': deliveryZoneId,
-        'status': status,
-      },
+      body: body,
       decode: (json) =>
           CookMealPublicationDto.fromJson(json as Map<String, dynamic>),
     );
@@ -205,8 +232,8 @@ class CookMealPublicationDto {
       stockTotal: (json['stock_total'] as num?)?.toInt(),
       stockAvailable: (json['stock_available'] as num?)?.toInt(),
       status: json['status'] as String?,
-      deliveryEnabled: json['delivery_enabled'] as bool?,
-      pickupEnabled: json['pickup_enabled'] as bool?,
+      deliveryEnabled: coerceBoolOrNull(json['delivery_enabled']),
+      pickupEnabled: coerceBoolOrNull(json['pickup_enabled']),
     );
   }
 }

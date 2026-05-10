@@ -1,6 +1,12 @@
 import 'package:json_annotation/json_annotation.dart';
 
+import '../../../core/networking/json_bool.dart';
+
 part 'meal_publication.g.dart';
+
+bool _mealPublicationDeliveryFromJson(dynamic v) => coerceBool(v, false);
+
+bool _mealPublicationPickupFromJson(dynamic v) => coerceBool(v, true);
 
 @JsonSerializable(fieldRename: FieldRename.snake)
 class MealPublication {
@@ -36,11 +42,11 @@ class MealPublication {
   final DateTime pickupTo;
 
   /// From publication: whether the cook offers delivery for this offer.
-  @JsonKey(defaultValue: false)
+  @JsonKey(fromJson: _mealPublicationDeliveryFromJson)
   final bool deliveryEnabled;
 
   /// From publication: whether the cook allows pickup (false = solo domicilio).
-  @JsonKey(defaultValue: true)
+  @JsonKey(fromJson: _mealPublicationPickupFromJson)
   final bool pickupEnabled;
 
   // Enriched feed fields (may be null depending on backend version)

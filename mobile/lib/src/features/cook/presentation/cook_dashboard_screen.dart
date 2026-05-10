@@ -15,7 +15,7 @@ import '../application/cook_orders_controller.dart';
 import '../application/cook_profile_controller.dart';
 import '../data/cook_profile_repository.dart';
 import '../domain/cook_meal.dart';
-import '../../orders/domain/order_summary.dart';
+import '../domain/cook_order_operacion.dart';
 import 'widgets/cook_getting_started_card.dart';
 
 bool _profileFeelsComplete(CookProfileDto p) {
@@ -24,15 +24,19 @@ bool _profileFeelsComplete(CookProfileDto p) {
   return bioOk || avatarOk;
 }
 
-/// Completed / cancelled / refunded — not "por atender" en el dashboard.
-bool _isTerminalOrderStatus(String raw) {
-  final s = raw.toUpperCase();
-  if (s == 'DELIVERED' || s == 'PICKED_UP' || s == 'REFUNDED') return true;
-  if (s.startsWith('CANCELLED')) return true;
-  return false;
+String _pedidosDashboardSubtitle({
+  required int activeOrders,
+  required int completedToday,
+  required int receivedToday,
+}) {
+  if (activeOrders == 0 && completedToday == 0 && receivedToday == 0) {
+    return 'Sin actividad hoy · Reinicio a medianoche';
+  }
+  if (receivedToday == 0 && activeOrders > 0) {
+    return '$completedToday listos hoy · Pendientes de otros días';
+  }
+  return '$completedToday listos · $receivedToday nuevos hoy';
 }
-
-bool _isActiveOrder(OrderSummary o) => !_isTerminalOrderStatus(o.status);
 
 class CookDashboardScreen extends ConsumerWidget {
   const CookDashboardScreen({super.key});
@@ -44,7 +48,7 @@ class CookDashboardScreen extends ConsumerWidget {
     final profile = ref.watch(cookProfileControllerProvider);
 
     return AppScaffold(
-      title: 'Dashboard',
+      title: 'Tu cocina',
       body: meals.when(
         loading: () => const AppLoadingCenter(message: 'Cargando tu cocina…'),
         error: (e, _) => AppEmptyState(
@@ -81,6 +85,7 @@ class CookDashboardScreen extends ConsumerWidget {
                       .refresh(),
                 ),
                 data: (prof) {
+                  final now = DateTime.now();
                   final active = items.where((m) => m.isActive).length;
                   final paused = items
                       .where((m) => m.status == CookMealStatus.paused)
@@ -92,13 +97,19 @@ class CookDashboardScreen extends ConsumerWidget {
                     (m) => m.publicationId != null,
                   );
                   final activeOrders =
-                      orderItems.where(_isActiveOrder).length;
+                      orderItems.where(cookOrderIsActive).length;
+                  final completedToday = countCookOrdersCompletedSuccessfulToday(
+                    orderItems,
+                    now,
+                  );
+                  final receivedToday =
+                      countCookOrdersCreatedToday(orderItems, now);
 
                   return ListView(
                     padding: const EdgeInsets.all(AppSpacing.md),
                     children: [
                       Text(
-                        'Operación de hoy',
+                        'Tu cocina',
                         style: Theme.of(context).textTheme.headlineSmall
                             ?.copyWith(
                               fontWeight: FontWeight.w900,
@@ -107,7 +118,7 @@ class CookDashboardScreen extends ConsumerWidget {
                       ),
                       const SizedBox(height: AppSpacing.xs),
                       Text(
-                        'Aquí ves lo que importa: qué cocinas, qué piden, qué falta.',
+                        'Menú y pedidos del día en un vistazo.',
                         style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                           color: Theme.of(
                             context,
@@ -121,62 +132,55 @@ class CookDashboardScreen extends ConsumerWidget {
                         hasOrders: orderItems.isNotEmpty,
                       ),
                       const SizedBox(height: AppSpacing.md),
-                      Row(
-                        children: [
-                          Expanded(
-                            child: _MetricCard(
-                              title: 'Comidas activas',
-                              value: '$active',
-                              subtitle: 'Publicadas y visibles',
-                              icon: Icons.restaurant_menu,
-                              tone: AppColors.secondary,
-                              onTap: () =>
-                                  context.go(const CookMealsRoute().location),
+                      // ListView da altura máxima infinita al hijo; Row+stretch+Expanded
+                      // rompe el layout (pantalla en blanco). IntrinsicHeight acota la fila.
+                      IntrinsicHeight(
+                        child: Row(
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
+                          children: [
+                            Expanded(
+                              child: _MetricCard(
+                                title: 'Comidas activas',
+                                value: '$active',
+                                subtitle: 'Publicadas y visibles',
+                                icon: Icons.restaurant_menu,
+                                tone: AppColors.secondary,
+                                onTap: () =>
+                                    context.go(const CookMealsRoute().location),
+                              ),
                             ),
-                          ),
-                          const SizedBox(width: AppSpacing.sm),
-                          Expanded(
-                            child: _MetricCard(
-                              title: 'Pedidos activos',
-                              value: '$activeOrders',
-                              subtitle: activeOrders == 0
-                                  ? 'Nada pendiente por ahora'
-                                  : 'Por preparar o entregar',
-                              icon: Icons.inbox_outlined,
-                              tone: AppColors.primary,
-                              onTap: () =>
-                                  context.go(const CookOrdersRoute().location),
+                            const SizedBox(width: AppSpacing.sm),
+                            Expanded(
+                              child: _MetricCard(
+                                title: 'Pedidos activos',
+                                value: '$activeOrders',
+                                subtitle: _pedidosDashboardSubtitle(
+                                  activeOrders: activeOrders,
+                                  completedToday: completedToday,
+                                  receivedToday: receivedToday,
+                                ),
+                                icon: Icons.inbox_outlined,
+                                tone: AppColors.primary,
+                                onTap: () => context
+                                    .go(const CookOrdersRoute().location),
+                              ),
                             ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: AppSpacing.sm),
-                      Row(
-                        children: [
-                          Expanded(
-                            child: _MetricCard(
-                              title: 'Platos pausados',
-                              value: '$paused',
-                              subtitle: 'No visibles',
-                              icon: Icons.pause_circle_outline,
-                              tone: AppColors.accentDeep,
-                              onTap: () =>
-                                  context.go(const CookMealsRoute().location),
+                            const SizedBox(width: AppSpacing.sm),
+                            Expanded(
+                              child: _MetricCard(
+                                title: 'Menú',
+                                value: '${paused + soldOut}',
+                                subtitle: paused == 0 && soldOut == 0
+                                    ? 'Sin pausas ni agotados'
+                                    : '$paused pausados · $soldOut sin stock',
+                                icon: Icons.menu_book_outlined,
+                                tone: AppColors.accentDeep,
+                                onTap: () =>
+                                    context.go(const CookMealsRoute().location),
+                              ),
                             ),
-                          ),
-                          const SizedBox(width: AppSpacing.sm),
-                          Expanded(
-                            child: _MetricCard(
-                              title: 'Agotadas',
-                              value: '$soldOut',
-                              subtitle: 'Sin stock',
-                              icon: Icons.bolt,
-                              tone: AppColors.warning,
-                              onTap: () =>
-                                  context.go(const CookMealsRoute().location),
-                            ),
-                          ),
-                        ],
+                          ],
+                        ),
                       ),
                       const SizedBox(height: AppSpacing.lg),
                       _CtaCard(
@@ -255,12 +259,22 @@ class _MetricCard extends StatelessWidget {
                     ),
                     child: Icon(icon, color: tone),
                   ),
-                  const Spacer(),
-                  Text(
-                    value,
-                    style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                      fontWeight: FontWeight.w900,
-                      color: tone,
+                  Expanded(
+                    child: Align(
+                      alignment: Alignment.centerRight,
+                      child: FittedBox(
+                        fit: BoxFit.scaleDown,
+                        alignment: Alignment.centerRight,
+                        child: Text(
+                          value,
+                          maxLines: 1,
+                          style: Theme.of(context).textTheme.headlineSmall
+                              ?.copyWith(
+                                fontWeight: FontWeight.w900,
+                                color: tone,
+                              ),
+                        ),
+                      ),
                     ),
                   ),
                 ],
@@ -268,6 +282,8 @@ class _MetricCard extends StatelessWidget {
               const SizedBox(height: AppSpacing.sm),
               Text(
                 title,
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
                 style: Theme.of(
                   context,
                 ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w900),
@@ -275,10 +291,13 @@ class _MetricCard extends StatelessWidget {
               const SizedBox(height: 2),
               Text(
                 subtitle,
-                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                maxLines: 3,
+                overflow: TextOverflow.ellipsis,
+                style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                  height: 1.25,
                   color: Theme.of(
                     context,
-                  ).colorScheme.onSurface.withValues(alpha: 0.65),
+                  ).colorScheme.onSurface.withValues(alpha: 0.62),
                 ),
               ),
             ],

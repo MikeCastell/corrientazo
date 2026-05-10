@@ -1,5 +1,19 @@
+import { Transform } from "class-transformer";
 import { IsArray, IsBoolean, IsIn, IsInt, IsOptional, IsString, Min } from "class-validator";
 import { ApiProperty, ApiPropertyOptional } from "@nestjs/swagger";
+
+/** Accepts true/false/1/0 from JSON clients that stringify booleans inconsistently. */
+function normalizeOptionalBool(value: unknown): boolean | undefined {
+  if (value === undefined || value === null) return undefined;
+  if (typeof value === "boolean") return value;
+  if (typeof value === "number") return value !== 0;
+  if (typeof value === "string") {
+    const s = value.trim().toLowerCase();
+    if (s === "true" || s === "1") return true;
+    if (s === "false" || s === "0") return false;
+  }
+  return Boolean(value);
+}
 
 export class CreateMealDto {
   @ApiProperty({ example: "Corrientazo ejecutivo" })
@@ -83,11 +97,13 @@ export class PublishMealDto {
 
   @ApiPropertyOptional({ example: false })
   @IsOptional()
+  @Transform(({ value }) => normalizeOptionalBool(value))
   @IsBoolean()
   deliveryEnabled?: boolean;
 
   @ApiPropertyOptional({ example: true, description: "If false, pickup orders are not allowed (solo domicilio)." })
   @IsOptional()
+  @Transform(({ value }) => normalizeOptionalBool(value))
   @IsBoolean()
   pickupEnabled?: boolean;
 

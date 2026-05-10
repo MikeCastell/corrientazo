@@ -17,8 +17,12 @@ MealPublication _$MealPublicationFromJson(Map<String, dynamic> json) =>
       availableTo: DateTime.parse(json['available_to'] as String),
       pickupFrom: DateTime.parse(json['pickup_from'] as String),
       pickupTo: DateTime.parse(json['pickup_to'] as String),
-      deliveryEnabled: json['delivery_enabled'] as bool? ?? false,
-      pickupEnabled: json['pickup_enabled'] as bool? ?? true,
+      deliveryEnabled: json['delivery_enabled'] == null
+          ? false
+          : _mealPublicationDeliveryFromJson(json['delivery_enabled']),
+      pickupEnabled: json['pickup_enabled'] == null
+          ? true
+          : _mealPublicationPickupFromJson(json['pickup_enabled']),
       title: json['title'] as String?,
       description: json['description'] as String?,
       tags: (json['tags'] as List<dynamic>?)?.map((e) => e as String).toList(),

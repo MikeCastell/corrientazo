@@ -10,6 +10,7 @@ import '../../../core/env/app_env.dart';
 import '../../../core/notifications/local_notifications.dart';
 import '../data/orders_repository.dart';
 import '../domain/order_summary.dart';
+import '../domain/order_status_terminal.dart';
 import '../../customer/application/customer_orders_controller.dart';
 import '../../cook/application/cook_orders_controller.dart';
 
@@ -101,7 +102,7 @@ class LiveOrdersPoller extends Notifier<void> {
         // Cook updated the meal/publication: detect on ACTIVE orders via order detail.
         // This keeps the experience "alive" without polling lots of endpoints.
         final active = next
-            .where((o) => !_isTerminal(o.status))
+            .where((o) => !orderStatusIsTerminal(o.status))
             .take(3)
             .toList();
         if (active.isNotEmpty) {
@@ -162,11 +163,6 @@ class LiveOrdersPoller extends Notifier<void> {
       }
     }
   }
-}
-
-bool _isTerminal(String s) {
-  final v = s.toUpperCase();
-  return v == 'DELIVERED' || v == 'CANCELLED' || v == 'REFUNDED';
 }
 
 ({String title, String body}) _customerStatusMessage({

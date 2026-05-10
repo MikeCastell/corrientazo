@@ -28,6 +28,9 @@ class ApiClient {
           if (tokens != null) {
             options.headers['Authorization'] = 'Bearer ${tokens.accessToken}';
           }
+          if (options.data is FormData) {
+            options.headers.remove(Headers.contentTypeHeader);
+          }
           if (AppEnv.startupDebug) {
             // ignore: avoid_print
             debugPrint(
@@ -159,6 +162,27 @@ class ApiClient {
     }
   }
 
+  /// Subida multipart (p. ej. foto para IA). No usar `postJson` aquí.
+  Future<T> postMultipart<T>(
+    String path,
+    FormData formData, {
+    T Function(dynamic json)? decode,
+  }) async {
+    try {
+      final r = await _dio.post<dynamic>(
+        path,
+        data: formData,
+        options: Options(
+          receiveTimeout: const Duration(seconds: 60),
+          sendTimeout: const Duration(seconds: 60),
+        ),
+      );
+      return decode != null ? decode(r.data) : r.data as T;
+    } on DioException catch (e) {
+      throw _mapDio(e);
+    }
+  }
+
   ApiException _mapDio(DioException e) {
     if (e.type == DioExceptionType.connectionTimeout ||
         e.type == DioExceptionType.receiveTimeout ||
@@ -173,7 +197,15 @@ class ApiClient {
       final err = data['error'];
       if (err is Map<String, dynamic>) {
         final code = err['code']?.toString() ?? 'API_ERROR';
-        final msg = err['message']?.toString() ?? 'Request failed';
+        final raw = err['message'];
+        final msg = switch (raw) {
+          String s => s,
+          List l => l
+              .map((e) => e == null ? '' : e.toString())
+              .where((s) => s.isNotEmpty)
+              .join(' · '),
+          _ => raw?.toString() ?? 'Request failed',
+        };
         return ApiErrorResponseException(code: code, message: msg);
       }
     }

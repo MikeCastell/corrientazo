@@ -16,6 +16,7 @@ import '../../features/customer/presentation/customer_profile_screen.dart';
 import '../../features/customer/presentation/public_cook_profile_screen.dart';
 import '../../features/cook/presentation/cook_dashboard_screen.dart';
 import '../../features/cook/presentation/cook_meals_screen.dart';
+import '../../features/cook/presentation/cook_create_meal_hub_screen.dart';
 import '../../features/cook/presentation/cook_create_meal_screen.dart';
 import '../../features/cook/presentation/cook_orders_screen.dart';
 import '../../features/cook/presentation/cook_profile_screen.dart';
@@ -228,13 +229,28 @@ final appRouterProvider = Provider<GoRouter>((ref) {
               GoRoute(
                 path: const CookCreateMealRoute().location,
                 name: CookCreateMealRoute.name,
-                pageBuilder: (context, state) {
-                  final editId = state.uri.queryParameters['edit'];
-                  return _fadeSlidePage<void>(
-                    state: state,
-                    child: CookCreateMealScreen(editMealId: editId),
-                  );
-                },
+                pageBuilder: (context, state) => _fadeSlidePage<void>(
+                  state: state,
+                  child: const CookCreateMealHubScreen(),
+                ),
+                routes: [
+                  GoRoute(
+                    path: 'form',
+                    name: CookCreateMealFormRoute.name,
+                    pageBuilder: (context, state) {
+                      final editId = state.uri.queryParameters['edit'];
+                      final templateId =
+                          state.uri.queryParameters['template'];
+                      return _fadeSlidePage<void>(
+                        state: state,
+                        child: CookCreateMealScreen(
+                          editMealId: editId,
+                          templateId: templateId,
+                        ),
+                      );
+                    },
+                  ),
+                ],
               ),
             ],
           ),
@@ -441,6 +457,26 @@ class CookCreateMealRoute {
   const CookCreateMealRoute();
   static const name = 'cook_create_meal';
   String get location => '/k/create';
+}
+
+/// Formulario de alta/edición (`/k/create/form`).
+class CookCreateMealFormRoute {
+  const CookCreateMealFormRoute();
+
+  static const name = 'cook_create_form';
+
+  /// Query opcional: [editMealId] plato existente, [templateId] plantilla local.
+  static String location({String? editMealId, String? templateId}) {
+    final q = <String>[];
+    if (editMealId != null && editMealId.isNotEmpty) {
+      q.add('edit=${Uri.encodeQueryComponent(editMealId)}');
+    }
+    if (templateId != null && templateId.isNotEmpty) {
+      q.add('template=${Uri.encodeQueryComponent(templateId)}');
+    }
+    final qs = q.isEmpty ? '' : '?${q.join('&')}';
+    return '/k/create/form$qs';
+  }
 }
 
 class CookOrdersRoute {

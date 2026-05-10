@@ -259,6 +259,7 @@ export class OrdersService {
           id: true,
           status: true,
           created_at: true,
+          updated_at: true,
           total_cop: true,
           quantity: true,
           fulfillment_type: true,
@@ -278,8 +279,9 @@ export class OrdersService {
       return rows.map((o) => ({
         id: o.id,
         status: o.status,
-        total_cop: o.total_cop,
         created_at: o.created_at,
+        updated_at: o.updated_at,
+        total_cop: o.total_cop,
         quantity: o.quantity,
         fulfillment_type: o.fulfillment_type,
         meal_publication_id: o.meal_publication_id,

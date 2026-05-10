@@ -2,6 +2,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../orders/data/orders_repository.dart';
 import '../../orders/domain/order_summary.dart';
+import '../../orders/domain/order_status_terminal.dart';
 
 class CustomerOrdersState {
   const CustomerOrdersState({
@@ -35,10 +36,7 @@ class CustomerOrdersController extends AsyncNotifier<CustomerOrdersState> {
     final active = <OrderSummary>[];
     final past = <OrderSummary>[];
     for (final o in results) {
-      final s = o.status.toUpperCase();
-      final isTerminal =
-          s == 'DELIVERED' || s == 'CANCELLED' || s == 'REFUNDED';
-      (isTerminal ? past : active).add(o);
+      (orderStatusIsTerminal(o.status) ? past : active).add(o);
     }
 
     return CustomerOrdersState(loading: false, active: active, past: past);

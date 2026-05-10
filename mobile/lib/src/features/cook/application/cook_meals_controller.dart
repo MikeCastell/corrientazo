@@ -21,7 +21,9 @@ class CookMealsController extends AsyncNotifier<List<CookMeal>> {
 
   Future<void> upsert(CookMeal meal) async {
     final repo = ref.read(cookMealsRepositoryProvider);
-    if (state.isLoading) return;
+    // Never no-op while the list is still loading: the user can publish a new
+    // dish before [build] finishes; the old `if (state.isLoading) return` skipped
+    // all network calls and the UI still looked like a success.
 
     final wantsPublish = meal.status == CookMealStatus.available;
     final now = DateTime.now();
@@ -133,6 +135,103 @@ class CookMealsController extends AsyncNotifier<List<CookMeal>> {
 
   Future<void> deleteMeal(String id) async {
     await ref.read(cookMealsRepositoryProvider).delete(id);
+    await refresh();
+  }
+
+  /// Publicar en masa (reactivar oferta o crear publicación si aún no existe).
+  Future<
+      ({
+        int published,
+        int skippedSoldOut,
+        int skippedNoStock,
+      })> bulkPublish(List<CookMeal> meals) async {
+    final repo = ref.read(cookMealsRepositoryProvider);
+    final now = DateTime.now();
+    final availableFrom = now.subtract(const Duration(minutes: 5));
+    final availableTo = now.add(const Duration(hours: 12));
+    final pickupFrom = now.add(const Duration(minutes: 20));
+    final pickupTo = now.add(const Duration(hours: 12));
+
+    var published = 0;
+    var skippedSoldOut = 0;
+    var skippedNoStock = 0;
+
+    for (final m in meals) {
+      if (m.status == CookMealStatus.soldOut) {
+        skippedSoldOut++;
+        continue;
+      }
+      if (m.stock <= 0) {
+        skippedNoStock++;
+        continue;
+      }
+      final ff = _fulfillmentFlags(m.fulfillmentType);
+
+      if (m.publicationId != null) {
+        await repo.updatePublication(
+          m.publicationId!,
+          status: 'PUBLISHED',
+          priceCop: m.priceCop,
+          stockTotal: m.stock,
+          stockAvailable: m.stock,
+        );
+      } else {
+        await repo.update(
+          m.id,
+          title: m.title,
+          description: m.description.isEmpty ? null : m.description,
+          basePriceCop: m.priceCop,
+          tags: m.ingredients,
+          photoUrl: null,
+        );
+        await repo.publish(
+          m.id,
+          priceCop: m.priceCop,
+          stockTotal: m.stock,
+          availableFrom: availableFrom,
+          availableTo: availableTo,
+          pickupFrom: pickupFrom,
+          pickupTo: pickupTo,
+          deliveryEnabled: ff.delivery,
+          pickupEnabled: ff.pickup,
+          deliveryZoneId: null,
+          status: 'PUBLISHED',
+        );
+      }
+      published++;
+    }
+    await refresh();
+    return (
+      published: published,
+      skippedSoldOut: skippedSoldOut,
+      skippedNoStock: skippedNoStock,
+    );
+  }
+
+  /// Pausar ofertas existentes (omite platos sin publicación).
+  Future<({int paused, int skippedNoPublication})> bulkPause(
+    List<CookMeal> meals,
+  ) async {
+    final repo = ref.read(cookMealsRepositoryProvider);
+    var paused = 0;
+    var skippedNoPublication = 0;
+    for (final m in meals) {
+      if (m.publicationId == null) {
+        skippedNoPublication++;
+        continue;
+      }
+      await repo.updatePublication(m.publicationId!, status: 'PAUSED');
+      paused++;
+    }
+    await refresh();
+    return (paused: paused, skippedNoPublication: skippedNoPublication);
+  }
+
+  Future<void> bulkDelete(List<String> ids) async {
+    final repo = ref.read(cookMealsRepositoryProvider);
+    for (final id in ids) {
+      await repo.delete(id);
+    }
     await refresh();
   }
 

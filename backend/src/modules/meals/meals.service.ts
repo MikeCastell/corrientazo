@@ -1,4 +1,4 @@
-import { Injectable } from "@nestjs/common";
+import { Injectable, ServiceUnavailableException } from "@nestjs/common";
 
 import { PrismaService } from "../../database/prisma/prisma.service";
 import { DomainError } from "../../common/errors/domain-errors";
@@ -270,33 +270,46 @@ export class MealsService {
       });
     }
 
-    return this.prisma.meal_publications.create({
-      data: {
-        meal_id: meal.id,
-        cook_profile_id: cook.id,
-        price_cop: dto.priceCop,
-        stock_total: dto.stockTotal,
-        stock_available: dto.stockTotal,
-        available_from: new Date(dto.availableFrom),
-        available_to: new Date(dto.availableTo),
-        pickup_from: new Date(dto.pickupFrom),
-        pickup_to: new Date(dto.pickupTo),
-        delivery_enabled: deliveryEnabled,
-        pickup_enabled: pickupEnabled,
-        delivery_zone_id: dto.deliveryZoneId ?? null,
-        status: dto.status ?? "PUBLISHED",
-      },
-      select: {
-        id: true,
-        meal_id: true,
-        cook_profile_id: true,
-        price_cop: true,
-        stock_total: true,
-        stock_available: true,
-        status: true,
-        created_at: true,
-      },
-    });
+    try {
+      return await this.prisma.meal_publications.create({
+        data: {
+          meal_id: meal.id,
+          cook_profile_id: cook.id,
+          price_cop: dto.priceCop,
+          stock_total: dto.stockTotal,
+          stock_available: dto.stockTotal,
+          available_from: new Date(dto.availableFrom),
+          available_to: new Date(dto.availableTo),
+          pickup_from: new Date(dto.pickupFrom),
+          pickup_to: new Date(dto.pickupTo),
+          delivery_enabled: deliveryEnabled,
+          pickup_enabled: pickupEnabled,
+          delivery_zone_id: dto.deliveryZoneId ?? null,
+          status: dto.status ?? "PUBLISHED",
+        },
+        select: {
+          id: true,
+          meal_id: true,
+          cook_profile_id: true,
+          price_cop: true,
+          stock_total: true,
+          stock_available: true,
+          delivery_enabled: true,
+          pickup_enabled: true,
+          status: true,
+          created_at: true,
+        },
+      });
+    } catch (e: unknown) {
+      const msg = e instanceof Error ? e.message : String(e);
+      // Postgres sin migración 20260510120000 / columna pickup_enabled
+      if (/pickup_enabled/i.test(msg)) {
+        throw new ServiceUnavailableException(
+          "La base de datos necesita migraciones: en el servidor ejecuta `npx prisma migrate deploy` (columna pickup_enabled en meal_publications).",
+        );
+      }
+      throw e;
+    }
   }
 
   async listCookPublications(cookUserId: string) {

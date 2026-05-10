@@ -13,20 +13,272 @@ import '../../../core/ui/states/app_loading_center.dart';
 import '../application/cook_meals_controller.dart';
 import '../domain/cook_meal.dart';
 
-class CookMealsScreen extends ConsumerWidget {
+class CookMealsScreen extends ConsumerStatefulWidget {
   const CookMealsScreen({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<CookMealsScreen> createState() => _CookMealsScreenState();
+}
+
+class _CookMealsScreenState extends ConsumerState<CookMealsScreen> {
+  bool _selecting = false;
+  final Set<String> _selected = {};
+
+  void _exitSelection() {
+    setState(() {
+      _selecting = false;
+      _selected.clear();
+    });
+  }
+
+  void _toggleSelected(String id) {
+    HapticFeedback.selectionClick();
+    setState(() {
+      if (_selected.contains(id)) {
+        _selected.remove(id);
+      } else {
+        _selected.add(id);
+      }
+    });
+  }
+
+  List<CookMeal> _picked(List<CookMeal> items) =>
+      items.where((m) => _selected.contains(m.id)).toList();
+
+  Future<void> _bulkPublish(List<CookMeal> items) async {
+    final picked = _picked(items);
+    if (picked.isEmpty) return;
+    final messenger = ScaffoldMessenger.of(context);
+    final nav = Navigator.of(context, rootNavigator: true);
+    showDialog<void>(
+      context: context,
+      barrierDismissible: false,
+      builder: (ctx) => const AlertDialog(
+        content: Row(
+          children: [
+            SizedBox(
+              width: 28,
+              height: 28,
+              child: CircularProgressIndicator(strokeWidth: 2.5),
+            ),
+            SizedBox(width: AppSpacing.md),
+            Expanded(child: Text('Publicando…')),
+          ],
+        ),
+      ),
+    );
+    try {
+      final r =
+          await ref.read(cookMealsControllerProvider.notifier).bulkPublish(picked);
+      if (!mounted) return;
+      nav.pop();
+      _exitSelection();
+      final extra = <String>[];
+      if (r.skippedSoldOut > 0) {
+        extra.add('${r.skippedSoldOut} agotados');
+      }
+      if (r.skippedNoStock > 0) {
+        extra.add('${r.skippedNoStock} sin stock');
+      }
+      messenger.showSnackBar(
+        SnackBar(
+          content: Text(
+            extra.isEmpty
+                ? 'Publicados: ${r.published}'
+                : 'Publicados: ${r.published} · Omitidos: ${extra.join(', ')}',
+          ),
+          behavior: SnackBarBehavior.floating,
+          duration: const Duration(milliseconds: 2200),
+          margin: const EdgeInsets.fromLTRB(12, 0, 12, 12),
+        ),
+      );
+    } catch (e) {
+      if (mounted) nav.pop();
+      if (!mounted) return;
+      messenger.showSnackBar(
+        SnackBar(
+          content: Text('No pudimos publicar en masa. ($e)'),
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+    }
+  }
+
+  Future<void> _bulkPause(List<CookMeal> items) async {
+    final picked = _picked(items);
+    if (picked.isEmpty) return;
+    final messenger = ScaffoldMessenger.of(context);
+    final nav = Navigator.of(context, rootNavigator: true);
+    showDialog<void>(
+      context: context,
+      barrierDismissible: false,
+      builder: (ctx) => const AlertDialog(
+        content: Row(
+          children: [
+            SizedBox(
+              width: 28,
+              height: 28,
+              child: CircularProgressIndicator(strokeWidth: 2.5),
+            ),
+            SizedBox(width: AppSpacing.md),
+            Expanded(child: Text('Pausando…')),
+          ],
+        ),
+      ),
+    );
+    try {
+      final r =
+          await ref.read(cookMealsControllerProvider.notifier).bulkPause(picked);
+      if (!mounted) return;
+      nav.pop();
+      _exitSelection();
+      messenger.showSnackBar(
+        SnackBar(
+          content: Text(
+            r.skippedNoPublication > 0
+                ? 'Pausados: ${r.paused} · Sin oferta previa: ${r.skippedNoPublication}'
+                : 'Pausados: ${r.paused}',
+          ),
+          behavior: SnackBarBehavior.floating,
+          duration: const Duration(milliseconds: 2200),
+          margin: const EdgeInsets.fromLTRB(12, 0, 12, 12),
+        ),
+      );
+    } catch (e) {
+      if (mounted) nav.pop();
+      if (!mounted) return;
+      messenger.showSnackBar(
+        SnackBar(
+          content: Text('No pudimos pausar en masa. ($e)'),
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+    }
+  }
+
+  Future<void> _bulkDelete(List<CookMeal> items) async {
+    final picked = _picked(items);
+    if (picked.isEmpty) return;
+    final confirmed = await _confirmBulkDelete(context, count: picked.length);
+    if (confirmed != true || !mounted) return;
+
+    final messenger = ScaffoldMessenger.of(context);
+    final nav = Navigator.of(context, rootNavigator: true);
+    showDialog<void>(
+      context: context,
+      barrierDismissible: false,
+      builder: (ctx) => AlertDialog(
+        content: Row(
+          children: [
+            const SizedBox(
+              width: 28,
+              height: 28,
+              child: CircularProgressIndicator(strokeWidth: 2.5),
+            ),
+            const SizedBox(width: AppSpacing.md),
+            Expanded(
+              child: Text(
+                'Eliminando ${picked.length} platos…',
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+    try {
+      await ref.read(cookMealsControllerProvider.notifier).bulkDelete(
+            picked.map((m) => m.id).toList(),
+          );
+      if (!mounted) return;
+      nav.pop();
+      _exitSelection();
+      messenger.showSnackBar(
+        SnackBar(
+          content: Text(
+            picked.length == 1
+                ? 'Eliminado: «${picked.first.title}»'
+                : '${picked.length} platos eliminados',
+          ),
+          behavior: SnackBarBehavior.floating,
+          duration: const Duration(milliseconds: 1600),
+          dismissDirection: DismissDirection.horizontal,
+          margin: const EdgeInsets.fromLTRB(12, 0, 12, 12),
+        ),
+      );
+    } catch (e) {
+      if (mounted) nav.pop();
+      if (!mounted) return;
+      messenger.showSnackBar(
+        SnackBar(
+          content: Text('No pudimos eliminar todo. ($e)'),
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final meals = ref.watch(cookMealsControllerProvider);
+    final hasPlates =
+        meals.maybeWhen(data: (l) => l.isNotEmpty, orElse: () => false);
 
     return AppScaffold(
-      title: 'Platos',
-      trailing: IconButton(
-        tooltip: 'Crear',
-        onPressed: () => context.go(const CookCreateMealRoute().location),
-        icon: const Icon(Icons.add_circle_outline),
+      title: _selecting ? '${_selected.length} seleccionados' : 'Platos',
+      trailing: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          if (hasPlates)
+            IconButton(
+              tooltip: _selecting ? 'Cerrar selección' : 'Seleccionar varios',
+              onPressed: () {
+                HapticFeedback.selectionClick();
+                setState(() {
+                  _selecting = !_selecting;
+                  if (!_selecting) _selected.clear();
+                });
+              },
+              icon: Icon(_selecting ? Icons.close : Icons.checklist_outlined),
+            ),
+          if (!_selecting)
+            IconButton(
+              tooltip: 'Crear',
+              onPressed: () => context.go(const CookCreateMealRoute().location),
+              icon: const Icon(Icons.add_circle_outline),
+            ),
+        ],
       ),
+      bottomNavigationBar: _selecting && hasPlates
+          ? _BulkActionsBar(
+              selectedCount: _selected.length,
+              totalCount: meals.maybeWhen(
+                data: (l) => l.length,
+                orElse: () => 0,
+              ),
+              onSelectAll: () {
+                final list = meals.maybeWhen(
+                  data: (l) => l,
+                  orElse: () => <CookMeal>[],
+                );
+                setState(() => _selected
+                  ..clear()
+                  ..addAll(list.map((e) => e.id)));
+              },
+              onClearSelection: () => setState(_selected.clear),
+              onPublish: () => meals.maybeWhen(
+                    data: _bulkPublish,
+                    orElse: () {},
+                  ),
+              onPause: () => meals.maybeWhen(
+                    data: _bulkPause,
+                    orElse: () {},
+                  ),
+              onDelete: () => meals.maybeWhen(
+                    data: _bulkDelete,
+                    orElse: () {},
+                  ),
+            )
+          : null,
       body: meals.when(
         loading: () => const AppLoadingCenter(message: 'Trayendo tus platos…'),
         error: (e, _) => AppEmptyState(
@@ -58,16 +310,24 @@ class CookMealsScreen extends ConsumerWidget {
             onRefresh: () async =>
                 ref.read(cookMealsControllerProvider.notifier).refresh(),
             child: ListView.separated(
-              padding: const EdgeInsets.all(AppSpacing.md),
+              padding: EdgeInsets.fromLTRB(
+                AppSpacing.md,
+                AppSpacing.md,
+                AppSpacing.md,
+                _selecting ? 120 : AppSpacing.md,
+              ),
               itemCount: items.length,
               separatorBuilder: (context, index) =>
                   const SizedBox(height: AppSpacing.sm),
               itemBuilder: (context, i) => _CookMealCard(
                 meal: items[i],
+                selectionMode: _selecting,
+                selected: _selected.contains(items[i].id),
+                onToggleSelect: () => _toggleSelected(items[i].id),
                 onAction: (action) async {
                   if (action == _CookMealAction.edit) {
                     context.go(
-                      '${const CookCreateMealRoute().location}?edit=${items[i].id}',
+                      CookCreateMealFormRoute.location(editMealId: items[i].id),
                     );
                     return;
                   }
@@ -87,7 +347,6 @@ class CookMealsScreen extends ConsumerWidget {
                       return;
                     }
 
-                    // Immediate feedback so we know the tap reached this handler.
                     if (!context.mounted) return;
                     ScaffoldMessenger.of(context).showSnackBar(
                       SnackBar(
@@ -154,12 +413,145 @@ class CookMealsScreen extends ConsumerWidget {
   }
 }
 
+class _BulkActionsBar extends StatelessWidget {
+  const _BulkActionsBar({
+    required this.selectedCount,
+    required this.totalCount,
+    required this.onSelectAll,
+    required this.onClearSelection,
+    required this.onPublish,
+    required this.onPause,
+    required this.onDelete,
+  });
+
+  final int selectedCount;
+  final int totalCount;
+  final VoidCallback onSelectAll;
+  final VoidCallback onClearSelection;
+  final VoidCallback onPublish;
+  final VoidCallback onPause;
+  final VoidCallback onDelete;
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    return Material(
+      elevation: 16,
+      color: scheme.surface,
+      shadowColor: Colors.black.withValues(alpha: 0.2),
+      child: SafeArea(
+        top: false,
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(12, 10, 12, 12),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Row(
+                children: [
+                  Flexible(
+                    child: Text(
+                      '$selectedCount de $totalCount',
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                            fontWeight: FontWeight.w900,
+                          ),
+                    ),
+                  ),
+                  TextButton(
+                    style: TextButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(horizontal: 8),
+                      minimumSize: Size.zero,
+                      tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                    ),
+                    onPressed:
+                        selectedCount >= totalCount ? null : onSelectAll,
+                    child: const Text('Todos'),
+                  ),
+                  TextButton(
+                    style: TextButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(horizontal: 8),
+                      minimumSize: Size.zero,
+                      tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                    ),
+                    onPressed: selectedCount == 0 ? null : onClearSelection,
+                    child: const Text('Ninguno'),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 10),
+              Row(
+                children: [
+                  Expanded(
+                    child: Tooltip(
+                      message: 'Publicar seleccionados',
+                      child: FilledButton.tonal(
+                        onPressed:
+                            selectedCount == 0 ? null : onPublish,
+                        style: FilledButton.styleFrom(
+                          padding: const EdgeInsets.symmetric(vertical: 14),
+                        ),
+                        child: const Icon(Icons.publish_outlined, size: 22),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Tooltip(
+                      message: 'Pausar seleccionados',
+                      child: FilledButton.tonal(
+                        onPressed:
+                            selectedCount == 0 ? null : onPause,
+                        style: FilledButton.styleFrom(
+                          padding: const EdgeInsets.symmetric(vertical: 14),
+                        ),
+                        child:
+                            const Icon(Icons.pause_circle_outline, size: 22),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Tooltip(
+                      message: 'Eliminar seleccionados',
+                      child: FilledButton(
+                        style: FilledButton.styleFrom(
+                          backgroundColor: AppColors.danger,
+                          foregroundColor: Colors.white,
+                          padding: const EdgeInsets.symmetric(vertical: 14),
+                        ),
+                        onPressed:
+                            selectedCount == 0 ? null : onDelete,
+                        child: const Icon(Icons.delete_outline, size: 22),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
 enum _CookMealAction { edit, toggleActive, delete }
 
 class _CookMealCard extends StatelessWidget {
-  const _CookMealCard({required this.meal, required this.onAction});
+  const _CookMealCard({
+    required this.meal,
+    required this.selectionMode,
+    required this.selected,
+    required this.onToggleSelect,
+    required this.onAction,
+  });
 
   final CookMeal meal;
+  final bool selectionMode;
+  final bool selected;
+  final VoidCallback onToggleSelect;
   final ValueChanged<_CookMealAction> onAction;
 
   @override
@@ -169,126 +561,165 @@ class _CookMealCard extends StatelessWidget {
     final tone = isSoldOut
         ? AppColors.warning
         : isAvailable
-        ? AppColors.secondary
-        : AppColors.accentDeep;
+            ? AppColors.secondary
+            : AppColors.accentDeep;
     final statusLabel = isSoldOut
         ? 'Agotado'
         : isAvailable
-        ? 'Disponible'
-        : 'Pausado';
+            ? 'Disponible'
+            : 'Pausado';
+
+    final surface = Theme.of(context).colorScheme.surface;
 
     return Container(
       padding: const EdgeInsets.all(AppSpacing.md),
       decoration: BoxDecoration(
-        color: Theme.of(context).colorScheme.surface,
+        color: selected
+            ? AppColors.primary.withValues(alpha: 0.08)
+            : surface,
         borderRadius: BorderRadius.circular(AppRadius.lg),
-        border: Border.all(color: Theme.of(context).dividerColor),
+        border: Border.all(
+          color: selected
+              ? AppColors.primary.withValues(alpha: 0.35)
+              : Theme.of(context).dividerColor,
+          width: selected ? 1.5 : 1,
+        ),
       ),
       child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Container(
-            width: 56,
-            height: 56,
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-                colors: [
-                  AppColors.primary.withValues(alpha: 0.18),
-                  AppColors.accent.withValues(alpha: 0.14),
-                  AppColors.secondary.withValues(alpha: 0.14),
-                ],
+          if (selectionMode)
+            Padding(
+              padding: const EdgeInsets.only(right: AppSpacing.sm),
+              child: Checkbox(
+                value: selected,
+                onChanged: (_) => onToggleSelect(),
               ),
-              borderRadius: BorderRadius.circular(AppRadius.lg),
-              border: Border.all(color: AppColors.border),
             ),
-            child: const Icon(Icons.restaurant, color: Colors.white),
-          ),
-          const SizedBox(width: AppSpacing.sm),
           Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  meal.title,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                    fontWeight: FontWeight.w900,
-                  ),
-                ),
-                const SizedBox(height: 2),
-                Text(
-                  'Stock: ${meal.stock} · ${meal.fulfillmentType}',
-                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                    color: Theme.of(
-                      context,
-                    ).colorScheme.onSurface.withValues(alpha: 0.65),
-                  ),
-                ),
-                const SizedBox(height: AppSpacing.xs),
-                Row(
+            child: Material(
+              color: Colors.transparent,
+              child: InkWell(
+                onTap: selectionMode ? onToggleSelect : null,
+                borderRadius: BorderRadius.circular(AppRadius.md),
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    _StatusPill(label: statusLabel, tone: tone),
-                    const SizedBox(width: 8),
-                    _StatusPill(
-                      label: '\$${meal.priceCop}',
-                      tone: AppColors.primary,
+                    Container(
+                      width: 56,
+                      height: 56,
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
+                          colors: [
+                            AppColors.primary.withValues(alpha: 0.18),
+                            AppColors.accent.withValues(alpha: 0.14),
+                            AppColors.secondary.withValues(alpha: 0.14),
+                          ],
+                        ),
+                        borderRadius: BorderRadius.circular(AppRadius.lg),
+                        border: Border.all(color: AppColors.border),
+                      ),
+                      child: const Icon(Icons.restaurant, color: Colors.white),
+                    ),
+                    const SizedBox(width: AppSpacing.sm),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            meal.title,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: Theme.of(context)
+                                .textTheme
+                                .titleMedium
+                                ?.copyWith(
+                                  fontWeight: FontWeight.w900,
+                                ),
+                          ),
+                          const SizedBox(height: 2),
+                          Text(
+                            'Stock: ${meal.stock} · ${meal.fulfillmentType}',
+                            style: Theme.of(context)
+                                .textTheme
+                                .bodyMedium
+                                ?.copyWith(
+                                  color: Theme.of(context)
+                                      .colorScheme
+                                      .onSurface
+                                      .withValues(alpha: 0.65),
+                                ),
+                          ),
+                          const SizedBox(height: AppSpacing.xs),
+                          Row(
+                            children: [
+                              _StatusPill(label: statusLabel, tone: tone),
+                              const SizedBox(width: 8),
+                              _StatusPill(
+                                label: '\$${meal.priceCop}',
+                                tone: AppColors.primary,
+                              ),
+                            ],
+                          ),
+                        ],
+                      ),
                     ),
                   ],
                 ),
-              ],
+              ),
             ),
           ),
-          const SizedBox(width: AppSpacing.sm),
-          Column(
-            children: [
-              PopupMenuButton<_CookMealAction>(
-                tooltip: 'Opciones',
-                onSelected: onAction,
-                itemBuilder: (context) => [
-                  const PopupMenuItem(
-                    value: _CookMealAction.edit,
-                    child: _MenuRow(icon: Icons.edit_outlined, label: 'Editar'),
-                  ),
-                  PopupMenuItem(
-                    value: _CookMealAction.toggleActive,
-                    enabled: !isSoldOut,
-                    child: _MenuRow(
-                      icon: isAvailable
-                          ? Icons.pause_circle_outline
-                          : Icons.play_circle_outline,
-                      label: isAvailable ? 'Pausar' : 'Activar',
-                    ),
-                  ),
-                  const PopupMenuDivider(),
-                  const PopupMenuItem(
-                    value: _CookMealAction.delete,
-                    child: _MenuRow(
-                      icon: Icons.delete_outline,
-                      label: 'Eliminar…',
-                      tone: AppColors.danger,
-                    ),
-                  ),
-                ],
-                child: Container(
-                  width: 44,
-                  height: 44,
-                  decoration: BoxDecoration(
-                    color: Theme.of(context).colorScheme.surface,
-                    borderRadius: BorderRadius.circular(14),
-                    border: Border.all(color: Theme.of(context).dividerColor),
-                  ),
-                  child: Icon(
-                    Icons.more_horiz_rounded,
-                    color: Theme.of(
-                      context,
-                    ).colorScheme.onSurface.withValues(alpha: 0.75),
+          if (!selectionMode) ...[
+            const SizedBox(width: AppSpacing.sm),
+            PopupMenuButton<_CookMealAction>(
+              tooltip: 'Opciones',
+              onSelected: onAction,
+              itemBuilder: (context) => [
+                const PopupMenuItem(
+                  value: _CookMealAction.edit,
+                  child:
+                      _MenuRow(icon: Icons.edit_outlined, label: 'Editar'),
+                ),
+                PopupMenuItem(
+                  value: _CookMealAction.toggleActive,
+                  enabled: !isSoldOut,
+                  child: _MenuRow(
+                    icon: isAvailable
+                        ? Icons.pause_circle_outline
+                        : Icons.play_circle_outline,
+                    label: isAvailable ? 'Pausar' : 'Activar',
                   ),
                 ),
+                const PopupMenuDivider(),
+                const PopupMenuItem(
+                  value: _CookMealAction.delete,
+                  child: _MenuRow(
+                    icon: Icons.delete_outline,
+                    label: 'Eliminar…',
+                    tone: AppColors.danger,
+                  ),
+                ),
+              ],
+              child: Container(
+                width: 44,
+                height: 44,
+                decoration: BoxDecoration(
+                  color: surface,
+                  borderRadius: BorderRadius.circular(14),
+                  border: Border.all(color: Theme.of(context).dividerColor),
+                ),
+                child: Icon(
+                  Icons.more_horiz_rounded,
+                  color: Theme.of(context)
+                      .colorScheme
+                      .onSurface
+                      .withValues(alpha: 0.75),
+                ),
               ),
-            ],
-          ),
+            ),
+          ],
         ],
       ),
     );
@@ -344,6 +775,111 @@ class _StatusPill extends StatelessWidget {
       ),
     );
   }
+}
+
+Future<bool?> _confirmBulkDelete(
+  BuildContext context, {
+  required int count,
+}) {
+  return showModalBottomSheet<bool>(
+    context: context,
+    backgroundColor: Colors.transparent,
+    isScrollControlled: true,
+    builder: (context) {
+      final isDark = Theme.of(context).brightness == Brightness.dark;
+      final surface = (isDark ? AppColors.surfaceDark : AppColors.surface)
+          .withValues(alpha: 0.96);
+
+      return Padding(
+        padding: const EdgeInsets.all(AppSpacing.md),
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(AppRadius.xl),
+          child: Container(
+            decoration: BoxDecoration(
+              color: surface,
+              borderRadius: BorderRadius.circular(AppRadius.xl),
+              border: Border.all(
+                color: isDark ? AppColors.borderDark : AppColors.border,
+              ),
+            ),
+            child: Padding(
+              padding: const EdgeInsets.all(AppSpacing.md),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Container(
+                        width: 44,
+                        height: 44,
+                        decoration: BoxDecoration(
+                          color: AppColors.danger.withValues(alpha: 0.10),
+                          borderRadius: BorderRadius.circular(14),
+                          border: Border.all(
+                            color: AppColors.danger.withValues(alpha: 0.18),
+                          ),
+                        ),
+                        child: const Icon(
+                          Icons.delete_outline,
+                          color: AppColors.danger,
+                        ),
+                      ),
+                      const SizedBox(width: AppSpacing.sm),
+                      Expanded(
+                        child: Text(
+                          'Eliminar varios platos',
+                          style:
+                              Theme.of(context).textTheme.titleLarge?.copyWith(
+                                    fontWeight: FontWeight.w900,
+                                    letterSpacing: -0.2,
+                                  ),
+                        ),
+                      ),
+                      IconButton(
+                        onPressed: () => Navigator.of(context).pop(false),
+                        icon: const Icon(Icons.close),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: AppSpacing.sm),
+                  Text(
+                    '¿Eliminar $count platos seleccionados? '
+                    'Esta acción no se puede deshacer.',
+                    style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                          height: 1.30,
+                        ),
+                  ),
+                  const SizedBox(height: AppSpacing.md),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: OutlinedButton(
+                          onPressed: () => Navigator.of(context).pop(false),
+                          child: const Text('Cancelar'),
+                        ),
+                      ),
+                      const SizedBox(width: AppSpacing.sm),
+                      Expanded(
+                        child: FilledButton(
+                          style: FilledButton.styleFrom(
+                            backgroundColor: AppColors.danger,
+                            foregroundColor: Colors.white,
+                          ),
+                          onPressed: () => Navigator.of(context).pop(true),
+                          child: const Text('Eliminar todos'),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      );
+    },
+  );
 }
 
 Future<bool?> _confirmDeleteMeal(
@@ -506,8 +1042,11 @@ Future<void> _runDelete(
           HapticFeedback.selectionClick();
           messenger.showSnackBar(
             SnackBar(
-              content: Text('Plato eliminado: “$title”'),
+              content: Text('Eliminado: “$title”'),
               behavior: SnackBarBehavior.floating,
+              duration: const Duration(milliseconds: 1600),
+              dismissDirection: DismissDirection.horizontal,
+              margin: const EdgeInsets.fromLTRB(12, 0, 12, 12),
             ),
           );
         } catch (e) {
@@ -519,6 +1058,9 @@ Future<void> _runDelete(
                 'No pudimos eliminar el plato. Intenta de nuevo. ($e)',
               ),
               behavior: SnackBarBehavior.floating,
+              duration: const Duration(seconds: 4),
+              dismissDirection: DismissDirection.horizontal,
+              margin: const EdgeInsets.fromLTRB(12, 0, 12, 12),
             ),
           );
         }

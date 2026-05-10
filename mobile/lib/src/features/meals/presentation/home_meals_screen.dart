@@ -15,6 +15,7 @@ import '../../../core/food/colombian_food_mock.dart';
 import '../../../core/ui/marketplace/food_image.dart';
 import '../../../core/ui/marketplace/meal_card_premium.dart';
 import '../application/meals_controller.dart';
+import '../application/customer_home_category.dart';
 import '../domain/meal_publication.dart';
 import '../../customer/application/customer_orders_controller.dart';
 import '../../customer/presentation/widgets/customer_welcome_banner.dart';
@@ -108,8 +109,56 @@ class HomeMealsScreen extends ConsumerWidget {
                   ];
                 }
 
+                final category = ref.watch(customerHomeCategoryProvider);
+                final filtered =
+                    mealsForCustomerCategory(items, category);
+
+                if (filtered.isEmpty) {
+                  return <Widget>[
+                    SliverToBoxAdapter(
+                      child: Builder(
+                        builder: (context) {
+                          final viewH = MediaQuery.sizeOf(context).height;
+                          final minH = (viewH - 240).clamp(220.0, 720.0);
+                          final isPostres =
+                              category == CustomerHomeCategory.postres;
+                          return SizedBox(
+                            width: double.infinity,
+                            height: minH,
+                            child: AppEmptyState(
+                              icon: isPostres
+                                  ? Icons.icecream_outlined
+                                  : Icons.restaurant_outlined,
+                              title: isPostres
+                                  ? 'No hay postres publicados'
+                                  : 'No hay corrientazos en esta categoría',
+                              subtitle: isPostres
+                                  ? 'Prueba Corrientazos o vuelve más tarde. '
+                                      'Si publicas un postre, usa palabras como '
+                                      '«postre», «torta» o «dulce» en el nombre o etiquetas.'
+                                  : 'Hoy puede que solo haya postres: elige la categoría Postres arriba.',
+                              actionLabel: 'Actualizar lista',
+                              onAction: () => ref.refresh(mealsFeedProvider),
+                            ),
+                          );
+                        },
+                      ),
+                    ),
+                  ];
+                }
+
+                final heading = switch (category) {
+                  null => 'Explora el menú',
+                  CustomerHomeCategory.postres => 'Postres',
+                  CustomerHomeCategory.corrientazos => 'Corrientazos',
+                };
+                final sectionSubtitle = category == null
+                    ? 'Filtra con Corrientazos o Postres cuando quieras.'
+                    : 'Solo opciones disponibles para pedir ahora.';
+
                 return <Widget>[
-                  SliverToBoxAdapter(child: _FeaturedStrip(items: items)),
+                  if (category == null)
+                    SliverToBoxAdapter(child: _FeaturedStrip(items: filtered)),
                   SliverToBoxAdapter(
                     child: Padding(
                       padding: const EdgeInsets.fromLTRB(
@@ -119,15 +168,37 @@ class HomeMealsScreen extends ConsumerWidget {
                         AppSpacing.sm,
                       ),
                       child: Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Expanded(
-                            child: Text(
-                              'Platos del día',
-                              style: Theme.of(context).textTheme.titleLarge
-                                  ?.copyWith(
-                                    fontWeight: FontWeight.w900,
-                                    letterSpacing: -0.4,
-                                  ),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  heading,
+                                  style: Theme.of(context)
+                                      .textTheme
+                                      .titleLarge
+                                      ?.copyWith(
+                                        fontWeight: FontWeight.w900,
+                                        letterSpacing: -0.4,
+                                      ),
+                                ),
+                                const SizedBox(height: 4),
+                                Text(
+                                  sectionSubtitle,
+                                  style: Theme.of(context)
+                                      .textTheme
+                                      .bodySmall
+                                      ?.copyWith(
+                                        color: Theme.of(context)
+                                            .colorScheme
+                                            .onSurface
+                                            .withValues(alpha: 0.58),
+                                        height: 1.3,
+                                      ),
+                                ),
+                              ],
                             ),
                           ),
                           TextButton(
@@ -164,25 +235,26 @@ class HomeMealsScreen extends ConsumerWidget {
                       AppSpacing.xxl,
                     ),
                     sliver: SliverList.separated(
-                      itemCount: items.length,
+                      itemCount: filtered.length,
                       separatorBuilder: (context, index) =>
                           const SizedBox(height: AppSpacing.lg),
                       itemBuilder: (context, i) => MealCardPremium(
-                        key: ValueKey('feed-${items[i].id}'),
-                        id: items[i].id,
-                        mealId: items[i].mealId,
-                        priceCop: items[i].priceCop,
-                        stockAvailable: items[i].stockAvailable,
-                        title: items[i].title,
-                        description: items[i].description,
-                        tags: items[i].tags,
-                        photoUrl: items[i].photoUrl,
-                        cookName: items[i].cookName,
-                        cookAvatarUrl: items[i].cookAvatarUrl,
-                        cookBio: items[i].cookBio,
-                        fulfillmentLabel: items[i].fulfillmentCustomerLabel,
+                        key: ValueKey('feed-${filtered[i].id}'),
+                        id: filtered[i].id,
+                        mealId: filtered[i].mealId,
+                        priceCop: filtered[i].priceCop,
+                        stockAvailable: filtered[i].stockAvailable,
+                        title: filtered[i].title,
+                        description: filtered[i].description,
+                        tags: filtered[i].tags,
+                        photoUrl: filtered[i].photoUrl,
+                        cookName: filtered[i].cookName,
+                        cookAvatarUrl: filtered[i].cookAvatarUrl,
+                        cookBio: filtered[i].cookBio,
+                        fulfillmentLabel:
+                            filtered[i].fulfillmentCustomerLabel,
                         onTap: () => context.go(
-                          '${const HomeRoute().location}/meals/${items[i].id}',
+                          '${const HomeRoute().location}/meals/${filtered[i].id}',
                         ),
                       ),
                     ),
@@ -453,7 +525,7 @@ class _EditorialHeader extends StatelessWidget {
             ),
             const SizedBox(height: AppSpacing.lg),
             _SearchBarPremium(
-              placeholder: 'Busca corrientazos, sopas, bandejas…',
+              placeholder: 'Busca corrientazos o postres…',
               onTap: () {
                 ScaffoldMessenger.of(context).showSnackBar(
                   const SnackBar(
@@ -801,33 +873,25 @@ String _formatCop(int value) {
   return '\$${b.toString()}';
 }
 
-class _EditorialCategories extends StatefulWidget {
+class _EditorialCategories extends ConsumerWidget {
   const _EditorialCategories();
 
   static const _items = <_CategoryItem>[
-    _CategoryItem('Corrientazos', Icons.restaurant),
-    _CategoryItem('Sopas', Icons.soup_kitchen),
-    _CategoryItem('Arepas', Icons.breakfast_dining),
-    _CategoryItem('Fritos', Icons.bakery_dining),
-    _CategoryItem('Jugos', Icons.local_drink),
-    _CategoryItem('Ejecutivos', Icons.lunch_dining),
+    _CategoryItem(
+      CustomerHomeCategory.corrientazos,
+      'Corrientazos',
+      Icons.restaurant,
+    ),
+    _CategoryItem(
+      CustomerHomeCategory.postres,
+      'Postres',
+      Icons.icecream_outlined,
+    ),
   ];
 
   @override
-  State<_EditorialCategories> createState() => _EditorialCategoriesState();
-}
-
-class _EditorialCategoriesState extends State<_EditorialCategories> {
-  int _active = 0;
-
-  void _select(int index) {
-    if (_active == index) return;
-    HapticFeedback.selectionClick();
-    setState(() => _active = index);
-  }
-
-  @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final selected = ref.watch(customerHomeCategoryProvider);
     return Padding(
       padding: const EdgeInsets.fromLTRB(
         AppSpacing.lg,
@@ -839,17 +903,23 @@ class _EditorialCategoriesState extends State<_EditorialCategories> {
         height: 96,
         child: ListView.separated(
           scrollDirection: Axis.horizontal,
-          itemCount: _EditorialCategories._items.length,
+          itemCount: _items.length,
           separatorBuilder: (context, index) =>
               const SizedBox(width: AppSpacing.sm),
           itemBuilder: (context, index) {
-            final item = _EditorialCategories._items[index];
-            final active = index == _active;
+            final item = _items[index];
+            final active = selected == item.category;
             return _CategoryCircle(
               label: item.label,
               icon: item.icon,
               active: active,
-              onTap: () => _select(index),
+              onTap: () {
+                if (active) return;
+                HapticFeedback.selectionClick();
+                ref
+                    .read(customerHomeCategoryProvider.notifier)
+                    .select(item.category);
+              },
             );
           },
         ),
@@ -859,8 +929,9 @@ class _EditorialCategoriesState extends State<_EditorialCategories> {
 }
 
 class _CategoryItem {
-  const _CategoryItem(this.label, this.icon);
+  const _CategoryItem(this.category, this.label, this.icon);
 
+  final CustomerHomeCategory category;
   final String label;
   final IconData icon;
 }

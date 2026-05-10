@@ -109,6 +109,10 @@ class MealDetailScreen extends ConsumerWidget {
                               _EditorialTagPill(label: t),
                           if (tagList.isEmpty)
                             const _EditorialTagPill(label: 'Casero'),
+                          _EditorialTagPill(
+                            label: item.fulfillmentCustomerLabel,
+                            tone: AppColors.accentDeep,
+                          ),
                           const _EditorialTagPill(label: 'Recién hecho'),
                         ],
                       ),
@@ -1143,14 +1147,21 @@ class _OrderSheet extends ConsumerStatefulWidget {
 
 class _OrderSheetState extends ConsumerState<_OrderSheet> {
   late String _fulfillment;
+  int _quantity = 1;
   bool _loading = false;
   ApiException? _error;
+
+  int get _maxQty {
+    final s = widget.publication.stockAvailable;
+    return s < 1 ? 1 : s;
+  }
 
   @override
   void initState() {
     super.initState();
     final p = widget.publication;
     _fulfillment = p.defaultFulfillmentForOrder;
+    _quantity = 1;
   }
 
   Future<void> _submit() async {
@@ -1159,9 +1170,10 @@ class _OrderSheetState extends ConsumerState<_OrderSheet> {
       _error = null;
     });
     try {
+      final qty = _quantity.clamp(1, _maxQty);
       final req = OrderCreateRequest(
         mealPublicationId: widget.publication.id,
-        quantity: 1,
+        quantity: qty,
         fulfillmentType: _fulfillment,
         deliveryAddressId: null,
       );
@@ -1189,6 +1201,8 @@ class _OrderSheetState extends ConsumerState<_OrderSheet> {
     final err = _error;
     final isSoldOut =
         err is ApiErrorResponseException && err.code == 'ORDER_SOLD_OUT';
+    final titleRaw = (widget.publication.title ?? '').trim();
+    final lineTitle = titleRaw.isEmpty ? 'Plato' : titleRaw;
 
     return Padding(
       padding: EdgeInsets.only(bottom: viewInsets.bottom),
@@ -1244,24 +1258,106 @@ class _OrderSheetState extends ConsumerState<_OrderSheet> {
                     borderRadius: BorderRadius.circular(AppRadius.lg),
                     border: Border.all(color: Theme.of(context).dividerColor),
                   ),
-                  child: Row(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const Icon(Icons.restaurant, color: AppColors.brand),
-                      const SizedBox(width: AppSpacing.sm),
-                      Expanded(
-                        child: Text(
-                          'Corrientazo del día · x1',
-                          style: Theme.of(context).textTheme.titleMedium
-                              ?.copyWith(fontWeight: FontWeight.w800),
+                      Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const Icon(Icons.restaurant, color: AppColors.brand),
+                          const SizedBox(width: AppSpacing.sm),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  lineTitle,
+                                  maxLines: 2,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: Theme.of(context).textTheme.titleMedium
+                                      ?.copyWith(fontWeight: FontWeight.w800),
+                                ),
+                                const SizedBox(height: 4),
+                                Text(
+                                  '${_formatCop(widget.publication.priceCop)} · unidad',
+                                  style: Theme.of(context).textTheme.labelLarge
+                                      ?.copyWith(
+                                        color: Theme.of(context)
+                                            .colorScheme
+                                            .onSurface
+                                            .withValues(alpha: 0.58),
+                                        fontWeight: FontWeight.w700,
+                                      ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: AppSpacing.md),
+                      Row(
+                        children: [
+                          Text(
+                            'Cantidad',
+                            style: Theme.of(context).textTheme.titleSmall
+                                ?.copyWith(fontWeight: FontWeight.w900),
+                          ),
+                          const Spacer(),
+                          _OrderQuantityStepper(
+                            quantity: _quantity,
+                            enabled: !_loading,
+                            onDecrement: _quantity > 1 && !_loading
+                                ? () {
+                                    HapticFeedback.selectionClick();
+                                    setState(() => _quantity--);
+                                  }
+                                : null,
+                            onIncrement:
+                                _quantity < _maxQty && !_loading
+                                ? () {
+                                    HapticFeedback.selectionClick();
+                                    setState(() => _quantity++);
+                                  }
+                                : null,
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 6),
+                      Text(
+                        _maxQty == 1
+                            ? 'Solo queda 1 unidad disponible.'
+                            : 'Máximo $_maxQty unidades (stock del cocinero).',
+                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                          color: Theme.of(context).colorScheme.onSurface
+                              .withValues(alpha: 0.55),
+                          height: 1.25,
                         ),
                       ),
-                      Text(
-                        'COP',
-                        style: Theme.of(context).textTheme.labelLarge?.copyWith(
-                          color: Theme.of(
-                            context,
-                          ).colorScheme.onSurface.withValues(alpha: 0.65),
+                      Padding(
+                        padding: const EdgeInsets.symmetric(
+                          vertical: AppSpacing.sm,
                         ),
+                        child: Divider(
+                          height: 1,
+                          color: Theme.of(context).dividerColor,
+                        ),
+                      ),
+                      Row(
+                        children: [
+                          Text(
+                            'Total',
+                            style: Theme.of(context).textTheme.titleMedium
+                                ?.copyWith(fontWeight: FontWeight.w900),
+                          ),
+                          const Spacer(),
+                          Text(
+                            _formatCop(
+                              widget.publication.priceCop * _quantity,
+                            ),
+                            style: Theme.of(context).textTheme.titleMedium
+                                ?.copyWith(fontWeight: FontWeight.w900),
+                          ),
+                        ],
                       ),
                     ],
                   ),
@@ -1324,6 +1420,70 @@ class _OrderSheetState extends ConsumerState<_OrderSheet> {
             ),
           ),
         ),
+      ),
+    );
+  }
+}
+
+class _OrderQuantityStepper extends StatelessWidget {
+  const _OrderQuantityStepper({
+    required this.quantity,
+    required this.enabled,
+    required this.onDecrement,
+    required this.onIncrement,
+  });
+
+  final int quantity;
+  final bool enabled;
+  final VoidCallback? onDecrement;
+  final VoidCallback? onIncrement;
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(AppRadius.xl),
+        border: Border.all(color: Theme.of(context).dividerColor),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          IconButton(
+            visualDensity: VisualDensity.compact,
+            padding: const EdgeInsets.all(10),
+            constraints: const BoxConstraints(minWidth: 40, minHeight: 40),
+            onPressed: enabled ? onDecrement : null,
+            icon: Icon(
+              Icons.remove_rounded,
+              color: onDecrement != null
+                  ? scheme.primary
+                  : scheme.onSurface.withValues(alpha: 0.28),
+            ),
+          ),
+          SizedBox(
+            width: 36,
+            child: Text(
+              '$quantity',
+              textAlign: TextAlign.center,
+              style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                fontWeight: FontWeight.w900,
+              ),
+            ),
+          ),
+          IconButton(
+            visualDensity: VisualDensity.compact,
+            padding: const EdgeInsets.all(10),
+            constraints: const BoxConstraints(minWidth: 40, minHeight: 40),
+            onPressed: enabled ? onIncrement : null,
+            icon: Icon(
+              Icons.add_rounded,
+              color: onIncrement != null
+                  ? scheme.primary
+                  : scheme.onSurface.withValues(alpha: 0.28),
+            ),
+          ),
+        ],
       ),
     );
   }

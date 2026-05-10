@@ -14,6 +14,7 @@ import '../../../core/ux/milestone_celebration.dart';
 import '../../../core/ux/ux_milestones_store.dart';
 import '../../orders/domain/order_summary.dart';
 import '../application/cook_orders_controller.dart';
+import '../domain/cook_order_operacion.dart';
 
 class CookOrdersScreen extends ConsumerStatefulWidget {
   const CookOrdersScreen({super.key});
@@ -22,8 +23,22 @@ class CookOrdersScreen extends ConsumerStatefulWidget {
   ConsumerState<CookOrdersScreen> createState() => _CookOrdersScreenState();
 }
 
-class _CookOrdersScreenState extends ConsumerState<CookOrdersScreen> {
+class _CookOrdersScreenState extends ConsumerState<CookOrdersScreen>
+    with SingleTickerProviderStateMixin {
+  late final TabController _tabController;
   bool _milestoneUiBusy = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _tabController = TabController(length: 2, vsync: this);
+  }
+
+  @override
+  void dispose() {
+    _tabController.dispose();
+    super.dispose();
+  }
 
   Future<void> _maybeCelebrate(List<OrderSummary> items) async {
     if (_milestoneUiBusy || !mounted) return;
@@ -78,6 +93,9 @@ class _CookOrdersScreenState extends ConsumerState<CookOrdersScreen> {
               ref.read(cookOrdersControllerProvider.notifier).refresh(),
         ),
         data: (items) {
+          Future<void> refresh() async =>
+              ref.read(cookOrdersControllerProvider.notifier).refresh();
+
           if (items.isEmpty) {
             return AppEmptyState(
               kicker: 'Tu horno ya está listo',
@@ -94,21 +112,17 @@ class _CookOrdersScreenState extends ConsumerState<CookOrdersScreen> {
             );
           }
 
-          return RefreshIndicator(
-            onRefresh: () async =>
-                ref.read(cookOrdersControllerProvider.notifier).refresh(),
-            child: ListView(
-              padding: const EdgeInsets.all(AppSpacing.md),
-              children: [
-                Text(
-                  'Recibidos',
-                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                    fontWeight: FontWeight.w900,
-                  ),
-                ),
-                const SizedBox(height: AppSpacing.sm),
-                ...items.map(
-                  (o) => _CookOrderCard(
+          final active = items.where(cookOrderIsActive).toList()
+            ..sort((a, b) => b.createdAt.compareTo(a.createdAt));
+          final historial = items.where((o) => cookOrderIsTerminal(o.status)).toList()
+            ..sort(
+              (a, b) => (b.updatedAt ?? b.createdAt)
+                  .compareTo(a.updatedAt ?? a.createdAt),
+            );
+
+          List<Widget> orderTiles(Iterable<OrderSummary> source) => [
+                for (final o in source)
+                  _CookOrderCard(
                     orderId: o.id,
                     status: o.status,
                     totalCop: o.totalCop,
@@ -126,10 +140,79 @@ class _CookOrdersScreenState extends ConsumerState<CookOrdersScreen> {
                           .transition(orderId: o.id, action: action);
                     },
                   ),
+              ];
+
+          Widget tabBody({
+            required bool isEmpty,
+            required Widget emptyState,
+            required List<Widget> tiles,
+          }) {
+            return RefreshIndicator(
+              onRefresh: refresh,
+              child: isEmpty
+                  ? ListView(
+                      physics: const AlwaysScrollableScrollPhysics(),
+                      padding: const EdgeInsets.all(AppSpacing.md),
+                      children: [
+                        SizedBox(
+                          height: MediaQuery.sizeOf(context).height * 0.12,
+                        ),
+                        emptyState,
+                      ],
+                    )
+                  : ListView(
+                      physics: const AlwaysScrollableScrollPhysics(),
+                      padding: const EdgeInsets.all(AppSpacing.md),
+                      children: [
+                        ...tiles,
+                        const SizedBox(height: AppSpacing.lg),
+                      ],
+                    ),
+            );
+          }
+
+          return Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              TabBar(
+                controller: _tabController,
+                tabs: const [
+                  Tab(text: 'Activos'),
+                  Tab(text: 'Historial'),
+                ],
+              ),
+              Expanded(
+                child: TabBarView(
+                  controller: _tabController,
+                  children: [
+                    tabBody(
+                      isEmpty: active.isEmpty,
+                      emptyState: AppEmptyState(
+                        icon: Icons.restaurant_outlined,
+                        title: 'Sin pedidos activos',
+                        subtitle:
+                            'Los pedidos nuevos aparecen aquí. Cuando los marques '
+                            'como entregados o cancelados, pasan al historial.',
+                        actionLabel: 'Publicar un plato',
+                        onAction: () =>
+                            context.go(const CookCreateMealRoute().location),
+                      ),
+                      tiles: orderTiles(active),
+                    ),
+                    tabBody(
+                      isEmpty: historial.isEmpty,
+                      emptyState: AppEmptyState(
+                        icon: Icons.history,
+                        title: 'Sin pedidos en el historial',
+                        subtitle:
+                            'Aquí verás pedidos entregados, recogidos o cancelados.',
+                      ),
+                      tiles: orderTiles(historial),
+                    ),
+                  ],
                 ),
-                const SizedBox(height: AppSpacing.lg),
-              ],
-            ),
+              ),
+            ],
           );
         },
       ),

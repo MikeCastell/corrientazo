@@ -11,6 +11,9 @@ OrderSummary _$OrderSummaryFromJson(Map<String, dynamic> json) => OrderSummary(
   status: json['status'] as String,
   totalCop: (json['total_cop'] as num).toInt(),
   createdAt: DateTime.parse(json['created_at'] as String),
+  updatedAt: json['updated_at'] == null
+      ? null
+      : DateTime.parse(json['updated_at'] as String),
   quantity: (json['quantity'] as num).toInt(),
   fulfillmentType: json['fulfillment_type'] as String,
   mealPublicationId: json['meal_publication_id'] as String,
@@ -27,6 +30,7 @@ Map<String, dynamic> _$OrderSummaryToJson(OrderSummary instance) =>
       'status': instance.status,
       'total_cop': instance.totalCop,
       'created_at': instance.createdAt.toIso8601String(),
+      'updated_at': instance.updatedAt?.toIso8601String(),
       'quantity': instance.quantity,
       'fulfillment_type': instance.fulfillmentType,
       'meal_publication_id': instance.mealPublicationId,

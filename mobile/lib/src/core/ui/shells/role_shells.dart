@@ -63,7 +63,7 @@ class CookShell extends StatelessWidget {
         compact: true,
         items: const [
           _NavItem(
-            label: 'Dashboard',
+            label: 'Tu cocina',
             icon: Icons.dashboard_outlined,
             activeIcon: Icons.dashboard,
           ),

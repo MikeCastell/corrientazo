@@ -1180,7 +1180,7 @@ class _MealPreviewCard extends StatelessWidget {
           onTap: () {
             HapticFeedback.selectionClick();
             context.go(
-              '${const CookCreateMealRoute().location}?edit=${meal.id}',
+              CookCreateMealFormRoute.location(editMealId: meal.id),
             );
           },
           borderRadius: BorderRadius.circular(AppRadius.xl),

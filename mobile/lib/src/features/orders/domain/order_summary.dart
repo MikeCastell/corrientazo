@@ -9,6 +9,7 @@ class OrderSummary {
     required this.status,
     required this.totalCop,
     required this.createdAt,
+    this.updatedAt,
     required this.quantity,
     required this.fulfillmentType,
     required this.mealPublicationId,
@@ -23,6 +24,9 @@ class OrderSummary {
   final String status;
   final int totalCop;
   final DateTime createdAt;
+
+  /// Last update (útil para “cerrado hoy” en dashboard del cocinero).
+  final DateTime? updatedAt;
 
   final int quantity;
   final String fulfillmentType; // "PICKUP" | "DELIVERY"
