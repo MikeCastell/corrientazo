@@ -3,6 +3,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../application/auth_controller.dart';
+import '../../../core/branding/corrientazo_brand.dart';
+import '../../../core/design/tokens/app_surface_style.dart';
 import '../../../core/routing/app_router.dart';
 import '../../../core/networking/api_exception.dart';
 
@@ -66,59 +68,91 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Crear cuenta')),
-      body: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.all(16),
-          child: Column(
-            children: [
-              TextField(
-                controller: _name,
-                decoration: const InputDecoration(labelText: 'Nombre'),
-              ),
-              const SizedBox(height: 12),
-              TextField(
-                controller: _phone,
-                keyboardType: TextInputType.phone,
-                decoration: const InputDecoration(labelText: 'Teléfono'),
-              ),
-              const SizedBox(height: 12),
-              TextField(
-                controller: _password,
-                obscureText: true,
-                decoration: const InputDecoration(labelText: 'Contraseña'),
-              ),
-              const SizedBox(height: 12),
-              DropdownButtonFormField<String>(
-                initialValue: _role,
-                decoration: const InputDecoration(labelText: 'Rol'),
-                items: const [
-                  DropdownMenuItem(value: 'CUSTOMER', child: Text('Cliente')),
-                  DropdownMenuItem(value: 'COOK', child: Text('Cocinero')),
-                ],
-                onChanged: _loading
-                    ? null
-                    : (v) => setState(() => _role = v ?? 'CUSTOMER'),
-              ),
-              const SizedBox(height: 16),
-              if (_error != null)
-                Text(_error!, style: const TextStyle(color: Colors.red)),
-              const Spacer(),
-              SizedBox(
-                width: double.infinity,
-                child: FilledButton(
-                  onPressed: _loading ? null : _submit,
-                  child: Text(_loading ? 'Creando…' : 'Crear cuenta'),
-                ),
-              ),
-              const SizedBox(height: 12),
-              TextButton(
-                onPressed: () => context.go(const LoginRoute().location),
-                child: const Text('Ya tengo cuenta'),
-              ),
-            ],
+      extendBodyBehindAppBar: true,
+      appBar: AppBar(
+        elevation: 0,
+        scrolledUnderElevation: 0,
+        backgroundColor: Colors.transparent,
+        centerTitle: true,
+        title: const CorrientazoWordmark(fontSize: 20),
+      ),
+      body: Stack(
+        children: [
+          Positioned.fill(
+            child: AppSurfaceBackground(
+              brightness: Theme.of(context).brightness,
+            ),
           ),
-        ),
+          SafeArea(
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  const SizedBox(height: 8),
+                  const CorrientazoLogoMark(height: 72),
+                  const SizedBox(height: 8),
+                  const CorrientazoTagline(fontSize: 11),
+                  const SizedBox(height: 8),
+                  Text(
+                    'Crear cuenta',
+                    textAlign: TextAlign.center,
+                    style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                          fontWeight: FontWeight.w900,
+                        ),
+                  ),
+                  const SizedBox(height: 20),
+                  TextField(
+                    controller: _name,
+                    decoration: const InputDecoration(labelText: 'Nombre'),
+                  ),
+                  const SizedBox(height: 12),
+                  TextField(
+                    controller: _phone,
+                    keyboardType: TextInputType.phone,
+                    decoration: const InputDecoration(labelText: 'Teléfono'),
+                  ),
+                  const SizedBox(height: 12),
+                  TextField(
+                    controller: _password,
+                    obscureText: true,
+                    decoration: const InputDecoration(
+                      labelText: 'Contraseña',
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  DropdownButtonFormField<String>(
+                    initialValue: _role,
+                    decoration: const InputDecoration(labelText: 'Rol'),
+                    items: const [
+                      DropdownMenuItem(value: 'CUSTOMER', child: Text('Cliente')),
+                      DropdownMenuItem(value: 'COOK', child: Text('Cocinero')),
+                    ],
+                    onChanged: _loading
+                        ? null
+                        : (v) => setState(() => _role = v ?? 'CUSTOMER'),
+                  ),
+                  const SizedBox(height: 16),
+                  if (_error != null)
+                    Text(_error!, style: const TextStyle(color: Colors.red)),
+                  const SizedBox(height: 24),
+                  SizedBox(
+                    width: double.infinity,
+                    child: FilledButton(
+                      onPressed: _loading ? null : _submit,
+                      child: Text(_loading ? 'Creando…' : 'Crear cuenta'),
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  TextButton(
+                    onPressed: () => context.go(const LoginRoute().location),
+                    child: const Text('Ya tengo cuenta'),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }

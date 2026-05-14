@@ -3,15 +3,11 @@ import 'package:google_fonts/google_fonts.dart';
 
 import 'app_colors.dart';
 
-/// Tipografía global CORRIENTAZO — **casual premium**, cálida y cercana (no fintech).
+/// Tipografía global CORRIENTAZO — **juvenil y casual** (comida casera, barrio, sin rigidez).
 ///
-/// ### Familia principal: **Nunito**
-/// - Formas redondeadas y amables, muy legible en móvil.
-/// - Sensación “food / casero / startup latina” sin rigidez corporativa.
-///
-/// ### Alternativas que encajan con la misma dirección (si algún día cambias 1 línea):
-/// - **Rubik**: un poco más urbano / street-food premium.
-/// - **Outfit**: más geométrico; puede acercarse a “producto SaaS” si no se dosifica.
+/// ### Familia principal: **Fredoka**
+/// - Letras redondeadas y simpáticas; sensación más jovial que Nunito/Rubik.
+/// - Muy legible en móvil con el peso que damos a títulos vs cuerpo.
 ///
 /// La jerarquía se ajusta aquí solamente; las pantallas siguen usando `Theme.of(context).textTheme`.
 class AppTypography {
@@ -22,9 +18,9 @@ class AppTypography {
 
     final materialBase =
         ThemeData(brightness: brightness, useMaterial3: true).textTheme;
-    final nunitoBase = GoogleFonts.nunitoTextTheme(materialBase);
+    final fredokaBase = GoogleFonts.fredokaTextTheme(materialBase);
 
-    final t = nunitoBase.apply(
+    final t = fredokaBase.apply(
       bodyColor: textColor,
       displayColor: textColor,
       decorationColor: text2Color,

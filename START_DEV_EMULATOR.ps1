@@ -46,6 +46,45 @@ function Get-LanIPv4() {
   return $null
 }
 
+function Test-CorrientazoApkZipOk {
+  param([Parameter(Mandatory)][string]$ApkPath)
+  if (-not (Test-Path -LiteralPath $ApkPath)) { return $false }
+  try {
+    Add-Type -AssemblyName System.IO.Compression.FileSystem -ErrorAction Stop
+    $z = [System.IO.Compression.ZipFile]::OpenRead($ApkPath)
+    $z.Dispose()
+    return $true
+  } catch {
+    return $false
+  }
+}
+
+function Remove-CorrientazoBrokenDebugApk {
+  param([Parameter(Mandatory)][string]$MobileRoot)
+  # Flutter puede dejar APK en flutter-apk/; Gradle en apk/debug/. Cualquiera corrupto
+  # (sin EOCD en el ZIP) rompe packageDebug / aapt / zipro.
+  $candidates = @(
+    (Join-Path $MobileRoot "build\app\outputs\flutter-apk\app-debug.apk"),
+    (Join-Path $MobileRoot "build\app\outputs\apk\debug\app-debug.apk")
+  )
+  $bad = $false
+  foreach ($apk in $candidates) {
+    if (-not (Test-Path -LiteralPath $apk)) { continue }
+    if (-not (Test-CorrientazoApkZipOk -ApkPath $apk)) {
+      $bad = $true
+      Write-Host ""
+      Write-Host "APK debug corrupto o incompleto (ZIP sin EOCD): $apk" -ForegroundColor Yellow
+      break
+    }
+  }
+  if (-not $bad) { return }
+  $outRoot = Join-Path $MobileRoot "build\app\outputs"
+  Write-Host "Borrando build\app\outputs para empaquetado limpio (evita IncrementalSplitter + APK roto)." -ForegroundColor Yellow
+  if (Test-Path -LiteralPath $outRoot) {
+    Remove-Item -LiteralPath $outRoot -Recurse -Force -ErrorAction SilentlyContinue
+  }
+}
+
 function Get-FlutterAndroidEmulatorIds {
   param([string]$MobileRoot)
   Push-Location $MobileRoot
@@ -147,6 +186,8 @@ if ($Target -eq "emulator") {
   Write-Host "Nota: Impeller no soporta render por software. No usamos --enable-software-rendering."
   Write-Host ""
 
+  Remove-CorrientazoBrokenDebugApk -MobileRoot $mobileRoot
+
   $emuIds = Get-FlutterAndroidEmulatorIds $mobileRoot
   # Separate argv entries — a single string breaks dart-define parsing on some shells.
   $flutterEmuDefines = @(
@@ -164,6 +205,7 @@ if ($Target -eq "emulator") {
     Write-Host ""
     Write-Host "Intentando flutter run sin -d (elige dispositivo si hay varios)..."
     Push-Location $mobileRoot
+    Remove-CorrientazoBrokenDebugApk -MobileRoot $mobileRoot
     & flutter run @flutterEmuDefines
     Pop-Location
   }
@@ -171,8 +213,30 @@ if ($Target -eq "emulator") {
     Write-Host "Se encontraron $($emuIds.Count) emuladores:" -ForegroundColor Green
     $emuIds | ForEach-Object { Write-Host "  - $_" }
     Write-Host ""
-    Write-Host "Abriendo UNA ventana de consola por emulador (customer en uno, cook en el otro)." -ForegroundColor Cyan
+    Write-Host "Compilando UN solo APK (debug) antes de abrir varias ventanas..." -ForegroundColor Cyan
+    Write-Host "Motivo: si varios 'flutter run' compilan a la vez, el mismo app-debug.apk se corrompe (zipro / aapt)." -ForegroundColor DarkGray
+    Push-Location $mobileRoot
+    & flutter build apk --debug @flutterEmuDefines
+    if ($LASTEXITCODE -ne 0) {
+      Pop-Location
+      throw "flutter build apk --debug falló (exit $LASTEXITCODE)."
+    }
+    Pop-Location
+
+    $apkPath = Join-Path $mobileRoot "build\app\outputs\flutter-apk\app-debug.apk"
+    if (-not (Test-Path -LiteralPath $apkPath)) {
+      throw "No encontré el APK tras el build: $apkPath"
+    }
+    if (-not (Test-CorrientazoApkZipOk -ApkPath $apkPath)) {
+      throw "El APK generado no es un ZIP válido (sigue truncado). Prueba: cerrar otras ventanas Flutter/Gradle, ejecutar flutter clean, o revisar antivirus/disco."
+    }
+
+    Write-Host ""
+    Write-Host "Abriendo UNA ventana de consola por emulador (mismo APK; sin carrera al escribir el .apk)." -ForegroundColor Cyan
+    $mobileRootEsc = $mobileRoot.Replace("'", "''")
+    $apkPathEsc = $apkPath.Replace("'", "''")
     foreach ($id in $emuIds) {
+      $idEsc = $id.Replace("'", "''")
       Start-Process -FilePath "powershell.exe" `
         -WorkingDirectory $mobileRoot `
         -ArgumentList @(
@@ -180,7 +244,7 @@ if ($Target -eq "emulator") {
           "-NoProfile",
           "-ExecutionPolicy", "Bypass",
           "-Command",
-          "`$Host.UI.RawUI.WindowTitle = 'CORRIENTAZO Flutter - $id'; & flutter run -d '$id' @('--dart-define=API_BASE_URL=http://10.0.2.2:3000','--dart-define=STARTUP_DEBUG=true')"
+          "`$Host.UI.RawUI.WindowTitle = 'CORRIENTAZO Flutter - $idEsc'; Set-Location '$mobileRootEsc'; & flutter run -d '$idEsc' --use-application-binary='$apkPathEsc' @('--dart-define=API_BASE_URL=http://10.0.2.2:3000','--dart-define=STARTUP_DEBUG=true')"
         )
     }
     Write-Host ""
@@ -190,6 +254,7 @@ if ($Target -eq "emulator") {
     $only = $emuIds[0]
     Write-Host "Un emulador conectado: $only" -ForegroundColor Green
     Push-Location $mobileRoot
+    Remove-CorrientazoBrokenDebugApk -MobileRoot $mobileRoot
     & flutter run -d $only @flutterEmuDefines
     Pop-Location
   }
@@ -209,6 +274,7 @@ if ($Target -eq "emulator") {
   Write-Host ""
   Write-Host "Si tu celular aparece arriba, este comando lo corre con API_BASE_URL=$api"
   Write-Host ""
+  Remove-CorrientazoBrokenDebugApk -MobileRoot $mobileRoot
   & flutter run @("--dart-define=API_BASE_URL=$api", '--dart-define=STARTUP_DEBUG=true')
   Pop-Location
 }

@@ -2,17 +2,17 @@ import 'package:flutter/material.dart';
 
 /// Semantic color tokens for CORRIENTAZO.
 class AppColors {
-  // Brand palette
-  // - Primario: Mango Orange  #F57C1F
-  // - Secundario: Tomato Red  #D9482B
-  // - Acento: Fresh Green    #1F8A43
-  // - Fondo: Warm Cream      #F5EBDD
-  static const primary = Color(0xFFF57C1F); // Mango Orange
-  static const primaryDeep = Color(0xFFCF5F0C);
+  // Brand palette — alineado con `assets/branding/LogoOFICIAL.png`
+  // - Primario: naranja “CORRIEN” (plato / texto)
+  // - Secundario: rojo tomate (energía / CTAs fuertes)
+  // - Acento: verde bosque “TAZO” / tagline (legible sobre crema)
+  // - Fondo: crema cálida del logo (no blanco puro)
+  static const primary = Color(0xFFE75F18); // naranja logo
+  static const primaryDeep = Color(0xFFC44E0F);
   static const secondary = Color(0xFFD9482B); // Tomato Red
   static const secondaryDeep = Color(0xFFB9351C);
-  static const accent = Color(0xFF1F8A43); // Fresh Green
-  static const accentDeep = Color(0xFF166F35);
+  static const accent = Color(0xFF1F5845); // verde bosque logo (TAZO)
+  static const accentDeep = Color(0xFF163E32);
 
   // Keep existing naming used across UI.
   static const brand = primary;
@@ -23,11 +23,11 @@ class AppColors {
   static const night = Color(0xFF120B0A); // deep warm night (less "SaaS")
   static const night2 = Color(0xFF1A1210);
 
-  // Neutrals
-  static const bg = Color(0xFFF5EBDD); // warm cream
-  static const surface = Color(0xFFFFFFFF);
-  static const surface2 = Color(0xFFFFFBF5);
-  static const border = Color(0xFFF1E3D6);
+  // Neutrals (fondo tipo lienzo del logo)
+  static const bg = Color(0xFFFAF7F2); // crema cálida logo
+  static const surface = Color(0xFFFFFFFF); // arroz / tarjetas
+  static const surface2 = Color(0xFFFFFBF7);
+  static const border = Color(0xFFE8DFD4);
 
   static const text = Color(0xFF0F172A);
   static const text2 = Color(0xFF64748B);
@@ -61,10 +61,10 @@ class AppColors {
             ]
           : [
               bg,
-              const Color(0xFFFFFBF5),
-              primary.withValues(alpha: 0.08),
-              secondary.withValues(alpha: 0.07),
-              accent.withValues(alpha: 0.06),
+              surface2,
+              primary.withValues(alpha: 0.11),
+              secondary.withValues(alpha: 0.085),
+              accent.withValues(alpha: 0.09),
             ],
       stops: isDark
           ? const [0.0, 0.45, 0.72, 0.88, 1.0]

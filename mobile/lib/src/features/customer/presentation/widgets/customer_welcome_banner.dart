@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../../core/branding/corrientazo_brand.dart';
 import '../../../../core/design/tokens/app_colors.dart';
 import '../../../../core/design/tokens/app_radius.dart';
 import '../../../../core/design/tokens/app_spacing.dart';
@@ -47,19 +48,30 @@ class _CustomerWelcomeBannerState extends ConsumerState<CustomerWelcomeBanner> {
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text('🏠', style: Theme.of(context).textTheme.headlineSmall),
+                const CorrientazoLogoMark(height: 48),
                 const SizedBox(width: AppSpacing.sm),
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(
-                        'No cocines hoy',
-                        style: Theme.of(context).textTheme.titleMedium
-                            ?.copyWith(
-                              fontWeight: FontWeight.w900,
-                              letterSpacing: -0.2,
+                      Text.rich(
+                        TextSpan(
+                          style: Theme.of(context).textTheme.titleMedium
+                              ?.copyWith(
+                                fontWeight: FontWeight.w900,
+                                letterSpacing: -0.2,
+                              ),
+                          children: [
+                            TextSpan(
+                              text: 'No cocines ',
+                              style: TextStyle(color: AppColors.primary),
                             ),
+                            TextSpan(
+                              text: 'hoy',
+                              style: TextStyle(color: AppColors.accent),
+                            ),
+                          ],
+                        ),
                       ),
                       const SizedBox(height: 4),
                       Text(

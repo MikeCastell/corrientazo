@@ -4,6 +4,8 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../core/branding/corrientazo_brand.dart';
+import '../../../core/design/tokens/app_surface_style.dart';
 import '../../../core/design/tokens/app_colors.dart';
 import '../../../core/design/tokens/app_radius.dart';
 import '../../../core/design/tokens/app_spacing.dart';
@@ -74,7 +76,6 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
     }
 
     final scheme = Theme.of(context).colorScheme;
-    final titleTone = AppColors.secondary; // Tomato Red
     final subtleText = scheme.onSurface.withValues(alpha: 0.62);
     final warmBrown = const Color(0xFF6B4A3A).withValues(alpha: 0.82);
 
@@ -84,22 +85,9 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
       backgroundColor: AppColors.bg,
       body: Stack(
         children: [
-          // Warm ambient wash (very subtle)
           Positioned.fill(
-            child: DecoratedBox(
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  begin: Alignment.topCenter,
-                  end: Alignment.bottomCenter,
-                  colors: [
-                    AppColors.bg,
-                    AppColors.bg,
-                    AppColors.primary.withValues(alpha: 0.04),
-                    AppColors.accent.withValues(alpha: 0.03),
-                  ],
-                  stops: const [0.0, 0.55, 0.80, 1.0],
-                ),
-              ),
+            child: AppSurfaceBackground(
+              brightness: Theme.of(context).brightness,
             ),
           ),
 
@@ -164,30 +152,18 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
                                   ),
                                 ],
                               ),
-                              child: Image.asset(
-                                'assets/branding/LogoOFICIAL.png',
-                                height: 152,
-                                fit: BoxFit.contain,
-                                filterQuality: FilterQuality.high,
-                              ),
+                              child: const CorrientazoLogoMark(height: 152),
                             ),
                           );
                         },
                       ),
                       const SizedBox(height: AppSpacing.lg),
+                      const CorrientazoWordmark(fontSize: 34),
+                      const SizedBox(height: 8),
+                      const CorrientazoTagline(fontSize: 13),
+                      const SizedBox(height: 8),
                       Text(
-                        'CORRIENTAZO',
-                        textAlign: TextAlign.center,
-                        style: Theme.of(context).textTheme.displaySmall
-                            ?.copyWith(
-                              fontWeight: FontWeight.w900,
-                              letterSpacing: -0.8,
-                              color: titleTone,
-                            ),
-                      ),
-                      const SizedBox(height: 6),
-                      Text(
-                        'Sabor de hogar, directo a tu mesa',
+                        'Directo a tu mesa',
                         textAlign: TextAlign.center,
                         style: Theme.of(context).textTheme.titleMedium
                             ?.copyWith(

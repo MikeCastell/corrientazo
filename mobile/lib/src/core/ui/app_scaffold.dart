@@ -2,6 +2,8 @@ import 'dart:ui';
 
 import 'package:flutter/material.dart';
 
+import '../branding/corrientazo_brand.dart';
+import '../design/tokens/app_surface_style.dart';
 import '../design/tokens/app_colors.dart';
 import '../design/tokens/app_radius.dart';
 import '../design/tokens/app_spacing.dart';
@@ -14,6 +16,7 @@ class AppScaffold extends StatelessWidget {
     this.trailing,
     this.bottomNavigationBar,
     this.showTopBar = true,
+    this.brandInAppBar = true,
   });
 
   final String title;
@@ -21,6 +24,8 @@ class AppScaffold extends StatelessWidget {
   final Widget? trailing;
   final Widget? bottomNavigationBar;
   final bool showTopBar;
+  /// Logo + wordmark colorido + título de pantalla (estilo marca).
+  final bool brandInAppBar;
 
   @override
   Widget build(BuildContext context) {
@@ -77,16 +82,20 @@ class AppScaffold extends StatelessWidget {
                         child: Row(
                           children: [
                             Expanded(
-                              child: Text(
-                                title,
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                                style: Theme.of(context).textTheme.titleLarge
-                                    ?.copyWith(
-                                      fontWeight: FontWeight.w900,
-                                      letterSpacing: -0.3,
+                              child: brandInAppBar
+                                  ? _BrandedAppBarTitle(title: title)
+                                  : Text(
+                                      title,
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                      style: Theme.of(context)
+                                          .textTheme
+                                          .titleLarge
+                                          ?.copyWith(
+                                            fontWeight: FontWeight.w900,
+                                            letterSpacing: -0.3,
+                                          ),
                                     ),
-                              ),
                             ),
                             if (trailing != null) ...[trailing!],
                           ],
@@ -104,14 +113,11 @@ class AppScaffold extends StatelessWidget {
           children: [
             // Ambient background (cheap gradient + subtle glow)
             Positioned.fill(
-              child: DecoratedBox(
-                decoration: BoxDecoration(
-                  gradient: AppColors.ambientBackground(
-                    Theme.of(context).brightness,
-                  ),
-                ),
+              child: AppSurfaceBackground(
+                brightness: Theme.of(context).brightness,
               ),
             ),
+            if (kAppSurfaceShowsGlowBlobs) ...[
             Positioned(
               top: -120,
               left: -90,
@@ -139,6 +145,7 @@ class AppScaffold extends StatelessWidget {
                 alpha: isDark ? 0.10 : 0.07,
               ),
             ),
+            ],
             Padding(
               padding: EdgeInsets.only(top: showTopBar ? 84 : 0),
               child: body,
@@ -146,6 +153,83 @@ class AppScaffold extends StatelessWidget {
           ],
         ),
       ),
+    );
+  }
+}
+
+class _BrandedAppBarTitle extends StatelessWidget {
+  const _BrandedAppBarTitle({required this.title});
+
+  final String title;
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    final t = title.trim();
+    return Row(
+      children: [
+        CorrientazoLogoMark(height: 34),
+        const SizedBox(width: 8),
+        Expanded(
+          child: LayoutBuilder(
+            builder: (context, constraints) {
+              return FittedBox(
+                fit: BoxFit.scaleDown,
+                alignment: Alignment.centerLeft,
+                child: ConstrainedBox(
+                  constraints: BoxConstraints(maxWidth: constraints.maxWidth),
+                  child: t.isEmpty
+                      ? const CorrientazoWordmark(
+                          fontSize: 20,
+                          textAlign: TextAlign.start,
+                        )
+                      : Row(
+                          children: [
+                            Flexible(
+                              flex: 2,
+                              child: FittedBox(
+                                fit: BoxFit.scaleDown,
+                                alignment: Alignment.centerLeft,
+                                child: const CorrientazoWordmark(
+                                  fontSize: 18,
+                                  textAlign: TextAlign.start,
+                                ),
+                              ),
+                            ),
+                            Padding(
+                              padding: const EdgeInsets.symmetric(horizontal: 4),
+                              child: Text(
+                                '·',
+                                style: Theme.of(context).textTheme.titleSmall
+                                    ?.copyWith(
+                                      fontWeight: FontWeight.w900,
+                                      color: AppColors.text2,
+                                    ),
+                              ),
+                            ),
+                            Expanded(
+                              flex: 3,
+                              child: Text(
+                                t,
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: Theme.of(context).textTheme.titleMedium
+                                    ?.copyWith(
+                                      fontWeight: FontWeight.w800,
+                                      color: scheme.onSurface.withValues(
+                                        alpha: 0.88,
+                                      ),
+                                    ),
+                              ),
+                            ),
+                          ],
+                        ),
+                ),
+              );
+            },
+          ),
+        ),
+      ],
     );
   }
 }

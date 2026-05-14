@@ -17,7 +17,9 @@ class CorrientazoApp extends ConsumerWidget {
       title: 'CORRIENTAZO',
       theme: AppTheme.light(),
       darkTheme: AppTheme.dark(),
-      themeMode: ThemeMode.system,
+      // Tema claro por defecto: la paleta crema+naranja+verde del logo solo está en light().
+      // Con ThemeMode.system, el modo oscuro del teléfono ocultaba esos colores.
+      themeMode: ThemeMode.light,
       routerConfig: router,
       debugShowCheckedModeBanner: false,
     );

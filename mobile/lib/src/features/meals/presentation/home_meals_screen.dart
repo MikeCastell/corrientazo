@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../auth/application/auth_controller.dart';
+import '../../../core/branding/corrientazo_brand.dart';
 import '../../../core/routing/app_router.dart';
 import '../../../core/ui/app_scaffold.dart';
 import '../../../core/ui/states/app_shimmer.dart';
@@ -477,6 +478,17 @@ class _EditorialHeader extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            Center(
+              child: Column(
+                children: [
+                  const CorrientazoLogoMark(height: 64),
+                  const SizedBox(height: 6),
+                  const CorrientazoWordmark(fontSize: 24),
+                  const CorrientazoTagline(fontSize: 11),
+                ],
+              ),
+            ),
+            const SizedBox(height: AppSpacing.md),
             Row(
               children: [
                 Icon(Icons.place_outlined, size: 16, color: locationTone),
@@ -505,13 +517,28 @@ class _EditorialHeader extends StatelessWidget {
               ],
             ),
             const SizedBox(height: AppSpacing.md),
-            Text(
-              '¿Qué se te antoja hoy? 🍲',
-              style: Theme.of(context).textTheme.displaySmall?.copyWith(
-                fontWeight: FontWeight.w900,
-                letterSpacing: -0.9,
-                height: 1.05,
-                color: scheme.onSurface.withValues(alpha: 0.92),
+            Text.rich(
+              TextSpan(
+                style: Theme.of(context).textTheme.displaySmall?.copyWith(
+                  fontWeight: FontWeight.w900,
+                  letterSpacing: -0.9,
+                  height: 1.05,
+                ),
+                children: [
+                  TextSpan(
+                    text: '¿Qué se te ',
+                    style: TextStyle(color: AppColors.primary),
+                  ),
+                  TextSpan(
+                    text: 'antoja',
+                    style: TextStyle(color: AppColors.accent),
+                  ),
+                  TextSpan(
+                    text: ' hoy? ',
+                    style: TextStyle(color: AppColors.secondary),
+                  ),
+                  const TextSpan(text: '🍲'),
+                ],
               ),
             ),
             const SizedBox(height: 10),
