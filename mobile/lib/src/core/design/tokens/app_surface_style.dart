@@ -90,51 +90,114 @@ class _FlatCornerBlocks extends StatelessWidget {
   Widget build(BuildContext context) {
     final base = isDark ? AppColors.bgDark : AppColors.bg;
     if (isDark) {
-      return ColoredBox(color: base);
+      return Stack(
+        fit: StackFit.expand,
+        children: [
+          ColoredBox(color: base),
+          Positioned(
+            top: 8,
+            left: -24,
+            child: Transform.rotate(
+              angle: -0.16,
+              child: Container(
+                width: 200,
+                height: 140,
+                decoration: BoxDecoration(
+                  color: AppColors.primary.withValues(alpha: 0.22),
+                  borderRadius: BorderRadius.circular(32),
+                ),
+              ),
+            ),
+          ),
+          Positioned(
+            bottom: 24,
+            right: -40,
+            child: Transform.rotate(
+              angle: 0.2,
+              child: Container(
+                width: 240,
+                height: 160,
+                decoration: BoxDecoration(
+                  color: AppColors.accent.withValues(alpha: 0.2),
+                  borderRadius: BorderRadius.circular(36),
+                ),
+              ),
+            ),
+          ),
+          Positioned(
+            top: 100,
+            right: 8,
+            child: Container(
+              width: 96,
+              height: 96,
+              decoration: BoxDecoration(
+                color: AppColors.secondary.withValues(alpha: 0.18),
+                shape: BoxShape.circle,
+              ),
+            ),
+          ),
+        ],
+      );
     }
     return Stack(
       fit: StackFit.expand,
       children: [
         ColoredBox(color: base),
+        // Bloques más grandes, más dentro de pantalla y más saturados (alfa alto).
         Positioned(
-          top: -40,
-          left: -50,
+          top: 12,
+          left: -28,
           child: Transform.rotate(
-            angle: -0.18,
+            angle: -0.16,
             child: Container(
-              width: 180,
-              height: 120,
+              width: 260,
+              height: 170,
               decoration: BoxDecoration(
-                color: AppColors.primary.withValues(alpha: 0.09),
-                borderRadius: BorderRadius.circular(28),
+                color: AppColors.primary.withValues(alpha: 0.38),
+                borderRadius: BorderRadius.circular(36),
               ),
             ),
           ),
         ),
         Positioned(
-          bottom: -50,
-          right: -60,
+          bottom: 20,
+          right: -48,
           child: Transform.rotate(
-            angle: 0.22,
+            angle: 0.2,
             child: Container(
-              width: 200,
-              height: 130,
+              width: 280,
+              height: 190,
               decoration: BoxDecoration(
-                color: AppColors.accent.withValues(alpha: 0.08),
-                borderRadius: BorderRadius.circular(32),
+                color: AppColors.accent.withValues(alpha: 0.34),
+                borderRadius: BorderRadius.circular(40),
               ),
             ),
           ),
         ),
         Positioned(
-          top: 120,
-          right: -30,
+          top: 96,
+          right: 4,
           child: Container(
-            width: 72,
-            height: 72,
+            width: 112,
+            height: 112,
             decoration: BoxDecoration(
-              color: AppColors.secondary.withValues(alpha: 0.07),
+              color: AppColors.secondary.withValues(alpha: 0.32),
               shape: BoxShape.circle,
+            ),
+          ),
+        ),
+        Positioned(
+          bottom: 140,
+          left: -20,
+          child: Transform.rotate(
+            angle: 0.12,
+            child: Container(
+              width: 120,
+              height: 88,
+              decoration: BoxDecoration(
+                color: AppColors.primary.withValues(alpha: 0.26),
+                borderRadius: BorderRadius.circular(24),
+              ),
             ),
           ),
         ),
