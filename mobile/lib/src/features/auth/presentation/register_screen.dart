@@ -118,9 +118,6 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                     controller: _password,
                     autofillHints: const [AutofillHints.newPassword],
                     textInputAction: TextInputAction.done,
-                    onSubmitted: (_) {
-                      if (!_loading) _submit();
-                    },
                   ),
                   const SizedBox(height: 12),
                   DropdownButtonFormField<String>(
@@ -141,7 +138,12 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                   SizedBox(
                     width: double.infinity,
                     child: FilledButton(
-                      onPressed: _loading ? null : _submit,
+                      onPressed: _loading
+                          ? null
+                          : () {
+                              FocusScope.of(context).unfocus();
+                              _submit();
+                            },
                       child: Text(_loading ? 'Creando…' : 'Crear cuenta'),
                     ),
                   ),

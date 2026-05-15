@@ -174,9 +174,6 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                   PasswordTextField(
                     controller: _password,
                     textInputAction: TextInputAction.done,
-                    onSubmitted: (_) {
-                      if (!_loading) _submit();
-                    },
                   ),
                   const SizedBox(height: 16),
                   if (_error != null)
@@ -185,7 +182,12 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                   SizedBox(
                     width: double.infinity,
                     child: FilledButton(
-                      onPressed: _loading ? null : _submit,
+                      onPressed: _loading
+                          ? null
+                          : () {
+                              FocusScope.of(context).unfocus();
+                              _submit();
+                            },
                       child: Text(_loading ? 'Entrando…' : 'Entrar'),
                     ),
                   ),
