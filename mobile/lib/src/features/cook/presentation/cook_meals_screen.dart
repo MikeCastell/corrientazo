@@ -326,7 +326,7 @@ class _CookMealsScreenState extends ConsumerState<CookMealsScreen> {
                 onToggleSelect: () => _toggleSelected(items[i].id),
                 onAction: (action) async {
                   if (action == _CookMealAction.edit) {
-                    context.go(
+                    context.push(
                       CookCreateMealFormRoute.location(editMealId: items[i].id),
                     );
                     return;

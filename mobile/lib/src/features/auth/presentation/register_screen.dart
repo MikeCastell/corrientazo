@@ -7,6 +7,7 @@ import '../../../core/branding/corrientazo_brand.dart';
 import '../../../core/design/tokens/app_surface_style.dart';
 import '../../../core/routing/app_router.dart';
 import '../../../core/networking/api_exception.dart';
+import '../../../core/ui/password_text_field.dart';
 
 class RegisterScreen extends ConsumerStatefulWidget {
   const RegisterScreen({super.key});
@@ -18,7 +19,7 @@ class RegisterScreen extends ConsumerStatefulWidget {
 class _RegisterScreenState extends ConsumerState<RegisterScreen> {
   final _name = TextEditingController();
   final _phone = TextEditingController(text: '+57');
-  final _password = TextEditingController();
+  final _password = ObscuredPasswordEditingController();
   String _role = 'CUSTOMER';
   bool _loading = false;
   String? _error;
@@ -113,12 +114,13 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                     decoration: const InputDecoration(labelText: 'Teléfono'),
                   ),
                   const SizedBox(height: 12),
-                  TextField(
+                  PasswordTextField(
                     controller: _password,
-                    obscureText: true,
-                    decoration: const InputDecoration(
-                      labelText: 'Contraseña',
-                    ),
+                    autofillHints: const [AutofillHints.newPassword],
+                    textInputAction: TextInputAction.done,
+                    onSubmitted: (_) {
+                      if (!_loading) _submit();
+                    },
                   ),
                   const SizedBox(height: 12),
                   DropdownButtonFormField<String>(

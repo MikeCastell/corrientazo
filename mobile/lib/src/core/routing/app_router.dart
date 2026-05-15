@@ -241,11 +241,20 @@ final appRouterProvider = Provider<GoRouter>((ref) {
                       final editId = state.uri.queryParameters['edit'];
                       final templateId =
                           state.uri.queryParameters['template'];
+                      final editMealId =
+                          (editId != null && editId.isNotEmpty) ? editId : null;
+                      final tplId = (templateId != null && templateId.isNotEmpty)
+                          ? templateId
+                          : null;
                       return _fadeSlidePage<void>(
                         state: state,
                         child: CookCreateMealScreen(
-                          editMealId: editId,
-                          templateId: templateId,
+                          // Fuerza estado nuevo al cambiar ?edit= / ?template= (go() reutiliza la ruta).
+                          key: ValueKey(
+                            'cook-meal-form-${editMealId ?? ''}::${tplId ?? ''}',
+                          ),
+                          editMealId: editMealId,
+                          templateId: tplId,
                         ),
                       );
                     },

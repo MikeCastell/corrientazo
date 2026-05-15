@@ -43,26 +43,23 @@ class CookMealsRepository {
     );
   }
 
-  Future<CookMealTemplateDto> update(
+  Future<void> update(
     String mealId, {
     required String title,
     required String? description,
     required int basePriceCop,
     required List<String> tags,
-    required String? photoUrl,
+    String? photoUrl,
   }) {
-    return _api.patchJson<CookMealTemplateDto>(
-      '/cook/meals/$mealId',
-      body: {
-        'title': title,
-        'description': description,
-        'basePriceCop': basePriceCop,
-        'tags': tags,
-        'photoUrl': photoUrl,
-      },
-      decode: (json) =>
-          CookMealTemplateDto.fromJson(json as Map<String, dynamic>),
-    );
+    final body = <String, dynamic>{
+      'title': title,
+      'basePriceCop': basePriceCop,
+      'tags': tags,
+    };
+    if (description != null) body['description'] = description;
+    if (photoUrl != null) body['photoUrl'] = photoUrl;
+
+    return _api.patchJson<void>('/cook/meals/$mealId', body: body);
   }
 
   Future<void> delete(String mealId) async {
@@ -126,23 +123,22 @@ class CookMealsRepository {
     );
   }
 
-  Future<CookMealPublicationDto> updatePublication(
+  Future<void> updatePublication(
     String publicationId, {
     String? status,
     int? stockAvailable,
     int? stockTotal,
     int? priceCop,
   }) {
-    return _api.patchJson<CookMealPublicationDto>(
+    final body = <String, dynamic>{};
+    if (status != null) body['status'] = status;
+    if (stockAvailable != null) body['stockAvailable'] = stockAvailable;
+    if (stockTotal != null) body['stockTotal'] = stockTotal;
+    if (priceCop != null) body['priceCop'] = priceCop;
+
+    return _api.patchJson<void>(
       '/meal-publications/$publicationId',
-      body: {
-        'status': status,
-        'stockAvailable': stockAvailable,
-        'stockTotal': stockTotal,
-        'priceCop': priceCop,
-      },
-      decode: (json) =>
-          CookMealPublicationDto.fromJson(json as Map<String, dynamic>),
+      body: body,
     );
   }
 }

@@ -40,18 +40,77 @@ class _CookCreateMealScreenState extends ConsumerState<CookCreateMealScreen> {
 
   bool _saving = false;
   bool _aiBusy = false;
+  String? _hydratedForEditId;
 
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      _hydrateIfEditing();
-      _hydrateFromTemplate();
+      if (widget.editMealId != null && widget.editMealId!.isNotEmpty) {
+        _ensureEditHydrated();
+      } else {
+        _hydrateFromTemplate();
+      }
     });
   }
 
+  @override
+  void didUpdateWidget(CookCreateMealScreen oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.editMealId != widget.editMealId) {
+      _hydratedForEditId = null;
+      _clearFormFields();
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (widget.editMealId != null && widget.editMealId!.isNotEmpty) {
+          _ensureEditHydrated();
+        } else {
+          _hydrateFromTemplate();
+        }
+      });
+    }
+  }
+
+  void _clearFormFields() {
+    _title.clear();
+    _description.clear();
+    _price.clear();
+    _stock.clear();
+    _fulfillment = 'PICKUP';
+    _ingredients.clear();
+  }
+
+  void _applyMealToForm(CookMeal found) {
+    _title.text = found.title;
+    _description.text = found.description;
+    _price.text = found.priceCop.toString();
+    _stock.text = found.stock.toString();
+    _fulfillment = found.fulfillmentType;
+    _ingredients
+      ..clear()
+      ..addAll(found.ingredients);
+  }
+
+  Future<void> _ensureEditHydrated() async {
+    final id = widget.editMealId;
+    if (id == null || id.isEmpty) return;
+    if (_hydratedForEditId == id) return;
+
+    var async = ref.read(cookMealsControllerProvider);
+    if (!async.hasValue) {
+      await ref.read(cookMealsControllerProvider.notifier).refresh();
+      async = ref.read(cookMealsControllerProvider);
+    }
+
+    final found = async.value?.where((m) => m.id == id).firstOrNull;
+    if (found == null) return;
+
+    _applyMealToForm(found);
+    _hydratedForEditId = id;
+    if (mounted) setState(() {});
+  }
+
   void _hydrateFromTemplate() {
-    if (widget.editMealId != null) return;
+    if (widget.editMealId != null && widget.editMealId!.isNotEmpty) return;
     final tid = widget.templateId;
     if (tid == null || tid.isEmpty) return;
     final templates = ref.read(cookMealDraftTemplatesProvider);
@@ -67,26 +126,6 @@ class _CookCreateMealScreenState extends ConsumerState<CookCreateMealScreen> {
     setState(() {});
   }
 
-  void _hydrateIfEditing() {
-    final id = widget.editMealId;
-    if (id == null) return;
-    final meals = ref
-        .read(cookMealsControllerProvider)
-        .maybeWhen(data: (v) => v, orElse: () => null);
-    final found = meals?.where((m) => m.id == id).firstOrNull;
-    if (found == null) return;
-
-    _title.text = found.title;
-    _description.text = found.description;
-    _price.text = found.priceCop.toString();
-    _stock.text = found.stock.toString();
-    _fulfillment = found.fulfillmentType;
-    _ingredients
-      ..clear()
-      ..addAll(found.ingredients);
-    setState(() {});
-  }
-
   @override
   void dispose() {
     _title.dispose();
@@ -96,13 +135,33 @@ class _CookCreateMealScreenState extends ConsumerState<CookCreateMealScreen> {
     super.dispose();
   }
 
-  CookMeal _buildDraft({required String id, required DateTime createdAt}) {
+  bool get _isEditing =>
+      widget.editMealId != null && !widget.editMealId!.startsWith('m_');
+
+  CookMeal? _existingMeal() {
+    final id = widget.editMealId;
+    if (id == null) return null;
+    return ref
+        .read(cookMealsControllerProvider)
+        .maybeWhen(
+          data: (v) => v.where((m) => m.id == id).firstOrNull,
+          orElse: () => null,
+        );
+  }
+
+  CookMeal _buildDraft({
+    required String id,
+    required DateTime createdAt,
+    CookMeal? existing,
+    CookMealStatus? statusOverride,
+  }) {
     final price = int.tryParse(_price.text.trim()) ?? 0;
     final stock = int.tryParse(_stock.text.trim()) ?? 0;
-    final status = stock <= 0 ? CookMealStatus.soldOut : CookMealStatus.paused;
+    final status = statusOverride ??
+        (stock <= 0 ? CookMealStatus.soldOut : CookMealStatus.paused);
     return CookMeal(
       id: id,
-      publicationId: null,
+      publicationId: existing?.publicationId,
       title: _title.text.trim(),
       description: _description.text.trim(),
       priceCop: price,
@@ -148,24 +207,29 @@ class _CookCreateMealScreenState extends ConsumerState<CookCreateMealScreen> {
     try {
       final now = DateTime.now();
       final id = widget.editMealId ?? 'm_${now.millisecondsSinceEpoch}';
-      final existing = ref
-          .read(cookMealsControllerProvider)
-          .maybeWhen(
-            data: (v) => v.where((m) => m.id == id).firstOrNull,
-            orElse: () => null,
-          );
+      final existing = _existingMeal();
       final createdAt = existing?.createdAt ?? now;
 
-      var meal = _buildDraft(id: id, createdAt: createdAt);
-      if (publish) {
-        meal = meal.copyWith(
-          status: meal.stock <= 0
+      final statusOverride = publish
+          ? (int.tryParse(_stock.text.trim()) ?? 0) <= 0
               ? CookMealStatus.soldOut
-              : CookMealStatus.available,
-        );
-      }
+              : CookMealStatus.available
+          : (_isEditing && existing != null ? existing.status : null);
 
-      await ref.read(cookMealsControllerProvider.notifier).upsert(meal);
+      var meal = _buildDraft(
+        id: id,
+        createdAt: createdAt,
+        existing: existing,
+        statusOverride: statusOverride,
+      );
+
+      final editingPublished = _isEditing && existing?.publicationId != null;
+
+      await ref.read(cookMealsControllerProvider.notifier).upsert(
+            meal,
+            preservePublicationStatus: !publish && editingPublished,
+            allowCreatePublication: publish,
+          );
       if (!mounted) return;
 
       if (publish) {
@@ -180,10 +244,13 @@ class _CookCreateMealScreenState extends ConsumerState<CookCreateMealScreen> {
         }
       }
 
+      final snack = publish
+          ? 'Comida publicada'
+          : (_isEditing && existing?.publicationId != null
+              ? 'Cambios guardados en tu plato'
+              : 'Borrador guardado');
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(publish ? 'Comida publicada' : 'Borrador guardado'),
-        ),
+        SnackBar(content: Text(snack)),
       );
       context.go(const CookMealsRoute().location);
     } catch (e) {
@@ -192,7 +259,7 @@ class _CookCreateMealScreenState extends ConsumerState<CookCreateMealScreen> {
       final msg = switch (e) {
         UnauthorizedException() =>
           'Tu sesión expiró. Vuelve a iniciar sesión e inténtalo de nuevo.',
-        ApiErrorResponseException(code: final c, message: final m) => '$m ($c)',
+        ApiErrorResponseException(:final code, :final message) => '$message ($code)',
         NetworkException(message: final m) =>
           'No pudimos conectar con el servidor. $m',
         _ =>
@@ -281,16 +348,31 @@ class _CookCreateMealScreenState extends ConsumerState<CookCreateMealScreen> {
 
   @override
   Widget build(BuildContext context) {
+    ref.listen(cookMealsControllerProvider, (previous, next) {
+      final id = widget.editMealId;
+      if (id == null || id.isEmpty) return;
+      if (_hydratedForEditId == id) return;
+      next.whenData((_) => _ensureEditHydrated());
+    });
+
     final preview = _buildDraft(
       id: widget.editMealId ?? 'preview',
       createdAt: DateTime.now(),
     );
+
+    final isEditLoading = widget.editMealId != null &&
+        widget.editMealId!.isNotEmpty &&
+        _hydratedForEditId != widget.editMealId;
 
     return AppScaffold(
       title: widget.editMealId == null ? 'Crear comida' : 'Editar comida',
       body: ListView(
         padding: const EdgeInsets.all(AppSpacing.md),
         children: [
+          if (isEditLoading) ...[
+            const LinearProgressIndicator(minHeight: 2),
+            const SizedBox(height: AppSpacing.sm),
+          ],
           _PreviewCard(meal: preview),
           const SizedBox(height: AppSpacing.md),
           TextField(
@@ -424,7 +506,11 @@ class _CookCreateMealScreenState extends ConsumerState<CookCreateMealScreen> {
               Expanded(
                 child: FilledButton.tonal(
                   onPressed: _saving ? null : () => _save(publish: false),
-                  child: Text(_saving ? 'Guardando…' : 'Guardar borrador'),
+                  child: Text(
+                    _saving
+                        ? 'Guardando…'
+                        : (_isEditing ? 'Guardar' : 'Guardar borrador'),
+                  ),
                 ),
               ),
               const SizedBox(width: AppSpacing.sm),
@@ -436,6 +522,20 @@ class _CookCreateMealScreenState extends ConsumerState<CookCreateMealScreen> {
               ),
             ],
           ),
+          if (_isEditing && _existingMeal()?.publicationId != null) ...[
+            const SizedBox(height: AppSpacing.xs),
+            Text(
+              'Guardar actualiza tu publicación activa (precio, cupos y datos del plato).',
+              textAlign: TextAlign.center,
+              style: Theme.of(context).textTheme.labelMedium?.copyWith(
+                    color: Theme.of(context)
+                        .colorScheme
+                        .onSurface
+                        .withValues(alpha: 0.55),
+                    height: 1.3,
+                  ),
+            ),
+          ],
           const SizedBox(height: AppSpacing.sm),
           Text(
             'Sin pagos · Sin realtime · Solo estructura operativa.',

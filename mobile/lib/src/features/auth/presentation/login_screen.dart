@@ -9,6 +9,7 @@ import '../../../core/networking/api_client.dart';
 import '../application/auth_controller.dart';
 import '../../../core/routing/app_router.dart';
 import '../../../core/networking/api_exception.dart';
+import '../../../core/ui/password_text_field.dart';
 
 class LoginScreen extends ConsumerStatefulWidget {
   const LoginScreen({super.key});
@@ -19,7 +20,7 @@ class LoginScreen extends ConsumerStatefulWidget {
 
 class _LoginScreenState extends ConsumerState<LoginScreen> {
   final _phone = TextEditingController(text: '+57');
-  final _password = TextEditingController();
+  final _password = ObscuredPasswordEditingController();
   bool _loading = false;
   String? _error;
   bool _diagLoading = false;
@@ -170,12 +171,12 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                     decoration: const InputDecoration(labelText: 'Teléfono'),
                   ),
                   const SizedBox(height: 12),
-                  TextField(
+                  PasswordTextField(
                     controller: _password,
-                    obscureText: true,
-                    decoration: const InputDecoration(
-                      labelText: 'Contraseña',
-                    ),
+                    textInputAction: TextInputAction.done,
+                    onSubmitted: (_) {
+                      if (!_loading) _submit();
+                    },
                   ),
                   const SizedBox(height: 16),
                   if (_error != null)

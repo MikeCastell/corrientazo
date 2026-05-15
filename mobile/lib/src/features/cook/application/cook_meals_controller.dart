@@ -19,7 +19,13 @@ class CookMealsController extends AsyncNotifier<List<CookMeal>> {
     });
   }
 
-  Future<void> upsert(CookMeal meal) async {
+  Future<void> upsert(
+    CookMeal meal, {
+    /// Si true, no cambia PUBLISHED/PAUSED de la oferta (solo precio, stock, etc.).
+    bool preservePublicationStatus = false,
+    /// Si false, no crea publicación nueva al guardar (solo al publicar).
+    bool allowCreatePublication = true,
+  }) async {
     final repo = ref.read(cookMealsRepositoryProvider);
     // Never no-op while the list is still loading: the user can publish a new
     // dish before [build] finishes; the old `if (state.isLoading) return` skipped
@@ -33,7 +39,9 @@ class CookMealsController extends AsyncNotifier<List<CookMeal>> {
     final availableTo = now.add(const Duration(hours: 12));
     final pickupFrom = now.add(const Duration(minutes: 20));
     final pickupTo = now.add(const Duration(hours: 12));
-    final desiredPubStatus = wantsPublish ? 'PUBLISHED' : 'PAUSED';
+    final desiredPubStatus = preservePublicationStatus
+        ? null
+        : (wantsPublish ? 'PUBLISHED' : 'PAUSED');
     final ff = _fulfillmentFlags(meal.fulfillmentType);
 
     if (meal.id.startsWith('m_')) {
@@ -44,7 +52,7 @@ class CookMealsController extends AsyncNotifier<List<CookMeal>> {
         tags: meal.ingredients,
         photoUrl: null,
       );
-      if (meal.stock > 0) {
+      if (meal.stock > 0 && allowCreatePublication) {
         await repo.publish(
           created.id,
           priceCop: meal.priceCop,
@@ -69,7 +77,6 @@ class CookMealsController extends AsyncNotifier<List<CookMeal>> {
       description: meal.description.isEmpty ? null : meal.description,
       basePriceCop: meal.priceCop,
       tags: meal.ingredients,
-      photoUrl: null,
     );
     if (meal.stock > 0) {
       if (meal.publicationId != null) {
@@ -77,10 +84,10 @@ class CookMealsController extends AsyncNotifier<List<CookMeal>> {
           meal.publicationId!,
           status: desiredPubStatus,
           priceCop: meal.priceCop,
-          stockTotal: meal.stock,
           stockAvailable: meal.stock,
+          stockTotal: meal.stock,
         );
-      } else {
+      } else if (allowCreatePublication) {
         await repo.publish(
           meal.id,
           priceCop: meal.priceCop,
@@ -95,6 +102,14 @@ class CookMealsController extends AsyncNotifier<List<CookMeal>> {
           status: desiredPubStatus,
         );
       }
+    } else if (meal.publicationId != null) {
+      await repo.updatePublication(
+        meal.publicationId!,
+        status: preservePublicationStatus ? null : 'PAUSED',
+        priceCop: meal.priceCop,
+        stockTotal: 0,
+        stockAvailable: 0,
+      );
     }
     await refresh();
   }

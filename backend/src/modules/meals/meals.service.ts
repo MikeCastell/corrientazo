@@ -350,8 +350,20 @@ export class MealsService {
       });
     }
 
-    const nextStockTotal = dto.stockTotal ?? pub.stock_total;
-    const nextStockAvailable = dto.stockAvailable ?? pub.stock_available;
+    let nextStockTotal = dto.stockTotal ?? pub.stock_total;
+    let nextStockAvailable = dto.stockAvailable ?? pub.stock_available;
+
+    // Si solo suben cupos disponibles, ampliar stock_total para no violar stockAvailable > stockTotal.
+    if (dto.stockAvailable !== undefined && dto.stockAvailable !== null) {
+      nextStockAvailable = dto.stockAvailable;
+      if (dto.stockTotal === undefined || dto.stockTotal === null) {
+        nextStockTotal = Math.max(pub.stock_total, dto.stockAvailable);
+      } else {
+        nextStockTotal = dto.stockTotal;
+      }
+    } else if (dto.stockTotal !== undefined && dto.stockTotal !== null) {
+      nextStockTotal = dto.stockTotal;
+    }
 
     if (nextStockTotal < 0 || nextStockAvailable < 0) {
       throw new DomainError({
