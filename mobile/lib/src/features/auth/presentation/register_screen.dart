@@ -19,7 +19,7 @@ class RegisterScreen extends ConsumerStatefulWidget {
 class _RegisterScreenState extends ConsumerState<RegisterScreen> {
   final _name = TextEditingController();
   final _phone = TextEditingController(text: '+57');
-  final _password = ObscuredPasswordEditingController();
+  final _password = TextEditingController();
   String _role = 'CUSTOMER';
   bool _loading = false;
   String? _error;

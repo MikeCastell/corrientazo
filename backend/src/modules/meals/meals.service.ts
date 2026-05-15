@@ -340,7 +340,14 @@ export class MealsService {
     const cook = await this.ensureCookProfile(cookUserId);
     const pub = await this.prisma.meal_publications.findFirst({
       where: { id: publicationId, cook_profile_id: cook.id },
-      select: { id: true, meal_id: true, stock_total: true, stock_available: true },
+      select: {
+        id: true,
+        meal_id: true,
+        stock_total: true,
+        stock_available: true,
+        delivery_enabled: true,
+        pickup_enabled: true,
+      },
     });
     if (!pub) {
       throw new DomainError({
@@ -352,6 +359,23 @@ export class MealsService {
 
     let nextStockTotal = dto.stockTotal ?? pub.stock_total;
     let nextStockAvailable = dto.stockAvailable ?? pub.stock_available;
+    const nextDeliveryEnabled =
+      dto.deliveryEnabled !== undefined && dto.deliveryEnabled !== null
+        ? dto.deliveryEnabled
+        : pub.delivery_enabled;
+    const nextPickupEnabled =
+      dto.pickupEnabled !== undefined && dto.pickupEnabled !== null
+        ? dto.pickupEnabled
+        : pub.pickup_enabled;
+
+    if (!nextDeliveryEnabled && !nextPickupEnabled) {
+      throw new DomainError({
+        code: ErrorCodes.ORDER_INVALID_STATE_TRANSITION,
+        message:
+          "Publication must allow pickup and/or delivery",
+        statusCode: 400,
+      });
+    }
 
     // Si solo suben cupos disponibles, ampliar stock_total para no violar stockAvailable > stockTotal.
     if (dto.stockAvailable !== undefined && dto.stockAvailable !== null) {
@@ -408,6 +432,12 @@ export class MealsService {
                   dto.stockTotal !== null &&
                   (dto.stockAvailable === undefined || dto.stockAvailable === null)
             ? { stock_available: Math.min(pub.stock_available, nextStockTotal) }
+            : {}),
+          ...(dto.deliveryEnabled !== undefined && dto.deliveryEnabled !== null
+            ? { delivery_enabled: nextDeliveryEnabled }
+            : {}),
+          ...(dto.pickupEnabled !== undefined && dto.pickupEnabled !== null
+            ? { pickup_enabled: nextPickupEnabled }
             : {}),
         },
         select: {

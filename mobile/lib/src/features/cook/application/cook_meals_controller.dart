@@ -86,6 +86,8 @@ class CookMealsController extends AsyncNotifier<List<CookMeal>> {
           priceCop: meal.priceCop,
           stockAvailable: meal.stock,
           stockTotal: meal.stock,
+          deliveryEnabled: ff.delivery,
+          pickupEnabled: ff.pickup,
         );
       } else if (allowCreatePublication) {
         await repo.publish(
@@ -109,6 +111,8 @@ class CookMealsController extends AsyncNotifier<List<CookMeal>> {
         priceCop: meal.priceCop,
         stockTotal: 0,
         stockAvailable: 0,
+        deliveryEnabled: ff.delivery,
+        pickupEnabled: ff.pickup,
       );
     }
     await refresh();
@@ -189,6 +193,8 @@ class CookMealsController extends AsyncNotifier<List<CookMeal>> {
           priceCop: m.priceCop,
           stockTotal: m.stock,
           stockAvailable: m.stock,
+          deliveryEnabled: ff.delivery,
+          pickupEnabled: ff.pickup,
         );
       } else {
         await repo.update(

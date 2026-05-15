@@ -138,6 +138,18 @@ export class UpdateMealPublicationDto {
   @Min(0)
   stockAvailable?: number;
 
+  @ApiPropertyOptional({ example: false })
+  @IsOptional()
+  @Transform(({ value }) => normalizeOptionalBool(value))
+  @IsBoolean()
+  deliveryEnabled?: boolean;
+
+  @ApiPropertyOptional({ example: true, description: "If false, pickup orders are not allowed." })
+  @IsOptional()
+  @Transform(({ value }) => normalizeOptionalBool(value))
+  @IsBoolean()
+  pickupEnabled?: boolean;
+
   @ApiPropertyOptional({ example: "PAUSED" })
   @IsOptional()
   @IsString()

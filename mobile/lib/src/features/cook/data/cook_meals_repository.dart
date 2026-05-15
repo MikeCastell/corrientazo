@@ -2,6 +2,7 @@ import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/networking/api_client.dart';
+import '../../../core/networking/api_exception.dart';
 import '../../../core/networking/json_bool.dart';
 
 class CookMealsRepository {
@@ -129,12 +130,57 @@ class CookMealsRepository {
     int? stockAvailable,
     int? stockTotal,
     int? priceCop,
+    bool? deliveryEnabled,
+    bool? pickupEnabled,
+  }) async {
+    final fulfillment = deliveryEnabled != null || pickupEnabled != null;
+    try {
+      await _patchPublication(
+        publicationId,
+        status: status,
+        stockAvailable: stockAvailable,
+        stockTotal: stockTotal,
+        priceCop: priceCop,
+        deliveryEnabled: deliveryEnabled,
+        pickupEnabled: pickupEnabled,
+      );
+    } on ApiErrorResponseException catch (e) {
+      // API viejo sin deliveryEnabled/pickupEnabled en PATCH: reintenta sin esos campos.
+      if (!fulfillment || !_isUnknownFulfillmentFieldError(e)) rethrow;
+      await _patchPublication(
+        publicationId,
+        status: status,
+        stockAvailable: stockAvailable,
+        stockTotal: stockTotal,
+        priceCop: priceCop,
+      );
+    }
+  }
+
+  bool _isUnknownFulfillmentFieldError(ApiErrorResponseException e) {
+    final m = e.message.toLowerCase();
+    return m.contains('deliveryenabled') ||
+        m.contains('pickupenabled') ||
+        m.contains('delivery_enabled') ||
+        m.contains('pickup_enabled');
+  }
+
+  Future<void> _patchPublication(
+    String publicationId, {
+    String? status,
+    int? stockAvailable,
+    int? stockTotal,
+    int? priceCop,
+    bool? deliveryEnabled,
+    bool? pickupEnabled,
   }) {
     final body = <String, dynamic>{};
     if (status != null) body['status'] = status;
     if (stockAvailable != null) body['stockAvailable'] = stockAvailable;
     if (stockTotal != null) body['stockTotal'] = stockTotal;
     if (priceCop != null) body['priceCop'] = priceCop;
+    if (deliveryEnabled != null) body['deliveryEnabled'] = deliveryEnabled;
+    if (pickupEnabled != null) body['pickupEnabled'] = pickupEnabled;
 
     return _api.patchJson<void>(
       '/meal-publications/$publicationId',
@@ -187,7 +233,9 @@ class CookMealTemplateDto {
       description: json['description'] as String?,
       basePriceCop: (json['base_price_cop'] as num).toInt(),
       photoUrl: json['photo_url'] as String?,
-      tags: (json['tags'] as List).cast<String>(),
+      tags: json['tags'] is List
+          ? (json['tags'] as List).map((e) => e.toString()).toList()
+          : const <String>[],
       isActive: json['is_active'] as bool,
       createdAt: DateTime.parse(json['created_at'] as String),
       updatedAt: DateTime.parse(json['updated_at'] as String),

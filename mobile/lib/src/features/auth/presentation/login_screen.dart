@@ -20,7 +20,7 @@ class LoginScreen extends ConsumerStatefulWidget {
 
 class _LoginScreenState extends ConsumerState<LoginScreen> {
   final _phone = TextEditingController(text: '+57');
-  final _password = ObscuredPasswordEditingController();
+  final _password = TextEditingController();
   bool _loading = false;
   String? _error;
   bool _diagLoading = false;

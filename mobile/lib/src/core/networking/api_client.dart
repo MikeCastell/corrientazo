@@ -148,7 +148,8 @@ class ApiClient {
   }) async {
     try {
       final r = await _dio.patch<dynamic>(path, data: body);
-      return decode != null ? decode(r.data) : r.data as T;
+      if (decode != null) return decode(r.data);
+      return r.data as T;
     } on DioException catch (e) {
       throw _mapDio(e);
     }

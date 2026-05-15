@@ -205,6 +205,10 @@ class _CookCreateMealScreenState extends ConsumerState<CookCreateMealScreen> {
     HapticFeedback.selectionClick();
 
     try {
+      if (_isEditing) {
+        await ref.read(cookMealsControllerProvider.notifier).refresh();
+      }
+
       final now = DateTime.now();
       final id = widget.editMealId ?? 'm_${now.millisecondsSinceEpoch}';
       final existing = _existingMeal();
@@ -262,6 +266,7 @@ class _CookCreateMealScreenState extends ConsumerState<CookCreateMealScreen> {
         ApiErrorResponseException(:final code, :final message) => '$message ($code)',
         NetworkException(message: final m) =>
           'No pudimos conectar con el servidor. $m',
+        FormatException(message: final m) => m,
         _ =>
           publish
               ? 'No pudimos publicar. Intenta de nuevo.'
@@ -525,7 +530,7 @@ class _CookCreateMealScreenState extends ConsumerState<CookCreateMealScreen> {
           if (_isEditing && _existingMeal()?.publicationId != null) ...[
             const SizedBox(height: AppSpacing.xs),
             Text(
-              'Guardar actualiza tu publicación activa (precio, cupos y datos del plato).',
+              'Guardar actualiza tu publicación activa (precio, cupos, método de entrega y datos del plato).',
               textAlign: TextAlign.center,
               style: Theme.of(context).textTheme.labelMedium?.copyWith(
                     color: Theme.of(context)
