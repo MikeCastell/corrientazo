@@ -17,6 +17,7 @@ import '../application/cook_meals_controller.dart';
 import '../data/cook_meals_repository.dart';
 import '../domain/cook_meal.dart';
 import '../domain/cook_meal_draft_template.dart';
+import 'widgets/cook_fulfillment_icon_badge.dart';
 
 class CookCreateMealScreen extends ConsumerStatefulWidget {
   const CookCreateMealScreen({super.key, this.editMealId, this.templateId});
@@ -780,8 +781,8 @@ class _PreviewCard extends StatelessWidget {
                       tone: AppColors.secondary,
                     ),
                     const SizedBox(width: 8),
-                    _Pill(
-                      label: meal.fulfillmentType,
+                    CookFulfillmentIconBadge(
+                      fulfillmentType: meal.fulfillmentType,
                       tone: AppColors.accentDeep,
                     ),
                   ],

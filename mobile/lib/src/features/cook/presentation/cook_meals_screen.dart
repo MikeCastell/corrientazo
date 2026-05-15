@@ -12,6 +12,7 @@ import '../../../core/ui/states/app_empty_state.dart';
 import '../../../core/ui/states/app_loading_center.dart';
 import '../application/cook_meals_controller.dart';
 import '../domain/cook_meal.dart';
+import 'widgets/cook_fulfillment_icon_badge.dart';
 
 class CookMealsScreen extends ConsumerStatefulWidget {
   const CookMealsScreen({super.key});
@@ -640,17 +641,26 @@ class _CookMealCard extends StatelessWidget {
                                 ),
                           ),
                           const SizedBox(height: 2),
-                          Text(
-                            'Stock: ${meal.stock} · ${meal.fulfillmentType}',
-                            style: Theme.of(context)
-                                .textTheme
-                                .bodyMedium
-                                ?.copyWith(
-                                  color: Theme.of(context)
-                                      .colorScheme
-                                      .onSurface
-                                      .withValues(alpha: 0.65),
-                                ),
+                          Row(
+                            children: [
+                              Text(
+                                'Stock: ${meal.stock}',
+                                style: Theme.of(context)
+                                    .textTheme
+                                    .bodyMedium
+                                    ?.copyWith(
+                                      color: Theme.of(context)
+                                          .colorScheme
+                                          .onSurface
+                                          .withValues(alpha: 0.65),
+                                    ),
+                              ),
+                              const SizedBox(width: 8),
+                              CookFulfillmentIconBadge(
+                                fulfillmentType: meal.fulfillmentType,
+                                tone: AppColors.accentDeep,
+                              ),
+                            ],
                           ),
                           const SizedBox(height: AppSpacing.xs),
                           Row(
