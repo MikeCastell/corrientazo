@@ -11,6 +11,7 @@ import '../../../core/ui/states/app_empty_state.dart';
 import '../../../core/ui/marketplace/food_image.dart';
 import '../../meals/application/meals_controller.dart';
 import '../../orders/domain/order_summary.dart';
+import '../../orders/presentation/widgets/order_tracking_progress.dart';
 import '../application/customer_orders_controller.dart';
 
 class CustomerOrdersScreen extends ConsumerWidget {
@@ -394,7 +395,11 @@ class _ActiveOrderHero extends StatelessWidget {
                     ),
                   ),
                   const SizedBox(height: 12),
-                  _SoftProgress(current: _trackingStepIndex(s), tone: t),
+                  OrderTrackingProgress(
+                    status: s,
+                    fulfillmentType: order.fulfillmentType,
+                    tone: t,
+                  ),
                   const SizedBox(height: 12),
                   Wrap(
                     spacing: 8,
@@ -740,129 +745,19 @@ class _MiniPill extends StatelessWidget {
   }
 }
 
-class _SoftProgress extends StatelessWidget {
-  const _SoftProgress({required this.current, required this.tone});
-
-  final int current; // 0..3
-  final Color tone;
-
-  static const _labels = ['Recibido', 'Preparando', 'En camino', 'Entregado'];
-  static const _icons = [
-    Icons.check,
-    Icons.restaurant,
-    Icons.delivery_dining,
-    Icons.door_front_door_outlined,
-  ];
-
-  @override
-  Widget build(BuildContext context) {
-    return LayoutBuilder(
-      builder: (context, c) {
-        return SizedBox(
-          width: double.infinity,
-          child: Stack(
-            children: [
-              Positioned(
-                left: 0,
-                right: 0,
-                top: 18,
-                child: Container(
-                  height: 2,
-                  color: Colors.white.withValues(alpha: 0.20),
-                ),
-              ),
-              Positioned(
-                left: 0,
-                top: 18,
-                child: Container(
-                  height: 2,
-                  width: (c.maxWidth * ((current.clamp(0, 3)) / 3)),
-                  color: tone.withValues(alpha: 0.75),
-                ),
-              ),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: List.generate(4, (i) {
-                  final active = i <= current;
-                  return Column(
-                    children: [
-                      Container(
-                        width: 38,
-                        height: 38,
-                        decoration: BoxDecoration(
-                          color: active
-                              ? tone.withValues(alpha: 0.92)
-                              : Colors.white.withValues(alpha: 0.16),
-                          shape: BoxShape.circle,
-                          border: active
-                              ? Border.all(
-                                  color: Colors.white.withValues(alpha: 0.20),
-                                  width: 3,
-                                )
-                              : null,
-                        ),
-                        child: Icon(
-                          _icons[i],
-                          size: 18,
-                          color: Colors.white.withValues(
-                            alpha: active ? 1.0 : 0.78,
-                          ),
-                        ),
-                      ),
-                      const SizedBox(height: 6),
-                      Text(
-                        _labels[i],
-                        style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                          color: Colors.white.withValues(
-                            alpha: i == current ? 1.0 : 0.78,
-                          ),
-                          fontWeight: i == current
-                              ? FontWeight.w900
-                              : FontWeight.w700,
-                        ),
-                      ),
-                    ],
-                  );
-                }),
-              ),
-            ],
-          ),
-        );
-      },
-    );
-  }
-}
-
 Color _trackingTone(String statusUpper) {
   final s = statusUpper;
   if (s.startsWith('CANCELLED') || s == 'REFUNDED') return AppColors.danger;
-  if (s == 'DELIVERED' || s == 'READY_FOR_PICKUP' || s == 'PICKED_UP') {
+  if (s == 'DELIVERED' ||
+      s == 'READY_FOR_PICKUP' ||
+      s == 'READY_FOR_DISPATCH' ||
+      s == 'PICKED_UP') {
     return AppColors.success;
   }
   if (s == 'CONFIRMED' || s == 'ACCEPTED') return AppColors.primary;
   if (s == 'PREPARING' || s == 'IN_KITCHEN') return AppColors.brand;
   if (s == 'ON_THE_WAY' || s == 'OUT_FOR_DELIVERY') return AppColors.accent;
   return AppColors.brand;
-}
-
-int _trackingStepIndex(String statusUpper) {
-  switch (statusUpper) {
-    case 'CONFIRMED':
-    case 'ACCEPTED':
-      return 0;
-    case 'PREPARING':
-    case 'IN_KITCHEN':
-      return 1;
-    case 'ON_THE_WAY':
-    case 'OUT_FOR_DELIVERY':
-    case 'READY_FOR_PICKUP':
-    case 'PICKED_UP':
-      return 2;
-    case 'DELIVERED':
-      return 3;
-    default:
-      return 1;
-  }
 }
 
 (String, String) _humanTrackingCopy({
@@ -878,6 +773,11 @@ int _trackingStepIndex(String statusUpper) {
       return (
         'Tu almuerzo ya está en preparación 🍲',
         '$cookName está cocinando tu pedido.',
+      );
+    case 'READY_FOR_DISPATCH':
+      return (
+        'Listo para enviar',
+        '$cookName ya lo dejó listo — sale en camino pronto.',
       );
     case 'ON_THE_WAY':
     case 'OUT_FOR_DELIVERY':
@@ -921,6 +821,8 @@ String _humanStatusLine(String statusUpper) {
       return 'Listo para disfrutar 👌';
     case 'READY_FOR_PICKUP':
       return 'Listo para recoger';
+    case 'READY_FOR_DISPATCH':
+      return 'Listo para enviar';
     case 'ON_THE_WAY':
     case 'OUT_FOR_DELIVERY':
       return 'Ya va en camino';

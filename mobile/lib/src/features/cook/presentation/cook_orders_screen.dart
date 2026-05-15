@@ -12,6 +12,7 @@ import '../../../core/ui/states/app_empty_state.dart';
 import '../../../core/ui/states/app_loading_center.dart';
 import '../../../core/ux/milestone_celebration.dart';
 import '../../../core/ux/ux_milestones_store.dart';
+import '../../orders/domain/order_cook_actions.dart';
 import '../../orders/domain/order_summary.dart';
 import '../application/cook_orders_controller.dart';
 import '../domain/cook_order_operacion.dart';
@@ -255,7 +256,10 @@ class _CookOrderCard extends StatelessWidget {
         ? statusLabel
         : '$statusLabel · ${_fulfillmentLabel(fulfillmentType)} · $eta';
 
-    final actions = _actionsForStatus(s);
+    final actions = cookActionsForOrder(
+      status: s,
+      fulfillmentType: fulfillmentType,
+    );
 
     return InkWell(
       borderRadius: BorderRadius.circular(AppRadius.lg),
@@ -457,26 +461,6 @@ class _CookOrderCard extends StatelessWidget {
     return '$low–$high min';
   }
 
-  static List<_ActionDef> _actionsForStatus(String s) {
-    switch (s) {
-      case 'INIT':
-        return const [_ActionDef('CONFIRM', 'Confirmar')];
-      case 'CONFIRMED':
-        return const [_ActionDef('START_PREPARING', 'Empezar')];
-      case 'PREPARING':
-        return const [_ActionDef('MARK_READY_PICKUP', 'Listo')];
-      case 'READY_FOR_PICKUP':
-        return const [_ActionDef('MARK_PICKED_UP', 'Entregado')];
-      default:
-        return const [];
-    }
-  }
-}
-
-class _ActionDef {
-  const _ActionDef(this.action, this.label);
-  final String action;
-  final String label;
 }
 
 class _Timeline extends StatelessWidget {

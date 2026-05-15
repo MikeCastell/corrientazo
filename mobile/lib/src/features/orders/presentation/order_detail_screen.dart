@@ -13,9 +13,13 @@ import '../../../core/ui/states/app_empty_state.dart';
 import '../data/orders_repository.dart';
 import '../../customer/application/customer_orders_controller.dart';
 import '../../cook/application/cook_orders_controller.dart';
+import '../application/order_status_override.dart';
 import '../domain/order_detail.dart';
+import '../domain/order_cook_actions.dart';
+import '../domain/order_status_labels.dart';
 import '../domain/order_status_terminal.dart';
 import 'widgets/order_cancel_flow.dart';
+import 'widgets/order_tracking_progress.dart';
 
 enum OrderDetailMode { customer, cook }
 
@@ -50,10 +54,11 @@ class OrderDetailScreen extends ConsumerWidget {
           onAction: () => ref.invalidate(orderDetailProvider(orderId)),
         ),
         data: (o) {
-          final s = o.status.toUpperCase();
+          final override = ref.watch(orderStatusOverrideProvider(orderId));
+          final s = (override ?? o.status).toUpperCase();
           final tone = _toneForStatus(s);
-          final statusLabel = _labelForStatus(s);
-          final etaLabel = _pseudoEtaLabel(o.createdAt, s);
+          final statusLabel = orderStatusLabel(s);
+          final etaLabel = orderPseudoEtaLabel(o.createdAt, s);
           final cancelled = _orderIsCancelled(s);
 
           return RefreshIndicator(
@@ -85,7 +90,11 @@ class OrderDetailScreen extends ConsumerWidget {
                   notes: o.notes,
                 ),
                 const SizedBox(height: AppSpacing.md),
-                _TimelineCard(status: s, timeline: o.timeline),
+                _TimelineCard(
+                  status: s,
+                  fulfillmentType: o.fulfillmentType,
+                  timeline: o.timeline,
+                ),
                 const SizedBox(height: AppSpacing.md),
                 if (mode == OrderDetailMode.customer && !cancelled)
                   _CustomerCancelPanel(
@@ -146,13 +155,30 @@ class OrderDetailScreen extends ConsumerWidget {
                 if (mode == OrderDetailMode.cook && !cancelled)
                   _CookActions(
                     status: s,
+                    fulfillmentType: o.fulfillmentType,
                     onAction: (action) async {
                       HapticFeedback.selectionClick();
-                      await ref
-                          .read(ordersRepositoryProvider)
-                          .updateStatus(orderId: o.id, action: action);
-                      ref.invalidate(orderDetailProvider(orderId));
-                      ref.invalidate(cookOrdersControllerProvider);
+                      final next = statusAfterCookAction(action);
+                      if (next != null) {
+                        ref
+                            .read(orderStatusOverrideProvider(orderId).notifier)
+                            .setOverride(next);
+                      }
+                      try {
+                        await ref
+                            .read(cookOrdersControllerProvider.notifier)
+                            .transition(orderId: o.id, action: action);
+                        await ref.read(orderDetailProvider(orderId).future);
+                        ref.invalidate(orderDetailProvider(orderId));
+                        ref
+                            .read(orderStatusOverrideProvider(orderId).notifier)
+                            .setOverride(null);
+                      } catch (e) {
+                        ref
+                            .read(orderStatusOverrideProvider(orderId).notifier)
+                            .setOverride(null);
+                        rethrow;
+                      }
                     },
                     onCancelFlowTap: _cookMayCancelFromKitchen(s)
                         ? () async {
@@ -532,9 +558,14 @@ class _InfoGrid extends StatelessWidget {
 }
 
 class _TimelineCard extends StatelessWidget {
-  const _TimelineCard({required this.status, required this.timeline});
+  const _TimelineCard({
+    required this.status,
+    required this.fulfillmentType,
+    required this.timeline,
+  });
 
   final String status;
+  final String fulfillmentType;
   final List<OrderStatusEvent> timeline;
 
   @override
@@ -550,7 +581,12 @@ class _TimelineCard extends StatelessWidget {
             ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w900),
           ),
           const SizedBox(height: AppSpacing.sm),
-          _DotsTimeline(status: status),
+          OrderTrackingProgress(
+            status: status,
+            fulfillmentType: fulfillmentType,
+            tone: _toneForStatus(status),
+            lightOnDark: false,
+          ),
           const SizedBox(height: AppSpacing.md),
           ...timeline.reversed.take(4).map((e) {
             final when =
@@ -570,7 +606,7 @@ class _TimelineCard extends StatelessWidget {
                   const SizedBox(width: 8),
                   Expanded(
                     child: Text(
-                      _labelForStatus(e.toStatus.toUpperCase()),
+                      orderStatusLabel(e.toStatus.toUpperCase()),
                       style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                         fontWeight: FontWeight.w800,
                       ),
@@ -725,17 +761,22 @@ class _CustomerCard extends StatelessWidget {
 class _CookActions extends StatelessWidget {
   const _CookActions({
     required this.status,
+    required this.fulfillmentType,
     required this.onAction,
     this.onCancelFlowTap,
   });
 
   final String status;
+  final String fulfillmentType;
   final ValueChanged<String> onAction;
   final VoidCallback? onCancelFlowTap;
 
   @override
   Widget build(BuildContext context) {
-    final actions = _actionsForStatus(status);
+    final actions = cookActionsForOrder(
+      status: status,
+      fulfillmentType: fulfillmentType,
+    );
     final showCancel = onCancelFlowTap != null;
 
     if (actions.isEmpty && !showCancel) return const SizedBox.shrink();
@@ -880,105 +921,6 @@ class _Pill extends StatelessWidget {
   }
 }
 
-class _DotsTimeline extends StatelessWidget {
-  const _DotsTimeline({required this.status});
-  final String status;
-
-  @override
-  Widget build(BuildContext context) {
-    if (status.startsWith('CANCELLED')) {
-      return Text(
-        'Este pedido quedó cancelado; aquí guardamos el historial para que '
-        'siempre puedas revisar qué pasó.',
-        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-              height: 1.35,
-              fontWeight: FontWeight.w700,
-              color: Theme.of(context)
-                  .colorScheme
-                  .onSurface
-                  .withValues(alpha: 0.76),
-            ),
-      );
-    }
-
-    final steps = const [
-      ('INIT', 'Nuevo'),
-      ('CONFIRMED', 'Confirmado'),
-      ('PREPARING', 'Preparando'),
-      ('READY_FOR_PICKUP', 'Listo'),
-      ('PICKED_UP', 'Entregado'),
-    ];
-
-    final idx = steps.indexWhere((s) => s.$1 == status);
-    final activeIndex = idx < 0 ? 0 : idx;
-
-    return Row(
-      children: [
-        for (var i = 0; i < steps.length; i++) ...[
-          _Dot(active: i <= activeIndex),
-          if (i != steps.length - 1) _Line(active: i < activeIndex),
-        ],
-      ],
-    );
-  }
-}
-
-class _Dot extends StatelessWidget {
-  const _Dot({required this.active});
-  final bool active;
-
-  @override
-  Widget build(BuildContext context) {
-    final c = active ? AppColors.brand : Theme.of(context).dividerColor;
-    return Container(
-      width: 10,
-      height: 10,
-      decoration: BoxDecoration(color: c, shape: BoxShape.circle),
-    );
-  }
-}
-
-class _Line extends StatelessWidget {
-  const _Line({required this.active});
-  final bool active;
-
-  @override
-  Widget build(BuildContext context) {
-    final c = active ? AppColors.brand : Theme.of(context).dividerColor;
-    return Expanded(
-      child: Container(
-        height: 2,
-        margin: const EdgeInsets.symmetric(horizontal: 6),
-        decoration: BoxDecoration(
-          color: c,
-          borderRadius: BorderRadius.circular(99),
-        ),
-      ),
-    );
-  }
-}
-
-class _ActionDef {
-  const _ActionDef(this.action, this.label);
-  final String action;
-  final String label;
-}
-
-List<_ActionDef> _actionsForStatus(String s) {
-  switch (s) {
-    case 'INIT':
-      return const [_ActionDef('CONFIRM', 'Confirmar pedido')];
-    case 'CONFIRMED':
-      return const [_ActionDef('START_PREPARING', 'Empezar preparación')];
-    case 'PREPARING':
-      return const [_ActionDef('MARK_READY_PICKUP', 'Listo para recoger')];
-    case 'READY_FOR_PICKUP':
-      return const [_ActionDef('MARK_PICKED_UP', 'Entregado')];
-    default:
-      return const [];
-  }
-}
-
 Color _toneForStatus(String s) {
   switch (s) {
     case 'INIT':
@@ -988,7 +930,10 @@ Color _toneForStatus(String s) {
     case 'PREPARING':
       return AppColors.accentDeep;
     case 'READY_FOR_PICKUP':
+    case 'READY_FOR_DISPATCH':
       return AppColors.secondary;
+    case 'OUT_FOR_DELIVERY':
+      return AppColors.accentDeep;
     case 'PICKED_UP':
     case 'DELIVERED':
       return AppColors.success;
@@ -1001,39 +946,3 @@ Color _toneForStatus(String s) {
   }
 }
 
-String _labelForStatus(String s) {
-  switch (s) {
-    case 'INIT':
-      return 'Nuevo';
-    case 'CONFIRMED':
-      return 'Confirmado';
-    case 'PREPARING':
-      return 'Preparando';
-    case 'READY_FOR_PICKUP':
-      return 'Listo';
-    case 'PICKED_UP':
-    case 'DELIVERED':
-      return 'Entregado';
-    case 'CANCELLED_BY_CLIENT':
-      return 'Cancelado por ti';
-    case 'CANCELLED_BY_COOK':
-      return 'Cancelado por el cook';
-    case 'CANCELLED_BY_ADMIN':
-      return 'Pedido cancelado';
-    default:
-      return s;
-  }
-}
-
-String _pseudoEtaLabel(DateTime createdAt, String status) {
-  if (status.startsWith('CANCELLED')) return 'Pedido cerrado';
-  final mins = DateTime.now().difference(createdAt).inMinutes.abs();
-  if (status == 'READY_FOR_PICKUP' ||
-      status == 'PICKED_UP' ||
-      status == 'DELIVERED') {
-    return 'Listo';
-  }
-  final low = 15 + (mins % 8);
-  final high = low + 12;
-  return '$low–$high min';
-}

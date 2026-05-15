@@ -10,6 +10,7 @@ import '../../../core/env/app_env.dart';
 import '../../../core/notifications/local_notifications.dart';
 import '../data/orders_repository.dart';
 import '../domain/order_summary.dart';
+import '../domain/order_status_labels.dart';
 import '../domain/order_status_terminal.dart';
 import '../../customer/application/customer_orders_controller.dart';
 import '../../cook/application/cook_orders_controller.dart';
@@ -23,6 +24,7 @@ import '../../cook/application/cook_orders_controller.dart';
 /// “nuevos” y el cocinero recibe spam sin sentido.
 class LiveOrdersPoller extends Notifier<void> {
   Timer? _timer;
+  Duration? _timerInterval;
   List<OrderSummary> _last = const [];
   final Map<String, _PublicationSnapshot> _lastPublicationByOrderId = {};
   /// `true` tras el primer `_tick` exitoso en esta sesión (lista ya hidratada).
@@ -42,12 +44,22 @@ class LiveOrdersPoller extends Notifier<void> {
       return;
     }
 
-    _timer ??= Timer.periodic(const Duration(seconds: 12), (_) => _tick());
+    final interval = auth.user.isCook
+        ? const Duration(seconds: 5)
+        : const Duration(seconds: 3);
+    _ensurePolling(interval);
     // Run an immediate tick on first build for quick UI hydration.
     Future.microtask(_tick);
     // Request notification permission early (Android 13+). Cooks usually hit this on the
     // first poll via show(); customers only call show() after a status/publication change.
     Future.microtask(() => ref.read(localNotificationsProvider).initIfNeeded());
+  }
+
+  void _ensurePolling(Duration interval) {
+    if (_timer != null && _timerInterval == interval) return;
+    _timer?.cancel();
+    _timerInterval = interval;
+    _timer = Timer.periodic(interval, (_) => _tick());
   }
 
   Future<void> _tick() async {
@@ -65,12 +77,13 @@ class LiveOrdersPoller extends Notifier<void> {
         final newOnes = next.where((o) => !prevIds.contains(o.id)).toList();
         if (_sessionOrdersHydrated && newOnes.isNotEmpty) {
           HapticFeedback.heavyImpact();
-          await ref
-              .read(localNotificationsProvider)
-              .show(
-                id: DateTime.now().millisecondsSinceEpoch.remainder(1 << 30),
+          final first = newOnes.first;
+          await ref.read(localNotificationsProvider).showOrder(
+                orderId: first.id,
                 title: 'Nuevo pedido',
-                body: '${newOnes.length} pedido(s) entraron. Abre “Pedidos”.',
+                body: newOnes.length == 1
+                    ? 'Tienes un pedido nuevo. Toca para verlo.'
+                    : '${newOnes.length} pedidos nuevos. Toca para ver el más reciente.',
               );
         }
 
@@ -82,12 +95,8 @@ class LiveOrdersPoller extends Notifier<void> {
             final nextS = entry.value.status.toUpperCase();
             if (prevS == nextS) continue;
             if (nextS.startsWith('CANCELLED')) {
-              await ref
-                  .read(localNotificationsProvider)
-                  .show(
-                    id: DateTime.now().millisecondsSinceEpoch.remainder(
-                      1 << 30,
-                    ),
+              await ref.read(localNotificationsProvider).showOrder(
+                    orderId: entry.key,
                     title: 'Pedido cancelado',
                     body: nextS.contains('CLIENT')
                         ? 'El cliente canceló antes de cocinar.'
@@ -104,7 +113,9 @@ class LiveOrdersPoller extends Notifier<void> {
               return p != null &&
                   p.status.toUpperCase() != e.value.status.toUpperCase();
             });
-        if (ordersUpdated) ref.invalidate(cookOrdersControllerProvider);
+        if (ordersUpdated) {
+          ref.read(cookOrdersControllerProvider.notifier).applyServerOrders(next);
+        }
       } else {
         // Status changes for customer
         final changed = <OrderSummary>[];
@@ -116,25 +127,31 @@ class LiveOrdersPoller extends Notifier<void> {
           }
         }
         final hadStatusChange = changed.isNotEmpty;
-        if (hadStatusChange && _sessionOrdersHydrated) {
-          final o = changed.first;
-          final prev = prevById[o.id];
-          final nextS = o.status.toUpperCase();
-          final prevS = prev?.status.toUpperCase();
+        if (hadStatusChange) {
+          if (_sessionOrdersHydrated) {
+            HapticFeedback.mediumImpact();
+            for (final o in changed) {
+              final prev = prevById[o.id];
+              final nextS = o.status.toUpperCase();
+              final prevS = prev?.status.toUpperCase();
+              if (prevS == nextS) continue;
 
-          final msg = _customerStatusMessage(prevS: prevS, nextS: nextS);
-          await ref
-              .read(localNotificationsProvider)
-              .show(
-                id: DateTime.now().millisecondsSinceEpoch.remainder(1 << 30),
-                title: msg.title,
-                body: msg.body,
+              final msg = _customerStatusMessage(
+                prevS: prevS,
+                nextS: nextS,
+                mealTitle: o.mealTitle,
               );
-
-          // Refresh UI only when something changed.
-          ref.invalidate(customerOrdersControllerProvider);
-        } else if (hadStatusChange) {
-          ref.invalidate(customerOrdersControllerProvider);
+              await ref.read(localNotificationsProvider).showOrder(
+                    orderId: o.id,
+                    title: msg.title,
+                    body: msg.body,
+                    notificationId: Object.hash(o.id, nextS),
+                  );
+            }
+          }
+          ref
+              .read(customerOrdersControllerProvider.notifier)
+              .applyServerOrders(next);
         }
 
         // Cook updated the meal/publication: detect on ACTIVE orders via order detail.
@@ -186,13 +203,11 @@ class LiveOrdersPoller extends Notifier<void> {
             : 'Stock: ${snap.stockAvailable}';
         final body = [status, stock].where((x) => x.isNotEmpty).join(' · ');
 
-        await ref
-            .read(localNotificationsProvider)
-            .show(
-              id: DateTime.now().millisecondsSinceEpoch.remainder(1 << 30),
+        await ref.read(localNotificationsProvider).showOrder(
+              orderId: o.id,
               title: 'Actualización del cocinero',
               body: body.isEmpty
-                  ? 'Tu plato fue actualizado.'
+                  ? 'Tu plato fue actualizado. Toca para ver tu pedido.'
                   : 'Tu plato fue actualizado. $body',
             );
       }
@@ -207,17 +222,21 @@ class LiveOrdersPoller extends Notifier<void> {
 ({String title, String body}) _customerStatusMessage({
   required String? prevS,
   required String nextS,
+  String? mealTitle,
 }) {
+  final dish = (mealTitle ?? '').trim();
+  final dishHint = dish.isEmpty ? '' : ' · $dish';
+
   if (prevS == null) {
     return (
       title: 'Pedido actualizado',
-      body: 'Estado: ${_labelForStatus(nextS)}',
+      body: 'Estado: ${orderStatusLabel(nextS)}$dishHint',
     );
   }
   if (prevS == 'INIT' && nextS == 'CONFIRMED') {
     return (
       title: 'Pedido confirmado',
-      body: 'El cocinero ya aceptó tu pedido. Empezamos.',
+      body: 'El cocinero ya aceptó tu pedido$dishHint.',
     );
   }
   if (nextS.startsWith('CANCELLED')) {
@@ -225,51 +244,41 @@ class LiveOrdersPoller extends Notifier<void> {
     return (
       title: byCook ? 'Tu cook canceló el pedido' : 'Tu pedido fue cancelado',
       body: byCook
-          ? 'Te dejamos el motivo en el detalle del pedido.'
+          ? 'Revisa el detalle del pedido$dishHint.'
           : 'Liberamos el cupo en el menú por ti.',
     );
   }
   if (nextS == 'PREPARING') {
     return (
       title: 'En preparación',
-      body: 'Tu corrientazo ya se está haciendo.',
+      body: 'Tu corrientazo ya se está haciendo$dishHint.',
     );
   }
   if (nextS == 'READY_FOR_PICKUP') {
     return (
       title: 'Listo para recoger',
-      body: 'Ya puedes pasar por tu pedido.',
+      body: 'Ya puedes pasar por tu pedido$dishHint.',
+    );
+  }
+  if (nextS == 'READY_FOR_DISPATCH') {
+    return (
+      title: 'Listo para enviar',
+      body: 'Tu pedido sale pronto hacia ti$dishHint.',
+    );
+  }
+  if (nextS == 'OUT_FOR_DELIVERY') {
+    return (
+      title: 'Va en camino',
+      body: 'Tu pedido está rumbo a ti$dishHint.',
     );
   }
   if (nextS == 'DELIVERED' || nextS == 'PICKED_UP') {
-    return (title: 'Pedido entregado', body: 'Buen provecho.');
+    return (title: 'Pedido entregado', body: 'Buen provecho$dishHint.');
   }
   return (
     title: 'Tu pedido avanzó',
-    body: 'Ahora está: ${_labelForStatus(nextS)}',
+    body: 'Ahora: ${orderStatusLabel(nextS)}$dishHint',
   );
-}
-
-String _labelForStatus(String s) {
-  switch (s.toUpperCase()) {
-    case 'INIT':
-      return 'Nuevo';
-    case 'CONFIRMED':
-      return 'Confirmado';
-    case 'PREPARING':
-      return 'Preparando';
-    case 'READY_FOR_PICKUP':
-      return 'Listo';
-    case 'DELIVERED':
-    case 'PICKED_UP':
-      return 'Entregado';
-    case 'CANCELLED_BY_CLIENT':
-    case 'CANCELLED_BY_COOK':
-    case 'CANCELLED_BY_ADMIN':
-      return 'Cancelado';
-    default:
-      return s;
-  }
 }
 
 class _PublicationSnapshot {

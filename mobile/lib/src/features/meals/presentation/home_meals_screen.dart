@@ -20,7 +20,9 @@ import '../application/customer_home_category.dart';
 import '../domain/meal_publication.dart';
 import '../../customer/application/customer_orders_controller.dart';
 import '../../customer/presentation/widgets/customer_welcome_banner.dart';
+import '../../orders/domain/order_status_labels.dart';
 import '../../orders/domain/order_summary.dart';
+import '../../orders/presentation/widgets/order_tracking_progress.dart';
 
 class HomeMealsScreen extends ConsumerWidget {
   const HomeMealsScreen({super.key});
@@ -314,8 +316,13 @@ class _ActiveOrderBanner extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final status = order.status.toUpperCase();
-    final eta = _pseudoEtaLabel(order.createdAt, status);
-    final narrow = MediaQuery.sizeOf(context).width < 360;
+    final statusLabel = orderStatusLabel(status);
+    final eta = orderPseudoEtaLabel(order.createdAt, status);
+    final title = (order.mealTitle ?? '').trim().isEmpty
+        ? 'Tu pedido'
+        : order.mealTitle!.trim();
+    final food = ColombianFoodMock.forMeal(order.mealPublicationId);
+    final photoUrl = (order.mealPhotoUrl ?? '').trim();
 
     void onOpen() => context.push(CustomerOrderDetailRoute(order.id).location);
 
@@ -323,129 +330,119 @@ class _ActiveOrderBanner extends ConsumerWidget {
       borderRadius: BorderRadius.circular(AppRadius.xl),
       onTap: onOpen,
       child: Container(
-        padding: const EdgeInsets.all(AppSpacing.md),
+        clipBehavior: Clip.antiAlias,
         decoration: BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: [
-              AppColors.brand.withValues(alpha: 0.16),
-              AppColors.primary.withValues(alpha: 0.10),
-              Theme.of(context).colorScheme.surface,
-            ],
-          ),
           borderRadius: BorderRadius.circular(AppRadius.xl),
           border: Border.all(color: Theme.of(context).dividerColor),
         ),
-        child: narrow
-            ? Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  Row(
+        child: IntrinsicHeight(
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              SizedBox(
+                width: 108,
+                child: photoUrl.isEmpty
+                    ? FoodImage(
+                        asset: food.imageAsset,
+                        fallbackGradient: food.heroGradient,
+                        fallbackIcon: food.heroIcon,
+                      )
+                    : Image.network(
+                        photoUrl,
+                        fit: BoxFit.cover,
+                        errorBuilder: (context, error, stackTrace) => FoodImage(
+                          asset: food.imageAsset,
+                          fallbackGradient: food.heroGradient,
+                          fallbackIcon: food.heroIcon,
+                        ),
+                      ),
+              ),
+              Expanded(
+                child: Padding(
+                  padding: const EdgeInsets.all(AppSpacing.md),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      leading(context),
-                      const SizedBox(width: AppSpacing.sm),
-                      Expanded(child: textBlock(context, status, eta)),
+                      Row(
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 8,
+                              vertical: 4,
+                            ),
+                            decoration: BoxDecoration(
+                              color: AppColors.brand.withValues(alpha: 0.12),
+                              borderRadius: BorderRadius.circular(999),
+                            ),
+                            child: Text(
+                              statusLabel,
+                              style: Theme.of(context)
+                                  .textTheme
+                                  .labelSmall
+                                  ?.copyWith(
+                                    fontWeight: FontWeight.w900,
+                                    color: AppColors.brand,
+                                  ),
+                            ),
+                          ),
+                          const Spacer(),
+                          Text(
+                            _formatCop(order.totalCop),
+                            style: Theme.of(context)
+                                .textTheme
+                                .titleSmall
+                                ?.copyWith(fontWeight: FontWeight.w900),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        title,
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                        style: Theme.of(context)
+                            .textTheme
+                            .titleMedium
+                            ?.copyWith(fontWeight: FontWeight.w900),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        'Cant. ${order.quantity} · ETA $eta',
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                              color: Theme.of(context)
+                                  .colorScheme
+                                  .onSurface
+                                  .withValues(alpha: 0.68),
+                              fontWeight: FontWeight.w700,
+                            ),
+                      ),
+                      const SizedBox(height: AppSpacing.sm),
+                      OrderTrackingProgress(
+                        status: status,
+                        fulfillmentType: order.fulfillmentType,
+                        tone: AppColors.brand,
+                        lightOnDark: false,
+                      ),
+                      const SizedBox(height: 6),
+                      Align(
+                        alignment: Alignment.centerRight,
+                        child: TextButton(
+                          onPressed: onOpen,
+                          child: const Text('Ver pedido'),
+                        ),
+                      ),
                     ],
                   ),
-                  const SizedBox(height: AppSpacing.sm),
-                  FilledButton.tonal(
-                    onPressed: onOpen,
-                    child: const Text('Ver pedido'),
-                  ),
-                ],
-              )
-            : Row(
-                children: [
-                  leading(context),
-                  const SizedBox(width: AppSpacing.sm),
-                  Expanded(child: textBlock(context, status, eta)),
-                  const SizedBox(width: AppSpacing.sm),
-                  SizedBox(
-                    width: 140,
-                    height: 44,
-                    child: FilledButton.tonal(
-                      style: FilledButton.styleFrom(
-                        padding: const EdgeInsets.symmetric(horizontal: 14),
-                        minimumSize: Size.zero,
-                      ),
-                      onPressed: onOpen,
-                      child: const Text('Ver pedido'),
-                    ),
-                  ),
-                ],
+                ),
               ),
+            ],
+          ),
+        ),
       ),
     );
   }
-
-  static Widget leading(BuildContext context) => Container(
-    width: 46,
-    height: 46,
-    decoration: BoxDecoration(
-      color: AppColors.brand.withValues(alpha: 0.10),
-      borderRadius: BorderRadius.circular(AppRadius.md),
-      border: Border.all(color: AppColors.brand.withValues(alpha: 0.18)),
-    ),
-    child: const Icon(Icons.receipt_long, color: AppColors.brand),
-  );
-
-  static Widget textBlock(BuildContext context, String status, String eta) =>
-      Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            'Pedido activo',
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-            style: Theme.of(
-              context,
-            ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w900),
-          ),
-          const SizedBox(height: 2),
-          Text(
-            '${_labelForStatus(status)} · ETA $eta',
-            maxLines: 2,
-            overflow: TextOverflow.ellipsis,
-            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-              color: Theme.of(
-                context,
-              ).colorScheme.onSurface.withValues(alpha: 0.70),
-              fontWeight: FontWeight.w700,
-            ),
-          ),
-        ],
-      );
-}
-
-String _labelForStatus(String s) {
-  switch (s) {
-    case 'INIT':
-      return 'Nuevo';
-    case 'CONFIRMED':
-      return 'Confirmado';
-    case 'PREPARING':
-      return 'Preparando';
-    case 'READY_FOR_PICKUP':
-      return 'Listo';
-    case 'DELIVERED':
-    case 'PICKED_UP':
-      return 'Entregado';
-    default:
-      return s;
-  }
-}
-
-String _pseudoEtaLabel(DateTime createdAt, String status) {
-  final mins = DateTime.now().difference(createdAt).inMinutes.abs();
-  if (status == 'READY_FOR_PICKUP' ||
-      status == 'PICKED_UP' ||
-      status == 'DELIVERED') {
-    return 'Listo';
-  }
-  final low = 15 + (mins % 8);
-  final high = low + 12;
-  return '$low–$high min';
 }
 
 class _EditorialHeader extends StatelessWidget {

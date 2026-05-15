@@ -28,9 +28,7 @@ class CustomerOrdersController extends AsyncNotifier<CustomerOrdersState> {
     return _load();
   }
 
-  Future<CustomerOrdersState> _load() async {
-    final repo = ref.read(ordersRepositoryProvider);
-    final results = await repo.listMine();
+  CustomerOrdersState _fromSummaries(List<OrderSummary> results) {
     if (results.isEmpty) return CustomerOrdersState.empty;
 
     final active = <OrderSummary>[];
@@ -42,9 +40,29 @@ class CustomerOrdersController extends AsyncNotifier<CustomerOrdersState> {
     return CustomerOrdersState(loading: false, active: active, past: past);
   }
 
+  Future<CustomerOrdersState> _load() async {
+    final repo = ref.read(ordersRepositoryProvider);
+    return _fromSummaries(await repo.listMine());
+  }
+
+  /// Actualiza la UI al instante cuando el poller detecta cambios del servidor.
+  void applyServerOrders(List<OrderSummary> orders) {
+    state = AsyncData(_fromSummaries(orders));
+  }
+
   Future<void> refresh() async {
     state = const AsyncLoading();
     state = await AsyncValue.guard(_load);
+  }
+
+  /// Polling / notificaciones: actualiza sin vaciar la lista.
+  Future<void> silentRefresh() async {
+    final previous = state;
+    try {
+      state = AsyncData(await _load());
+    } catch (_) {
+      if (previous.hasValue) state = previous;
+    }
   }
 }
 

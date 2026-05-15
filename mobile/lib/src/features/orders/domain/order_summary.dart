@@ -45,4 +45,25 @@ class OrderSummary {
       _$OrderSummaryFromJson(json);
 
   Map<String, dynamic> toJson() => _$OrderSummaryToJson(this);
+
+  OrderSummary copyWith({
+    String? status,
+    DateTime? updatedAt,
+  }) {
+    return OrderSummary(
+      id: id,
+      status: status ?? this.status,
+      totalCop: totalCop,
+      createdAt: createdAt,
+      updatedAt: updatedAt ?? this.updatedAt,
+      quantity: quantity,
+      fulfillmentType: fulfillmentType,
+      mealPublicationId: mealPublicationId,
+      mealTitle: mealTitle,
+      mealPhotoUrl: mealPhotoUrl,
+      customerName: customerName,
+      customerPhone: customerPhone,
+      customerAvatarUrl: customerAvatarUrl,
+    );
+  }
 }
