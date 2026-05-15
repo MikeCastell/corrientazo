@@ -2,33 +2,33 @@ import 'package:flutter/material.dart';
 
 import 'app_colors.dart';
 
-/// Estilo de fondo global (MVP: cambiá [kAppSurfaceStyle] y hot restart).
+/// Fondos pensados para **app de comida**: limpios, cálidos, que no compitan con fotos de platos.
 ///
-/// Opciones **planas** (sin degradado suave tipo “atmósfera”):
-/// - [flatCream] — un solo color crema (o noche en dark).
-/// - [flatTwoBand] — dos franjas horizontales sólidas (papel doblado).
-/// - [flatCornerBlocks] — bloques naranja/verde en esquinas, colores planos.
-/// - [flatDotPaper] — crema + rejilla de puntitos (una tinta).
-/// - [flatBrandFrame] — crema + franja superior naranja + acento lateral verde.
+/// Cambiá [kAppSurfaceStyle] y hacé hot restart.
 ///
-/// Con degradado (comportamiento anterior):
-/// - [gradientAmbient] — gradiente + burbujas en [AppScaffold].
+/// - [flatKitchenMotifs] — **motivos de cocina** (sartén, vapor, plato, tomate, hoja) en esquinas,
+///   misma idea de capas que los bloques viejos pero con temática culinaria.
+/// - [flatCream] — crema uniforme (mantel), cero decoración.
+/// - [flatTwoBand] — dos cremas muy cercanas (sutil).
+/// - [flatDotPaper] — puntitos tipo papel menú.
+/// - [gradientAmbient] — degradado suave + burbujas en [AppScaffold].
+/// - [flatBrandFrame] — acento fino arriba/izquierda (marca).
 enum AppSurfaceStyle {
   gradientAmbient,
   flatCream,
   flatTwoBand,
-  flatCornerBlocks,
   flatDotPaper,
   flatBrandFrame,
+  flatKitchenMotifs,
 }
 
-/// **Elegí el fondo aquí** (un solo valor para toda la app).
-const AppSurfaceStyle kAppSurfaceStyle = AppSurfaceStyle.flatCornerBlocks;
+/// Fondo por defecto: motivos de cocina suaves sobre crema.
+const AppSurfaceStyle kAppSurfaceStyle = AppSurfaceStyle.flatKitchenMotifs;
 
 bool get kAppSurfaceShowsGlowBlobs =>
     kAppSurfaceStyle == AppSurfaceStyle.gradientAmbient;
 
-/// Fondo de pantalla según [kAppSurfaceStyle] (y modo claro/oscuro).
+/// Fondo de pantalla según [kAppSurfaceStyle].
 class AppSurfaceBackground extends StatelessWidget {
   const AppSurfaceBackground({super.key, required this.brightness});
 
@@ -50,12 +50,15 @@ class AppSurfaceBackground extends StatelessWidget {
         );
       case AppSurfaceStyle.flatTwoBand:
         return _FlatTwoBand(isDark: isDark);
-      case AppSurfaceStyle.flatCornerBlocks:
-        return _FlatCornerBlocks(isDark: isDark);
       case AppSurfaceStyle.flatDotPaper:
         return _FlatDotPaper(isDark: isDark);
       case AppSurfaceStyle.flatBrandFrame:
         return _FlatBrandFrame(isDark: isDark);
+      case AppSurfaceStyle.flatKitchenMotifs:
+        return CustomPaint(
+          painter: _KitchenMotifPainter(isDark: isDark),
+          child: const SizedBox.expand(),
+        );
     }
   }
 }
@@ -70,137 +73,12 @@ class _FlatTwoBand extends StatelessWidget {
     if (isDark) {
       return const ColoredBox(color: AppColors.bgDark);
     }
-    const top = Color(0xFFFDF9F4);
-    const bottom = Color(0xFFF5EFE6);
-    return const Column(
+    final hi = AppColors.surface2;
+    final lo = AppColors.bg;
+    return Column(
       children: [
-        Expanded(child: ColoredBox(color: top)),
-        Expanded(child: ColoredBox(color: bottom)),
-      ],
-    );
-  }
-}
-
-class _FlatCornerBlocks extends StatelessWidget {
-  const _FlatCornerBlocks({required this.isDark});
-
-  final bool isDark;
-
-  @override
-  Widget build(BuildContext context) {
-    final base = isDark ? AppColors.bgDark : AppColors.bg;
-    if (isDark) {
-      return Stack(
-        fit: StackFit.expand,
-        children: [
-          ColoredBox(color: base),
-          Positioned(
-            top: 8,
-            left: -24,
-            child: Transform.rotate(
-              angle: -0.16,
-              child: Container(
-                width: 200,
-                height: 140,
-                decoration: BoxDecoration(
-                  color: AppColors.primary.withValues(alpha: 0.22),
-                  borderRadius: BorderRadius.circular(32),
-                ),
-              ),
-            ),
-          ),
-          Positioned(
-            bottom: 24,
-            right: -40,
-            child: Transform.rotate(
-              angle: 0.2,
-              child: Container(
-                width: 240,
-                height: 160,
-                decoration: BoxDecoration(
-                  color: AppColors.accent.withValues(alpha: 0.2),
-                  borderRadius: BorderRadius.circular(36),
-                ),
-              ),
-            ),
-          ),
-          Positioned(
-            top: 100,
-            right: 8,
-            child: Container(
-              width: 96,
-              height: 96,
-              decoration: BoxDecoration(
-                color: AppColors.secondary.withValues(alpha: 0.18),
-                shape: BoxShape.circle,
-              ),
-            ),
-          ),
-        ],
-      );
-    }
-    return Stack(
-      fit: StackFit.expand,
-      children: [
-        ColoredBox(color: base),
-        // Bloques más grandes, más dentro de pantalla y más saturados (alfa alto).
-        Positioned(
-          top: 12,
-          left: -28,
-          child: Transform.rotate(
-            angle: -0.16,
-            child: Container(
-              width: 260,
-              height: 170,
-              decoration: BoxDecoration(
-                color: AppColors.primary.withValues(alpha: 0.38),
-                borderRadius: BorderRadius.circular(36),
-              ),
-            ),
-          ),
-        ),
-        Positioned(
-          bottom: 20,
-          right: -48,
-          child: Transform.rotate(
-            angle: 0.2,
-            child: Container(
-              width: 280,
-              height: 190,
-              decoration: BoxDecoration(
-                color: AppColors.accent.withValues(alpha: 0.34),
-                borderRadius: BorderRadius.circular(40),
-              ),
-            ),
-          ),
-        ),
-        Positioned(
-          top: 96,
-          right: 4,
-          child: Container(
-            width: 112,
-            height: 112,
-            decoration: BoxDecoration(
-              color: AppColors.secondary.withValues(alpha: 0.32),
-              shape: BoxShape.circle,
-            ),
-          ),
-        ),
-        Positioned(
-          bottom: 140,
-          left: -20,
-          child: Transform.rotate(
-            angle: 0.12,
-            child: Container(
-              width: 120,
-              height: 88,
-              decoration: BoxDecoration(
-                color: AppColors.primary.withValues(alpha: 0.26),
-                borderRadius: BorderRadius.circular(24),
-              ),
-            ),
-          ),
-        ),
+        Expanded(child: ColoredBox(color: hi)),
+        Expanded(child: ColoredBox(color: lo)),
       ],
     );
   }
@@ -231,14 +109,14 @@ class _DotGridPainter extends CustomPainter {
     canvas.drawRect(Offset.zero & size, Paint()..color = base);
 
     final dot = (isDark ? AppColors.text2Dark : AppColors.text2)
-        .withValues(alpha: isDark ? 0.06 : 0.055);
+        .withValues(alpha: isDark ? 0.045 : 0.04);
     const step = 22.0;
     final p = Paint()..color = dot;
     var row = 0;
     for (var y = 0.0; y < size.height; y += step, row++) {
       final offsetX = row % 2 == 0 ? 0.0 : step * 0.5;
       for (var x = 0.0; x < size.width; x += step) {
-        canvas.drawCircle(Offset(x + offsetX, y), 1.1, p);
+        canvas.drawCircle(Offset(x + offsetX, y), 1.0, p);
       }
     }
   }
@@ -267,21 +145,130 @@ class _FlatBrandFrame extends StatelessWidget {
           top: 0,
           left: 0,
           right: 0,
-          height: 5,
+          height: 3,
           child: ColoredBox(
-            color: AppColors.primary.withValues(alpha: 0.85),
+            color: AppColors.primary.withValues(alpha: 0.45),
           ),
         ),
         Positioned(
           top: 0,
           bottom: 0,
           left: 0,
-          width: 4,
+          width: 3,
           child: ColoredBox(
-            color: AppColors.accent.withValues(alpha: 0.75),
+            color: AppColors.accent.withValues(alpha: 0.4),
           ),
         ),
       ],
     );
   }
+}
+
+/// Siluetas planas inspiradas en cocina casera (sin fotos, no compiten con cards).
+class _KitchenMotifPainter extends CustomPainter {
+  _KitchenMotifPainter({required this.isDark});
+
+  final bool isDark;
+
+  /// Opacidad en modo claro; en oscuro baja un poco para no ensuciar.
+  double _a(double light) => isDark ? light * 0.42 : light;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final base = isDark ? AppColors.bgDark : AppColors.bg;
+    canvas.drawRect(Offset.zero & size, Paint()..color = base);
+
+    final fill = Paint()..style = PaintingStyle.fill;
+    final stroke = Paint()
+      ..style = PaintingStyle.stroke
+      ..strokeCap = StrokeCap.round
+      ..strokeJoin = StrokeJoin.round;
+
+    // — Sartén (arriba-izquierda), misma zona que el bloque naranja viejo —
+    canvas.save();
+    canvas.translate(-size.width * 0.06, size.height * 0.02);
+    canvas.rotate(-0.2);
+    fill.color = AppColors.primary.withValues(alpha: _a(0.30));
+    final panRect = RRect.fromRectAndRadius(
+      const Rect.fromLTWH(0, 36, 200, 40),
+      const Radius.circular(20),
+    );
+    canvas.drawRRect(panRect, fill);
+    fill.color = AppColors.primary.withValues(alpha: _a(0.36));
+    canvas.drawRRect(
+      RRect.fromRectAndRadius(
+        const Rect.fromLTWH(188, 42, 64, 16),
+        const Radius.circular(8),
+      ),
+      fill,
+    );
+    canvas.restore();
+
+    // — Vapor (abajo-derecha), curvas suaves —
+    canvas.save();
+    canvas.translate(size.width * 0.62, size.height * 0.72);
+    stroke
+      ..strokeWidth = 4.2
+      ..color = AppColors.accent.withValues(alpha: _a(0.28));
+    for (var i = 0; i < 3; i++) {
+      final ox = i * 22.0;
+      final p = Path()
+        ..moveTo(ox, 20)
+        ..quadraticBezierTo(ox + 16, 0, ox + 4, -36)
+        ..quadraticBezierTo(ox - 8, -52, ox + 2, -78);
+      canvas.drawPath(p, stroke);
+    }
+    canvas.restore();
+
+    // — Plato / fuente (arriba-derecha), solo borde —
+    canvas.save();
+    canvas.translate(size.width * 0.72, -size.height * 0.04);
+    canvas.rotate(0.14);
+    stroke
+      ..strokeWidth = 5
+      ..color = AppColors.secondary.withValues(alpha: _a(0.26));
+    canvas.drawOval(
+      Rect.fromCenter(center: Offset.zero, width: 220, height: 64),
+      stroke,
+    );
+    canvas.restore();
+
+    // — “Tomate” redondo (derecha, centro-alto) —
+    fill.color = AppColors.secondary.withValues(alpha: _a(0.24));
+    canvas.drawCircle(
+      Offset(size.width * 0.88, size.height * 0.16),
+      30,
+      fill,
+    );
+    fill.color = AppColors.secondary.withValues(alpha: _a(0.12));
+    canvas.drawCircle(Offset(size.width * 0.88 - 6, size.height * 0.14), 5, fill);
+
+    // — Hoja / hierba (abajo-izquierda) —
+    canvas.save();
+    canvas.translate(size.width * 0.06, size.height * 0.78);
+    canvas.rotate(-0.35);
+    fill.color = AppColors.accent.withValues(alpha: _a(0.22));
+    final leaf = Path()
+      ..moveTo(0, 0)
+      ..quadraticBezierTo(36, -28, 72, -4)
+      ..quadraticBezierTo(40, 20, 0, 0);
+    canvas.drawPath(leaf, fill);
+    canvas.restore();
+
+    // — Cuchara / cazo simplificado (izquierda media), silueta redondeada —
+    canvas.save();
+    canvas.translate(size.width * 0.02, size.height * 0.38);
+    canvas.rotate(0.55);
+    fill.color = AppColors.primary.withValues(alpha: _a(0.14));
+    canvas.drawOval(const Rect.fromLTWH(0, 0, 36, 52), fill);
+    stroke
+      ..strokeWidth = 5
+      ..color = AppColors.primary.withValues(alpha: _a(0.20));
+    canvas.drawLine(const Offset(18, 48), const Offset(18, 112), stroke);
+    canvas.restore();
+  }
+
+  @override
+  bool shouldRepaint(covariant _KitchenMotifPainter oldDelegate) =>
+      oldDelegate.isDark != isDark;
 }
