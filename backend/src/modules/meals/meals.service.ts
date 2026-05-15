@@ -11,6 +11,45 @@ import {
   UpdateMealPublicationDto,
 } from "./meals.dto";
 
+const listPublishedSelect = {
+  id: true,
+  meal_id: true,
+  cook_profile_id: true,
+  price_cop: true,
+  stock_available: true,
+  available_from: true,
+  available_to: true,
+  pickup_from: true,
+  pickup_to: true,
+  delivery_enabled: true,
+  pickup_enabled: true,
+  photo_url: true,
+  title_override: true,
+  description_override: true,
+  meal: {
+    select: {
+      title: true,
+      description: true,
+      photo_url: true,
+      tags: true,
+    },
+  },
+  cook_profile: {
+    select: {
+      bio: true,
+      user: { select: { name: true, avatar_url: true } },
+    },
+  },
+} as const;
+
+type ListPublishedRow = Prisma.meal_publicationsGetPayload<{
+  select: typeof listPublishedSelect;
+}>;
+
+type PublicationIdRow = Prisma.meal_publicationsGetPayload<{
+  select: { id: true };
+}>;
+
 @Injectable()
 export class MealsService {
   constructor(private readonly prisma: PrismaService) {}
@@ -27,40 +66,11 @@ export class MealsService {
       },
       orderBy: { created_at: "desc" },
       take: 50,
-      select: {
-        id: true,
-        meal_id: true,
-        cook_profile_id: true,
-        price_cop: true,
-        stock_available: true,
-        available_from: true,
-        available_to: true,
-        pickup_from: true,
-        pickup_to: true,
-        delivery_enabled: true,
-        pickup_enabled: true,
-        photo_url: true,
-        title_override: true,
-        description_override: true,
-        meal: {
-          select: {
-            title: true,
-            description: true,
-            photo_url: true,
-            tags: true,
-          },
-        },
-        cook_profile: {
-          select: {
-            bio: true,
-            user: { select: { name: true, avatar_url: true } },
-          },
-        },
-      },
+      select: listPublishedSelect,
     });
 
     // Flatten enriched fields for the mobile app.
-    return rows.map((r) => ({
+    return rows.map((r: ListPublishedRow) => ({
       id: r.id,
       meal_id: r.meal_id,
       cook_profile_id: r.cook_profile_id,
@@ -219,7 +229,7 @@ export class MealsService {
       where: { meal_id: mealId },
       select: { id: true },
     });
-    const ids = pubIds.map((p) => p.id);
+    const ids = pubIds.map((p: PublicationIdRow) => p.id);
 
     const refs =
       ids.length === 0

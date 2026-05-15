@@ -13,6 +13,94 @@ type MealPublicationStockRow = {
   stock_available: number;
 };
 
+const orderByIdSelect = {
+  id: true,
+  customer_id: true,
+  cook_profile_id: true,
+  meal_publication_id: true,
+  fulfillment_type: true,
+  quantity: true,
+  status: true,
+  created_at: true,
+  total_cop: true,
+  notes: true,
+  cancel_reason: true,
+  order_status_events: {
+    orderBy: { occurred_at: "asc" as const },
+    select: {
+      from_status: true,
+      to_status: true,
+      occurred_at: true,
+      actor_user_id: true,
+    },
+  },
+  customer: { select: { name: true, phone: true, avatar_url: true } },
+  meal_publication: {
+    select: {
+      id: true,
+      stock_available: true,
+      status: true,
+      photo_url: true,
+      title_override: true,
+      meal: { select: { title: true, photo_url: true } },
+      cook_profile: {
+        select: {
+          bio: true,
+          user: { select: { name: true, avatar_url: true, phone: true } },
+        },
+      },
+    },
+  },
+} as const;
+
+type OrderByIdRow = Prisma.ordersGetPayload<{ select: typeof orderByIdSelect }>;
+type OrderStatusEventRow = OrderByIdRow["order_status_events"][number];
+
+const cookOrdersListSelect = {
+  id: true,
+  status: true,
+  created_at: true,
+  updated_at: true,
+  total_cop: true,
+  quantity: true,
+  fulfillment_type: true,
+  meal_publication_id: true,
+  customer: { select: { name: true, phone: true, avatar_url: true } },
+  meal_publication: {
+    select: {
+      id: true,
+      photo_url: true,
+      title_override: true,
+      meal: { select: { title: true, photo_url: true } },
+    },
+  },
+} as const;
+
+type CookOrderListRow = Prisma.ordersGetPayload<{ select: typeof cookOrdersListSelect }>;
+
+const customerOrdersListSelect = {
+  id: true,
+  status: true,
+  created_at: true,
+  total_cop: true,
+  quantity: true,
+  fulfillment_type: true,
+  meal_publication_id: true,
+  cook_profile_id: true,
+  meal_publication: {
+    select: {
+      id: true,
+      photo_url: true,
+      title_override: true,
+      meal: { select: { title: true, photo_url: true } },
+    },
+  },
+} as const;
+
+type CustomerOrderListRow = Prisma.ordersGetPayload<{
+  select: typeof customerOrdersListSelect;
+}>;
+
 @Injectable()
 export class OrdersService {
   constructor(private readonly prisma: PrismaService) {}
@@ -78,7 +166,7 @@ export class OrdersService {
 
       // Reserva stock atómica (evita sobreventa) con UPDATE ... WHERE ... RETURNING.
       // Esto también bloquea la fila de la publicación en Postgres.
-      const rows = await tx.$queryRaw<MealPublicationStockRow[]>(Prisma.sql`
+      const stockRows = await tx.$queryRaw`
         UPDATE meal_publications
         SET stock_available = stock_available - ${qty},
             updated_at = NOW()
@@ -86,7 +174,8 @@ export class OrdersService {
           AND stock_available >= ${qty}
           AND status = 'PUBLISHED'
         RETURNING stock_available
-      `);
+      `;
+      const rows = stockRows as MealPublicationStockRow[];
 
       if (rows.length !== 1) {
         throw new SoldOutError({ publicationId, qty });
@@ -163,40 +252,7 @@ export class OrdersService {
   async getOrder(requesterUserId: string, orderId: string) {
     const order = await this.prisma.orders.findUnique({
       where: { id: orderId },
-      select: {
-        id: true,
-        customer_id: true,
-        cook_profile_id: true,
-        meal_publication_id: true,
-        fulfillment_type: true,
-        quantity: true,
-        status: true,
-        created_at: true,
-        total_cop: true,
-        notes: true,
-        cancel_reason: true,
-        order_status_events: {
-          orderBy: { occurred_at: "asc" },
-          select: { from_status: true, to_status: true, occurred_at: true, actor_user_id: true },
-        },
-        customer: { select: { name: true, phone: true, avatar_url: true } },
-        meal_publication: {
-          select: {
-            id: true,
-            stock_available: true,
-            status: true,
-            photo_url: true,
-            title_override: true,
-            meal: { select: { title: true, photo_url: true } },
-            cook_profile: {
-              select: {
-                bio: true,
-                user: { select: { name: true, avatar_url: true, phone: true } },
-              },
-            },
-          },
-        },
-      },
+      select: orderByIdSelect,
     });
     if (!order) {
       throw new DomainError({
@@ -231,7 +287,7 @@ export class OrdersService {
       meal_publication_id: order.meal_publication_id,
       notes: order.notes,
       cancel_reason: order.cancel_reason,
-      timeline: order.order_status_events.map((e) => ({
+      timeline: order.order_status_events.map((e: OrderStatusEventRow) => ({
         from_status: e.from_status,
         to_status: e.to_status,
         occurred_at: e.occurred_at,
@@ -259,28 +315,10 @@ export class OrdersService {
         where: { cook_profile_id: cookProfileId },
         orderBy: { created_at: "desc" },
         take: 100,
-        select: {
-          id: true,
-          status: true,
-          created_at: true,
-          updated_at: true,
-          total_cop: true,
-          quantity: true,
-          fulfillment_type: true,
-          meal_publication_id: true,
-          customer: { select: { name: true, phone: true, avatar_url: true } },
-          meal_publication: {
-            select: {
-              id: true,
-              photo_url: true,
-              title_override: true,
-              meal: { select: { title: true, photo_url: true } },
-            },
-          },
-        },
+        select: cookOrdersListSelect,
       });
 
-      return rows.map((o) => ({
+      return rows.map((o: CookOrderListRow) => ({
         id: o.id,
         status: o.status,
         created_at: o.created_at,
@@ -301,27 +339,10 @@ export class OrdersService {
       where: { customer_id: requesterUserId },
       orderBy: { created_at: "desc" },
       take: 100,
-      select: {
-        id: true,
-        status: true,
-        created_at: true,
-        total_cop: true,
-        quantity: true,
-        fulfillment_type: true,
-        meal_publication_id: true,
-        cook_profile_id: true,
-        meal_publication: {
-          select: {
-            id: true,
-            photo_url: true,
-            title_override: true,
-            meal: { select: { title: true, photo_url: true } },
-          },
-        },
-      },
+      select: customerOrdersListSelect,
     });
 
-    return rows.map((o) => ({
+    return rows.map((o: CustomerOrderListRow) => ({
       id: o.id,
       status: o.status,
       total_cop: o.total_cop,
@@ -540,12 +561,12 @@ export class OrdersService {
    * Devuelve al inventario la cantidad reservada al crear el pedido.
    */
   private async releaseReservedStock(tx: Prisma.TransactionClient, publicationId: string, qty: number) {
-    await tx.$executeRaw(Prisma.sql`
+    await tx.$executeRaw`
       UPDATE meal_publications
       SET stock_available = stock_available + ${qty},
           updated_at = NOW()
       WHERE id = ${publicationId}
-    `);
+    `;
 
     const row = await tx.meal_publications.findUnique({
       where: { id: publicationId },
