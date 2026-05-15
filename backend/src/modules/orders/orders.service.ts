@@ -9,6 +9,10 @@ import { OrderStateMachine } from "../../orders/domain/order-state-machine";
 import { OrderAction } from "../../orders/domain/order-state-machine";
 import { OrderStatus } from "../../orders/domain/order-status";
 
+type MealPublicationStockRow = {
+  stock_available: number;
+};
+
 @Injectable()
 export class OrdersService {
   constructor(private readonly prisma: PrismaService) {}
@@ -74,9 +78,7 @@ export class OrdersService {
 
       // Reserva stock atómica (evita sobreventa) con UPDATE ... WHERE ... RETURNING.
       // Esto también bloquea la fila de la publicación en Postgres.
-      const rows = await tx.$queryRaw<
-        Array<{ stock_available: number }>
-      >(Prisma.sql`
+      const rows = await tx.$queryRaw<MealPublicationStockRow[]>(Prisma.sql`
         UPDATE meal_publications
         SET stock_available = stock_available - ${qty},
             updated_at = NOW()
@@ -344,7 +346,7 @@ export class OrdersService {
       });
     }
 
-    return this.prisma.$transaction(async (tx) => {
+    return this.prisma.$transaction(async (tx: Prisma.TransactionClient) => {
       const order = await tx.orders.findUnique({
         where: { id: orderId },
         select: {
@@ -571,7 +573,11 @@ export class OrdersService {
     cancelReason: string | null;
     meta: Record<string, unknown>;
   }) {
-    const run = async (tx: Prisma.TransactionClient) => {
+    const run: (tx: Prisma.TransactionClient) => Promise<{
+      id: string;
+      status: string;
+      updated_at: Date;
+    }> = async (tx: Prisma.TransactionClient) => {
       const current = await tx.orders.findUnique({
         where: { id: params.order.id },
         select: { status: true },

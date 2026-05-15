@@ -1,4 +1,5 @@
 import { Injectable, ServiceUnavailableException } from "@nestjs/common";
+import { Prisma } from "@prisma/client";
 
 import { PrismaService } from "../../database/prisma/prisma.service";
 import { DomainError } from "../../common/errors/domain-errors";
@@ -404,7 +405,7 @@ export class MealsService {
       });
     }
 
-    return this.prisma.$transaction(async (tx) => {
+    return this.prisma.$transaction(async (tx: Prisma.TransactionClient) => {
       // Guarantee: only one PUBLISHED publication per meal for the cook.
       if (dto.status === "PUBLISHED" || dto.status === "PAUSED") {
         // Pause all siblings (not only those currently PUBLISHED) to avoid
