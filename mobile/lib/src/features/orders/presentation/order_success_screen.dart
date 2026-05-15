@@ -13,7 +13,7 @@ import '../../customer/application/customer_orders_controller.dart';
 import '../../meals/application/meals_controller.dart';
 
 void _navigateToCustomerFeed(WidgetRef ref, BuildContext context) {
-  ref.invalidate(mealsFeedProvider);
+  ref.read(mealsFeedProvider.notifier).silentRefresh();
   ref.invalidate(customerOrdersControllerProvider);
   context.go(const CustomerHomeRoute().location);
 }

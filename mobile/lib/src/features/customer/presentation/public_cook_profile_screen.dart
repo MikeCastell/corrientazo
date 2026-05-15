@@ -40,7 +40,7 @@ class PublicCookProfileScreen extends ConsumerWidget {
           loading: () => const _PublicCookLoading(),
           error: (e, _) => _PublicCookError(
             message: e.toString(),
-            onRetry: () => ref.refresh(mealsFeedProvider),
+            onRetry: () => ref.read(mealsFeedProvider.notifier).refresh(),
           ),
           data: (items) {
             try {
@@ -168,7 +168,7 @@ class PublicCookProfileScreen extends ConsumerWidget {
             } catch (e) {
               return _PublicCookError(
                 message: 'Error dibujando el perfil. ($e)',
-                onRetry: () => ref.refresh(mealsFeedProvider),
+                onRetry: () => ref.read(mealsFeedProvider.notifier).refresh(),
               );
             }
           },

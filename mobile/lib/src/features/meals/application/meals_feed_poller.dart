@@ -11,11 +11,14 @@ import 'meals_controller.dart';
 /// Refresco liviano del feed sin sockets (MVP).
 ///
 /// - Solo corre para usuarios `CUSTOMER`.
-/// - Cada N segundos refresca `mealsFeedProvider` para que cambios del cook
-///   (pickup/delivery, stock, etc.) se vean en la UI con baja latencia.
+/// - Actualiza en silencio (sin pantalla de carga ni error si ya había datos).
 class MealsFeedPoller extends Notifier<void> {
   Timer? _timer;
   bool _inFlight = false;
+  DateTime? _lastSuccess;
+
+  static const _pollInterval = Duration(seconds: 45);
+  static const _minGapBetweenFetches = Duration(seconds: 30);
 
   @override
   void build() {
@@ -26,26 +29,32 @@ class MealsFeedPoller extends Notifier<void> {
       _timer?.cancel();
       _timer = null;
       _inFlight = false;
+      _lastSuccess = null;
       return;
     }
 
-    _timer ??= Timer.periodic(const Duration(seconds: 15), (_) => _tick());
-    // Hidratar rápido al entrar al app.
-    Future.microtask(_tick);
+    _timer ??= Timer.periodic(_pollInterval, (_) => _tick());
   }
 
   Future<void> _tick() async {
     if (_inFlight) return;
+
     final auth = ref.read(authControllerProvider);
     if (auth is! Authenticated || !auth.user.isCustomer) return;
+
+    final last = _lastSuccess;
+    if (last != null && DateTime.now().difference(last) < _minGapBetweenFetches) {
+      return;
+    }
+
     _inFlight = true;
     try {
-      // Forzamos refresh para que el FutureProvider entregue contenido nuevo.
-      ref.invalidate(mealsFeedProvider);
-      await ref.read(mealsFeedProvider.future);
+      await ref.read(mealsFeedProvider.notifier).silentRefresh();
+      final feed = ref.read(mealsFeedProvider);
+      if (feed.hasValue) _lastSuccess = DateTime.now();
     } catch (e, st) {
       if (AppEnv.startupDebug) {
-        debugPrint('[meals_feed_poller] failed: $e\n$st');
+        debugPrint('[meals_feed_poller] tick failed: $e\n$st');
       }
     } finally {
       _inFlight = false;
@@ -56,4 +65,3 @@ class MealsFeedPoller extends Notifier<void> {
 final mealsFeedPollerProvider = NotifierProvider<MealsFeedPoller, void>(
   MealsFeedPoller.new,
 );
-

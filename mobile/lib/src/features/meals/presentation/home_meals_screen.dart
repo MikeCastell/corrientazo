@@ -34,7 +34,8 @@ class HomeMealsScreen extends ConsumerWidget {
       title: '',
       showTopBar: false,
       body: RefreshIndicator(
-        onRefresh: () async => ref.refresh(mealsFeedProvider.future),
+        onRefresh: () =>
+            ref.read(mealsFeedProvider.notifier).refresh(),
         child: CustomScrollView(
           // Pull-to-refresh even when content is short; avoids zero-height slivers on small screens.
           physics: const AlwaysScrollableScrollPhysics(),
@@ -76,7 +77,8 @@ class HomeMealsScreen extends ConsumerWidget {
                     title: 'No pudimos cargar el feed',
                     subtitle: 'Revisa tu conexión e inténtalo de nuevo.',
                     actionLabel: 'Reintentar',
-                    onAction: () => ref.refresh(mealsFeedProvider),
+                    onAction: () =>
+                        ref.read(mealsFeedProvider.notifier).refresh(),
                   ),
                 ),
               ],
@@ -101,7 +103,8 @@ class HomeMealsScreen extends ConsumerWidget {
                                   'Los cocineros suben cupos nuevos durante el día. '
                                   'Vuelve en un rato o prueba refrescar.',
                               actionLabel: 'Actualizar lista',
-                              onAction: () => ref.refresh(mealsFeedProvider),
+                              onAction: () =>
+                        ref.read(mealsFeedProvider.notifier).refresh(),
                             ),
                           );
                         },
@@ -139,7 +142,8 @@ class HomeMealsScreen extends ConsumerWidget {
                                       '«postre», «torta» o «dulce» en el nombre o etiquetas.'
                                   : 'Hoy puede que solo haya postres: elige la categoría Postres arriba.',
                               actionLabel: 'Actualizar lista',
-                              onAction: () => ref.refresh(mealsFeedProvider),
+                              onAction: () =>
+                        ref.read(mealsFeedProvider.notifier).refresh(),
                             ),
                           );
                         },
