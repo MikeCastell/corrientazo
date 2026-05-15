@@ -59,7 +59,7 @@ final appRouterProvider = Provider<GoRouter>((ref) {
   return GoRouter(
     initialLocation: const SplashRoute().location,
     refreshListenable: _GoRouterRefresh(ref, authState),
-    debugLogDiagnostics: true,
+    debugLogDiagnostics: false,
     routes: [
       GoRoute(
         path: const SplashRoute().location,

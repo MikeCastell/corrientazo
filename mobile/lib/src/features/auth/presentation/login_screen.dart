@@ -4,8 +4,6 @@ import 'package:go_router/go_router.dart';
 
 import '../../../core/branding/corrientazo_brand.dart';
 import '../../../core/design/tokens/app_surface_style.dart';
-import '../../../core/env/app_env.dart';
-import '../../../core/networking/api_client.dart';
 import '../application/auth_controller.dart';
 import '../../../core/routing/app_router.dart';
 import '../../../core/networking/api_exception.dart';
@@ -23,8 +21,6 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   final _password = TextEditingController();
   bool _loading = false;
   String? _error;
-  bool _diagLoading = false;
-  String? _diag;
 
   @override
   void dispose() {
@@ -64,29 +60,8 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     }
   }
 
-  Future<void> _probe() async {
-    setState(() {
-      _diagLoading = true;
-      _diag = null;
-    });
-    try {
-      final api = ref.read(apiClientProvider);
-      final data = await api.getJson<Map<String, dynamic>>(
-        '/healthz',
-        decode: (json) => (json as Map).cast<String, dynamic>(),
-      );
-      setState(() => _diag = 'OK /healthz: $data');
-    } catch (e) {
-      final msg = e is ApiException ? e.message : e.toString();
-      setState(() => _diag = 'FALLÓ /healthz: $msg');
-    } finally {
-      if (mounted) setState(() => _diagLoading = false);
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
-    final scheme = Theme.of(context).colorScheme;
     return Scaffold(
       extendBodyBehindAppBar: true,
       appBar: AppBar(
@@ -114,57 +89,6 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                   const SizedBox(height: 10),
                   const CorrientazoTagline(fontSize: 12),
                   const SizedBox(height: 20),
-                  Container(
-                    width: double.infinity,
-                    padding: const EdgeInsets.all(12),
-                    decoration: BoxDecoration(
-                      color: scheme.surfaceContainerHighest.withValues(
-                        alpha: 0.55,
-                      ),
-                      borderRadius: BorderRadius.circular(14),
-                      border: Border.all(
-                        color: scheme.outline.withValues(alpha: 0.25),
-                      ),
-                    ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          'Conexión (alpha)',
-                          style: Theme.of(context).textTheme.labelLarge
-                              ?.copyWith(fontWeight: FontWeight.w800),
-                        ),
-                        const SizedBox(height: 6),
-                        Text(
-                          'API_BASE_URL: ${AppEnv.apiBaseUrl}',
-                          style: Theme.of(context).textTheme.labelMedium,
-                        ),
-                        const SizedBox(height: 10),
-                        SizedBox(
-                          width: double.infinity,
-                          child: OutlinedButton(
-                            onPressed: _diagLoading ? null : _probe,
-                            child: Text(
-                              _diagLoading ? 'Probando…' : 'Probar conexión',
-                            ),
-                          ),
-                        ),
-                        if (_diag != null) ...[
-                          const SizedBox(height: 8),
-                          Text(
-                            _diag!,
-                            style: Theme.of(context).textTheme.labelMedium
-                                ?.copyWith(
-                                  color: scheme.onSurface.withValues(
-                                    alpha: 0.75,
-                                  ),
-                                ),
-                          ),
-                        ],
-                      ],
-                    ),
-                  ),
-                  const SizedBox(height: 16),
                   TextField(
                     controller: _phone,
                     keyboardType: TextInputType.phone,

@@ -66,20 +66,16 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
   @override
   Widget build(BuildContext context) {
     final authState = ref.watch(authControllerProvider);
-    final status = ref.watch(authDebugStatusProvider);
 
     if (AppEnv.startupDebug) {
-      // ignore: avoid_print
-      debugPrint(
-        '[splash] build authState=${authState.runtimeType} status="$status"',
-      );
+      debugPrint('[splash] build authState=${authState.runtimeType}');
     }
 
     final scheme = Theme.of(context).colorScheme;
     final subtleText = scheme.onSurface.withValues(alpha: 0.62);
     final warmBrown = const Color(0xFF6B4A3A).withValues(alpha: 0.82);
 
-    final loadingLabel = AppEnv.startupDebug ? status : _messages[_msgIndex];
+    final loadingLabel = _messages[_msgIndex];
 
     return Scaffold(
       backgroundColor: AppColors.bg,
@@ -230,17 +226,6 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
                         ],
                       ),
 
-                      if (AppEnv.startupDebug) ...[
-                        const SizedBox(height: AppSpacing.md),
-                        Text(
-                          'AuthState: ${authState.runtimeType}',
-                          textAlign: TextAlign.center,
-                          style: Theme.of(context).textTheme.labelMedium
-                              ?.copyWith(
-                                color: scheme.onSurface.withValues(alpha: 0.55),
-                              ),
-                        ),
-                      ],
                       const SizedBox(height: 8),
                     ],
                   ),
