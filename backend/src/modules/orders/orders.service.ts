@@ -8,10 +8,13 @@ import { CancelOrderDto, CookCancelReasonCode, CreateOrderDto } from "./orders.d
 import { OrderStateMachine } from "../../orders/domain/order-state-machine";
 import { OrderAction } from "../../orders/domain/order-state-machine";
 import { OrderStatus } from "../../orders/domain/order-status";
-
-type MealPublicationStockRow = {
-  stock_available: number;
-};
+import {
+  CookOrderListRow,
+  CustomerOrderListRow,
+  MealPublicationStockRow,
+  OrderByIdRow,
+  OrderStatusEventRow,
+} from "./orders.query-types";
 
 const orderByIdSelect = {
   id: true,
@@ -53,9 +56,6 @@ const orderByIdSelect = {
   },
 } as const;
 
-type OrderByIdRow = Prisma.ordersGetPayload<{ select: typeof orderByIdSelect }>;
-type OrderStatusEventRow = OrderByIdRow["order_status_events"][number];
-
 const cookOrdersListSelect = {
   id: true,
   status: true,
@@ -76,8 +76,6 @@ const cookOrdersListSelect = {
   },
 } as const;
 
-type CookOrderListRow = Prisma.ordersGetPayload<{ select: typeof cookOrdersListSelect }>;
-
 const customerOrdersListSelect = {
   id: true,
   status: true,
@@ -96,10 +94,6 @@ const customerOrdersListSelect = {
     },
   },
 } as const;
-
-type CustomerOrderListRow = Prisma.ordersGetPayload<{
-  select: typeof customerOrdersListSelect;
-}>;
 
 @Injectable()
 export class OrdersService {
@@ -250,10 +244,10 @@ export class OrdersService {
   }
 
   async getOrder(requesterUserId: string, orderId: string) {
-    const order = await this.prisma.orders.findUnique({
+    const order = (await this.prisma.orders.findUnique({
       where: { id: orderId },
       select: orderByIdSelect,
-    });
+    })) as OrderByIdRow | null;
     if (!order) {
       throw new DomainError({
         code: ErrorCodes.ORDER_NOT_FOUND,
@@ -311,12 +305,12 @@ export class OrdersService {
     const role = await this.getUserRole(requesterUserId);
     if (role === "COOK") {
       const cookProfileId = await this.ensureCookProfile(requesterUserId);
-      const rows = await this.prisma.orders.findMany({
+      const rows = (await this.prisma.orders.findMany({
         where: { cook_profile_id: cookProfileId },
         orderBy: { created_at: "desc" },
         take: 100,
         select: cookOrdersListSelect,
-      });
+      })) as CookOrderListRow[];
 
       return rows.map((o: CookOrderListRow) => ({
         id: o.id,
@@ -335,12 +329,12 @@ export class OrdersService {
       }));
     }
 
-    const rows = await this.prisma.orders.findMany({
+    const rows = (await this.prisma.orders.findMany({
       where: { customer_id: requesterUserId },
       orderBy: { created_at: "desc" },
       take: 100,
       select: customerOrdersListSelect,
-    });
+    })) as CustomerOrderListRow[];
 
     return rows.map((o: CustomerOrderListRow) => ({
       id: o.id,

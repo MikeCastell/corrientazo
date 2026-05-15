@@ -10,6 +10,7 @@ import {
   UpdateMealDto,
   UpdateMealPublicationDto,
 } from "./meals.dto";
+import { ListPublishedRow, PublicationIdRow } from "./meals.query-types";
 
 const listPublishedSelect = {
   id: true,
@@ -42,14 +43,6 @@ const listPublishedSelect = {
   },
 } as const;
 
-type ListPublishedRow = Prisma.meal_publicationsGetPayload<{
-  select: typeof listPublishedSelect;
-}>;
-
-type PublicationIdRow = Prisma.meal_publicationsGetPayload<{
-  select: { id: true };
-}>;
-
 @Injectable()
 export class MealsService {
   constructor(private readonly prisma: PrismaService) {}
@@ -57,7 +50,7 @@ export class MealsService {
   async listPublished() {
     // Foundation: lista simple de publicaciones disponibles (sin geo ni ranking)
     const now = new Date();
-    const rows = await this.prisma.meal_publications.findMany({
+    const rows = (await this.prisma.meal_publications.findMany({
       where: {
         available_from: { lte: now },
         available_to: { gte: now },
@@ -67,7 +60,7 @@ export class MealsService {
       orderBy: { created_at: "desc" },
       take: 50,
       select: listPublishedSelect,
-    });
+    })) as ListPublishedRow[];
 
     // Flatten enriched fields for the mobile app.
     return rows.map((r: ListPublishedRow) => ({
@@ -225,10 +218,10 @@ export class MealsService {
     // Hard delete can fail if there are orders referencing a publication:
     // orders.meal_publication_id has ON DELETE RESTRICT.
     // In that case, we do a safe "archive": deactivate the template and archive publications.
-    const pubIds = await this.prisma.meal_publications.findMany({
+    const pubIds = (await this.prisma.meal_publications.findMany({
       where: { meal_id: mealId },
       select: { id: true },
-    });
+    })) as PublicationIdRow[];
     const ids = pubIds.map((p: PublicationIdRow) => p.id);
 
     const refs =
